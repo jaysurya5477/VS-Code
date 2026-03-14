@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNotes - Personal Workspace</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #7719aa; /* OneNote Purple */
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --sidebar-bg: #f3f2f1;
+            --white: #ffffff;
+            --gray: #edebe9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; overflow: hidden; }
+
+        /* --- LOGIN PAGE STYLES --- */
+        #login-screen {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-gradient);
+            transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 350px;
+            text-align: center;
+        }
+
+        .login-card h2 { margin-bottom: 20px; color: var(--primary-color); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 14px; margin-bottom: 5px; }
+        .input-group input { 
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; 
+            font-family: inherit; outline-color: var(--primary-color);
+        }
+        .error-msg { color: #d93025; font-size: 12px; margin-top: 5px; display: none; }
+
+        .btn {
+            width: 100%; padding: 12px; background: var(--primary-color); color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 16px;
+        }
+        .btn:hover { background: #5e138a; }
+
+        /* --- NOTES APP STYLES (HIDDEN BY DEFAULT) --- */
+        #app-screen {
+            display: none;
+            height: 100vh;
+            grid-template-columns: 250px 1fr;
+        }
+
+        /* Sidebar Like OneNote */
+        .sidebar {
+            background: var(--sidebar-bg);
+            border-right: 1px solid #e1dfdd;
+            display: flex;
+            flex-column: column;
+            padding: 20px 0;
+        }
+
+        .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #ddd; }
+        .add-note-btn {
+            width: 100%; padding: 8px; background: var(--primary-color); color: white;
+            border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;
+        }
+
+        #notes-list { list-style: none; margin-top: 10px; overflow-y: auto; }
+        .note-item {
+            padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #e1dfdd;
+            transition: background 0.2s;
+        }
+        .note-item:hover { background: #edebe9; }
+        .note-item.active { background: #ffffff; border-left: 4px solid var(--primary-color); }
+        .note-item h4 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Main Content Area */
+        .main-content { display: flex; flex-direction: column; background: white; }
+        .note-header { padding: 20px; border-bottom: 1px solid #eee; }
+        #note-title-input {
+            width: 100%; border: none; font-size: 28px; font-weight: 600; outline: none;
+        }
+        #note-body-input {
+            flex: 1; padding: 20px; border: none; font-size: 16px; outline: none; resize: none;
+            line-height: 1.6;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- SECTION: LOGIN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>CloudNotes</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="email@example.com" required>
+                    <p id="email-error" class="error-msg">Invalid email format.</p>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Min. 6 characters" required>
+                    <p id="pass-error" class="error-msg">Password too short.</p>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SECTION: APP (OneNote Style) -->
+    <div id="app-screen">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>My Notebook</h3>
+                <button class="add-note-btn" onclick="addNewNote()">+ New Page</button>
+            </div>
+            <ul id="notes-list">
+                <!-- Notes will appear here -->
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="note-header">
+                <input type="text" id="note-title-input" placeholder="Page Title" oninput="updateCurrentNote()">
+            </div>
+            <textarea id="note-body-input" placeholder="Start typing your notes here..." oninput="updateCurrentNote()"></textarea>
+        </main>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        let notes = JSON.parse(localStorage.getItem('my-notes')) || [
+            { id: 1, title: 'Welcome to CloudNotes', content: 'Click "New Page" to start writing!' }
+        ];
+        let currentNoteId = notes[0]?.id || null;
+
+        // --- LOGIN VALIDATION & FLOW ---
+        const loginForm = document.getElementById('login-form');
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            let isValid = true;
+            if (!email.includes('@')) {
+                document.getElementById('email-error').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('email-error').style.display = 'none';
+            }
+
+            if (password.length < 6) {
+                document.getElementById('pass-error').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('pass-error').style.display = 'none';
+            }
+
+            if (isValid) {
+                // Mock Login Success
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').style.display = 'grid';
+                renderNotesList();
+                loadNote(currentNoteId);
+            }
+        });
+
+        // --- NOTES LOGIC ---
+        function renderNotesList() {
+            const list = document.getElementById('notes-list');
+            list.innerHTML = '';
+            notes.forEach(note => {
+                const li = document.createElement('li');
+                li.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
+                li.innerHTML = `<h4>${note.title || 'Untitled'}</h4>`;
+                li.onclick = () => loadNote(note.id);
+                list.appendChild(li);
+            });
+        }
+
+        function loadNote(id) {
+            currentNoteId = id;
+            const note = notes.find(n => n.id === id);
+            document.getElementById('note-title-input').value = note.title;
+            document.getElementById('note-body-input').value = note.content;
+            renderNotesList();
+        }
+
+        function addNewNote() {
+            const newId = Date.now();
+            const newNote = { id: newId, title: 'Untitled Page', content: '' };
+            notes.unshift(newNote); // Add to top
+            saveToStorage();
+            loadNote(newId);
+        }
+
+        function updateCurrentNote() {
+            const title = document.getElementById('note-title-input').value;
+            const body = document.getElementById('note-body-input').value;
+            
+            const index = notes.findIndex(n => n.id === currentNoteId);
+            if (index !== -1) {
+                notes[index].title = title;
+                notes[index].content = body;
+                saveToStorage();
+                // Debounced sidebar update
+                document.querySelector('.note-item.active h4').innerText = title || 'Untitled';
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('my-notes', JSON.stringify(notes));
+        }
+    </script>
+</body>
+</html>

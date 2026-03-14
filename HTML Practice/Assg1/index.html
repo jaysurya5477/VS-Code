@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="main" class="background">
+
+        <div id="main-subdiv" class="center">
+
+            <h1 id="main-heading" class="color">Student Portal</h1>
+            <hr>
+
+            <label class="left">
+                Username:
+                <input type="text" placeholder="Enter your name">
+            </label>
+
+            <br><br>
+
+            <label class="left">
+                Password:
+                <input type="password" placeholder="Password">
+            </label>
+
+            <br><br>
+
+            <!-- Option 1: Add buttons directly in HTML (Recommended) -->
+            <div style="text-align: center;">
+                <button id ="login">Login</button>
+                <button id ="clear">Clear</button>
+            </div>
+
+            <!-- Option 2: If you must use JavaScript, add a container for the buttons -->
+            <!-- <div id="button-container"></div> -->
+
+            <hr>
+
+            <p class="left">Message</p>
+            <p id="green" class="left" style="font-weight: bold;">Welcome to the Student Portal</p>
+
+            <hr>
+
+            <p class="center">Click the box below:</p>
+
+            <div class="box center" onclick="Colorbox()"></div>
+
+        </div>
+
+        <!-- script should be here -->
+        <script src="scripting.js"></script>
+
+</body>
+
+</html>
