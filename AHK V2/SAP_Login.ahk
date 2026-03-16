@@ -175,7 +175,7 @@ OpenAndLogin(connectionName, client, username, password) {
             return
         }
 
-        Sleep(2000) ; Wait for the connection window to appear
+        Sleep(1000) ; Wait for the connection window to appear
 
         ; Get the first available session
         if sapConnection.Sessions.Count < 1 {
@@ -197,7 +197,7 @@ OpenAndLogin(connectionName, client, username, password) {
         ; Submit the login form (Enter key)
         sapSession.findById("wnd[0]").sendVKey(0)
 
-        ; Handle "user already logged in" dialog, if it appears
+        ; ; Handle "user already logged in" dialog, if it appears
         try {
             if sapSession.findById("wnd[1]").Visible {
                 ; Select option 3: terminate previous session and continue with this one
