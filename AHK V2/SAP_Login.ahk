@@ -32,6 +32,9 @@ Hotkey(launcherHotkey, LoginToSAP.Bind("MEQ200"))
 launcherHotkey := IniRead(CONFIG_FILE, "Hotkeys", "MEP300", "")
 Hotkey(launcherHotkey, LoginToSAP.Bind("MEP300"))
 
+; ^4:: LoginToSAP("MED120")
+
+
 ; --- Hotkey Bindings (Alt + Number) ---
 ; !1:: LoginToSAP("MED120")
 ; !2:: LoginToSAP("MEQ200")
@@ -84,6 +87,7 @@ LoginToSAP(profileName, *) {
 
         ; No existing session — open a fresh connection and log in
         OpenAndLogin(connectionName, client, username, password)
+        return
 
     } catch as err {
         MsgBox("Unexpected error: " err.Message, "Error", "Icon!")
@@ -205,8 +209,10 @@ OpenAndLogin(connectionName, client, username, password) {
                 sapSession.findById("wnd[1]/tbar[0]/btn[0]").Press()
             }
         } catch {
-            ; No multi-login dialog — proceed normally
+
         }
+
+        return
 
     } catch as err {
         MsgBox("Login failed: " err.Message, "Error", "Icon!")
@@ -263,37 +269,37 @@ BringWindowToFront(hwnd) {
 ; FIRST-RUN SETUP
 ; Creates a sample sap_config.ini if one doesn't already exist
 ; =============================================================================
-CreateSampleConfig() {
-    global CONFIG_FILE
+; CreateSampleConfig() {
+;     global CONFIG_FILE
 
-    if FileExist(CONFIG_FILE)
-        return
+;     if FileExist(CONFIG_FILE)
+;         return
 
-    template :=
-        (
-            "[MED120]
-        ; Connection name as shown in SAP Logon pad
-        ConnectionName=YOUR_CONNECTION_NAME
-        SID=MED
-        Client=120
-        User=YOUR_USERNAME
-        Password=YOUR_PASSWORD
+;     template :=
+;         (
+;             "[MED120]
+;         ; Connection name as shown in SAP Logon pad
+;         ConnectionName=YOUR_CONNECTION_NAME
+;         SID=MED
+;         Client=120
+;         User=YOUR_USERNAME
+;         Password=YOUR_PASSWORD
 
-        [MEQ200]
-        ConnectionName=YOUR_CONNECTION_NAME
-        SID=MEQ
-        Client=200
-        User=YOUR_USERNAME
-        Password=YOUR_PASSWORD"
-        )
+;         [MEQ200]
+;         ConnectionName=YOUR_CONNECTION_NAME
+;         SID=MEQ
+;         Client=200
+;         User=YOUR_USERNAME
+;         Password=YOUR_PASSWORD"
+;         )
 
-    try {
-        FileAppend(template, CONFIG_FILE)
-        MsgBox("Sample config created at:`n" CONFIG_FILE "`n`nEdit it with your SAP credentials before using the hotkeys.",
-            "First Run")
-    } catch {
-        MsgBox("Could not create config file.", "Error", "Icon!")
-    }
-}
+;     try {
+;         FileAppend(template, CONFIG_FILE)
+;         MsgBox("Sample config created at:`n" CONFIG_FILE "`n`nEdit it with your SAP credentials before using the hotkeys.",
+;             "First Run")
+;     } catch {
+;         MsgBox("Could not create config file.", "Error", "Icon!")
+;     }
+; }
 
-CreateSampleConfig()
+; CreateSampleConfig()

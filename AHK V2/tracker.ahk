@@ -100,14 +100,14 @@ GetFunctional(module) {
             if (contentCols.Length >= 2 && RegExMatch(contentCols[1], "^\d{1,2}-[A-Za-z]{3}-\d{2}$")) {
                 ; First col is date
                 date := contentCols[1]
-                issue := contentCols.Length >= 2 ? contentCols[2] : ""
-                remarks := contentCols.Length >= 3 ? contentCols[3] : ""
-                module := contentCols.Length >= 4 ? contentCols[4] : ""
+                module := contentCols.Length >= 2 ? contentCols[2] : ""
+                issue  := contentCols.Length >= 3 ? contentCols[3] : ""
+                remarks:= contentCols.Length >= 4 ? contentCols[4] : ""
             } else {
                 ; No date in this row (merged cell) — use carried forward date
-                issue := contentCols[1]
-                remarks := contentCols.Length >= 2 ? contentCols[2] : ""
-                module := contentCols.Length >= 3 ? contentCols[3] : ""
+                module := contentCols[1]
+                issue := contentCols.Length >= 2 ? contentCols[2] : ""
+                remarks := contentCols.Length >= 3 ? contentCols[3] : ""
             }
         }
 

@@ -4,7 +4,7 @@ SendMode("Input")
 SetWorkingDir(A_ScriptDir)
 CoordMode("Pixel", "Window")
 
-MsgBox("Started", "Reload", "T0.5")
+; MsgBox("Started", "Reload", "T0.5")
 
 ; F5:: Reload()
 

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAP UI5 — Student Registration</title>
+
+    <!--
+        SAP UI5 Bootstrap (CDN version)
+        - data-sap-ui-theme         : UI theme (sap_horizon is the latest)
+        - data-sap-ui-libs          : Libraries to preload
+        - data-sap-ui-resourceroots : Maps your namespace to a folder path
+        - data-sap-ui-oninit        : Module to run after UI5 initializes
+        - data-sap-ui-compatVersion : Ensures compatible behavior
+        - data-sap-ui-async         : Enables async loading (recommended)
+    -->
+    <script
+        id="sap-ui-bootstrap"
+        src="https://openui5.hana.ondemand.com/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-libs="sap.m,sap.ui.layout"
+        data-sap-ui-resourceroots='{
+            "sap.ui5.beginner.registration": "./"
+        }'
+        data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true">
+    </script>
+</head>
+<body class="sapUiBody" id="content">
+
+    <!--
+        sap.ui.core.ComponentContainer renders the Component defined
+        in manifest.json. This is the recommended entry point for
+        component-based SAP UI5 apps.
+    -->
+    <div
+        data-sap-ui-component
+        data-name="sap.ui5.beginner.registration"
+        data-id="container"
+        data-settings='{"id": "registration"}'
+        style="height: 100%">
+    </div>
+
+</body>
+</html>

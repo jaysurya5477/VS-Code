@@ -5,16 +5,34 @@
 ; Hotkeys
 ; ---------------------------
 
-^1::LoginSAP("ALIMCO DEV S4", "100", "HBTADMIN", "HighbarAlimco^33")
-^2::LoginSAP("ALIMCO QAS S4", "200", "HBTADMIN", "Abap@Hbt!@#$%987654")
-^3::LoginSAP("ALIMCO PRD S4", "300", "HBTADMIN", "Abap@Hbt!@#$%987654")
-^4::LoginSAP("ALIMCO DEV S4", "120", "HBTABAP",  "HighbarAlimco^33")
+^1:: LoginSAP("ALIMCO DEV S4", "100", "HBTADMIN", "HighbarAlimco^33")
+^2:: LoginSAP("ALIMCO QAS S4", "200", "HBTADMIN", "Abap@Hbt!@#$%987654")
+^3:: LoginSAP("ALIMCO PRD S4", "300", "HBTADMIN", "Abap@Hbt!@#$%987654")
+^4:: LoginSAP("ALIMCO DEV S4", "120", "HBTABAP", "HighbarAlimco^33")
 
 ; ---------------------------
 ; Main Login Function
 ; ---------------------------
 
 LoginSAP(systemName, client, username, password) {
+
+    ; Configuration file path
+    configFile := A_ScriptDir . "\sap_config.ini"
+
+    ; Default if file missing
+    if !FileExist(CONFIG_FILE) {
+        MsgBox(
+            "Config file not found!"
+        )
+        return
+    }
+
+    ; Load credentials from the matching section
+    connectionName := IniRead(CONFIG_FILE, profileName, "ConnectionName", "")
+    sid := IniRead(CONFIG_FILE, profileName, "SID", "")
+    client := IniRead(CONFIG_FILE, profileName, "Client", "")
+    username := IniRead(CONFIG_FILE, profileName, "User", "")
+    password := IniRead(CONFIG_FILE, profileName, "Password", "")
 
     sapLogonPath := "C:\Program Files\SAP\FrontEnd\SAPGUI\saplogon.exe"
 
