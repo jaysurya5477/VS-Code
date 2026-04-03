@@ -1,10 +1,10 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-^1:: LoginToSAP("MED120")
+^1:: LoginToSAP("MED100")
 ^2:: LoginToSAP("MEQ200")
 ^3:: LoginToSAP("MEP300")
-^4:: LoginToSAP("MED100")
+^4:: LoginToSAP("MED120")
 
 LoginToSAP(profileName) {
 
