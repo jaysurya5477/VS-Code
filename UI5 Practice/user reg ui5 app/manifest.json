@@ -1,0 +1,47 @@
+{
+    "_version": "1.58.0",
+    "sap.app": {
+        "id": "com.nexora.registration",
+        "type": "application",
+        "title": "Nexora Cloud — Registration",
+        "description": "User registration page for Nexora Cloud",
+        "applicationVersion": {
+            "version": "1.0.0"
+        }
+    },
+    "sap.ui": {
+        "technology": "UI5",
+        "deviceTypes": {
+            "desktop": true,
+            "tablet": true,
+            "phone": true
+        }
+    },
+    "sap.ui5": {
+        "rootView": {
+            "viewName": "com.nexora.registration.view.Register",
+            "type": "XML",
+            "async": true,
+            "id": "app"
+        },
+        "dependencies": {
+            "minUI5Version": "1.108.0",
+            "libs": {
+                "sap.m": {},
+                "sap.ui.core": {},
+                "sap.ui.layout": {}
+            }
+        },
+        "contentDensities": {
+            "compact": true,
+            "cozy": true
+        },
+        "resources": {
+            "css": [
+                {
+                    "uri": "css/registration.css"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,410 @@
+/* =============================================================
+   Nexora Cloud — Registration Page Styles
+   File: webapp/css/registration.css
+   Compatible with: SAP UI5 1.108+  (Horizon / Quartz themes)
+   ============================================================= */
+
+/* ─────────────────────────────────────────────
+   1. ROOT LAYOUT
+───────────────────────────────────────────── */
+
+.nexoraRoot {
+    min-height: 100vh;
+    width: 100%;
+    font-family: "72", "72full", Arial, Helvetica, sans-serif;
+}
+
+/* ─────────────────────────────────────────────
+   2. LEFT PANEL — Brand / Logo
+───────────────────────────────────────────── */
+
+.leftPanel {
+    width: 42%;
+    min-width: 280px;
+    background-color: #0a2c6e;
+    padding: 48px 36px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative circles */
+.leftPanel::before,
+.leftPanel::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    pointer-events: none;
+}
+.leftPanel::before {
+    width: 340px;
+    height: 340px;
+    top: -100px;
+    left: -100px;
+}
+.leftPanel::after {
+    width: 280px;
+    height: 280px;
+    bottom: -70px;
+    right: -70px;
+}
+
+/* Logo icon box */
+.logoIconBox {
+    width: 84px;
+    height: 84px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    margin-bottom: 20px;
+}
+
+.logoIcon {
+    color: #4da8ff !important;
+}
+
+/* Company name */
+.companyName {
+    color: #ffffff !important;
+    font-size: 1.75rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.3px;
+    text-align: center;
+    margin-bottom: 10px !important;
+}
+
+/* Brand divider */
+.brandDivider {
+    width: 44px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 2px;
+    margin: 0 auto 14px auto;
+}
+
+/* Tagline */
+.companyTagline {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.875rem !important;
+    text-align: center;
+    max-width: 220px;
+    line-height: 1.65 !important;
+    margin-bottom: 36px !important;
+}
+
+/* Feature list */
+.featureList {
+    width: 100%;
+    gap: 14px;
+}
+
+.featureItem {
+    gap: 10px;
+}
+
+.featureDot {
+    color: #4da8ff !important;
+    font-size: 0.75rem !important;
+    flex-shrink: 0;
+}
+
+.featureText {
+    color: rgba(255, 255, 255, 0.65) !important;
+    font-size: 0.8125rem !important;
+}
+
+/* ─────────────────────────────────────────────
+   3. RIGHT PANEL — Form
+───────────────────────────────────────────── */
+
+.rightPanel {
+    width: 58%;
+    background: #ffffff;
+}
+
+/* Inner form container */
+.formContainer {
+    padding: 40px 44px;
+    max-width: 560px;
+    gap: 0;
+}
+
+/* Form header */
+.formHeader {
+    margin-bottom: 28px;
+    gap: 6px;
+}
+
+.formTitle {
+    font-size: 1.5rem !important;
+    font-weight: 500 !important;
+    color: #1d2939 !important;
+    letter-spacing: -0.2px;
+}
+
+.formSubtitle {
+    font-size: 0.875rem !important;
+    color: #667085 !important;
+}
+
+/* ─────────────────────────────────────────────
+   4. FIELD GROUPS
+───────────────────────────────────────────── */
+
+.formFields {
+    gap: 0;
+}
+
+.fieldGroup {
+    margin-bottom: 16px;
+    gap: 5px;
+}
+
+.fieldLabel {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #344054 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Required asterisk colour */
+.fieldLabel .sapMLabelRequired::after {
+    color: #d94f4f !important;
+}
+
+/* Inputs */
+.fieldInput.sapMInput {
+    height: 40px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d0d5dd !important;
+    background: #f9fafb !important;
+    font-size: 0.875rem !important;
+    color: #101828 !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.fieldInput.sapMInput:focus-within,
+.fieldInput.sapMInputFocused {
+    border-color: #1a73e8 !important;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.14) !important;
+    background: #ffffff !important;
+}
+
+/* ValueState — Success */
+.fieldInput.sapMInputSuccess {
+    border-color: #1d9e75 !important;
+}
+/* ValueState — Error */
+.fieldInput.sapMInputError {
+    border-color: #d94f4f !important;
+}
+
+/* Placeholder */
+.fieldInput .sapMInputBaseInner::placeholder {
+    color: #98a2b3 !important;
+    font-size: 0.8125rem !important;
+}
+
+/* Field hint messages */
+.fieldMsg {
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+}
+
+.fieldMsgError {
+    color: #d94f4f !important;
+}
+
+.fieldMsgSuccess {
+    color: #1d9e75 !important;
+}
+
+/* ─────────────────────────────────────────────
+   5. PASSWORD GRID (two-column)
+───────────────────────────────────────────── */
+
+.passwordGrid {
+    margin-bottom: 0 !important;
+}
+
+/* ─────────────────────────────────────────────
+   6. STRENGTH BAR
+───────────────────────────────────────────── */
+
+.strengthBar {
+    margin-top: 6px;
+    gap: 4px;
+    height: 4px;
+    width: 100%;
+}
+
+.strengthSeg {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background-color: #e4e7ec;
+    transition: background-color 0.3s;
+}
+
+.strengthSegEmpty {
+    background-color: #e4e7ec !important;
+}
+
+.strengthLabel {
+    font-size: 0.7rem !important;
+    color: #98a2b3 !important;
+    margin-top: 3px !important;
+    transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────────────
+   7. FORM DIVIDER
+───────────────────────────────────────────── */
+
+.formDivider {
+    width: 100%;
+    height: 1px;
+    background: #e4e7ec;
+    margin: 18px 0;
+}
+
+/* ─────────────────────────────────────────────
+   8. TERMS ROW
+───────────────────────────────────────────── */
+
+.termsRow {
+    margin-bottom: 20px;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.termsCheck .sapMCbBg {
+    border-radius: 4px !important;
+    border-color: #d0d5dd !important;
+}
+
+.termsCheck.sapMCbChecked .sapMCbBg {
+    background-color: #1a73e8 !important;
+    border-color: #1a73e8 !important;
+}
+
+.termsText {
+    font-size: 0.8125rem !important;
+    color: #667085 !important;
+    line-height: 1.55 !important;
+}
+
+.termsText a,
+.termsLink {
+    color: #1a73e8 !important;
+    text-decoration: none;
+}
+
+/* ─────────────────────────────────────────────
+   9. REGISTER BUTTON
+───────────────────────────────────────────── */
+
+.registerBtn.sapMBtn {
+    border-radius: 8px !important;
+    height: 44px !important;
+    font-size: 0.9375rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.2px;
+    transition: background-color 0.15s, transform 0.1s !important;
+}
+
+/* Emphasized (default enabled state) */
+.registerBtn.sapMBtnEmphasized .sapMBtnInner {
+    background-color: #0a2c6e !important;
+    border-color: #0a2c6e !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+}
+
+.registerBtn.sapMBtnEmphasized:not(.sapMBtnDisabled) .sapMBtnInner:hover {
+    background-color: #0d3685 !important;
+    border-color: #0d3685 !important;
+}
+
+.registerBtn.sapMBtnEmphasized:not(.sapMBtnDisabled) .sapMBtnInner:active {
+    transform: scale(0.99);
+}
+
+/* Disabled state */
+.registerBtn.sapMBtnDisabled .sapMBtnInner {
+    background-color: #98a2b3 !important;
+    border-color: #98a2b3 !important;
+    color: #ffffff !important;
+    opacity: 0.6;
+    border-radius: 8px !important;
+}
+
+/* Success state (after registration) */
+.registerBtnSuccess .sapMBtnInner {
+    background-color: #1d9e75 !important;
+    border-color: #1d9e75 !important;
+    color: #ffffff !important;
+}
+
+/* ─────────────────────────────────────────────
+   10. LOGIN LINK ROW
+───────────────────────────────────────────── */
+
+.loginLinkRow {
+    margin-top: 16px;
+    gap: 4px;
+}
+
+.loginText {
+    font-size: 0.8125rem !important;
+    color: #667085 !important;
+}
+
+.loginLink .sapMLnk {
+    font-size: 0.8125rem !important;
+    color: #1a73e8 !important;
+    font-weight: 500 !important;
+}
+
+/* ─────────────────────────────────────────────
+   11. RESPONSIVE BREAKPOINTS
+───────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .nexoraRoot {
+        flex-direction: column !important;
+    }
+
+    .leftPanel {
+        width: 100% !important;
+        min-height: 220px;
+        padding: 32px 24px;
+    }
+
+    .featureList {
+        display: none; /* hide on small screens */
+    }
+
+    .rightPanel {
+        width: 100% !important;
+    }
+
+    .formContainer {
+        padding: 28px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .companyName {
+        font-size: 1.375rem !important;
+    }
+
+    .formTitle {
+        font-size: 1.25rem !important;
+    }
+
+    .formContainer {
+        padding: 20px 16px;
+    }
+}

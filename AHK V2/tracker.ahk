@@ -29,6 +29,8 @@ GetFunctional(module) {
 }
 
 ; working version with pasting, date detection and debug logging
+
+#HotIf WinActive("Sheets - Daily Tracker.xlsx - Google Sheets")
 ^+v:: {
 
     LoadConfig()   ; << reload config fresh on each hotkey press
@@ -176,6 +178,7 @@ GetFunctional(module) {
     ClipWait 1
     Send "^v"
 }
+#HotIf
 ; ```
 
 ; **Key logic change — date detection instead of fixed positions:**

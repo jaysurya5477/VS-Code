@@ -1,0 +1,122 @@
+<!-- 
+<mvc:View controllerName="com.sap.zeuser.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Page id="idMainPage" title="{i18n>title}" enableScrolling="false">
+
+        <FlexBox id="_IDGenFlexBox1"
+            width="100%"
+            height="100%"
+            justifyContent="Center"
+            alignItems="Center"
+            fitContainer="true">
+
+            <!-- Main Container -->
+            <HBox id="_IDGenHBox" width="100%" justifyContent="Center" alignItems="Center">
+
+                <!-- LEFT : FORM -->
+                <VBox id="_IDGenVBox"
+                    width="100%"
+                    class="sapUiMediumMargin"
+                    alignItems="Center"
+                    justifyContent="Center">
+
+                    <VBox id="_IDGenVBox1" width="300px">
+
+                        <Label id="_IDGenLabel" text="{i18n>username}" />
+                        <Input id="_IDGenInput" value="{/username}" />
+
+                        <Label id="_IDGenLabel1" text="{i18n>password}" />
+                        <Input id="_IDGenInput1" type="Password" value="{/password}" />
+
+                        <Label id="_IDGenLabel2" text="{i18n>repeatpassword}" />
+                        <Input id="_IDGenInput2" type="Password" value="{/repeatpassword}" />
+
+                        <Label id="_IDGenLabel3" text="{i18n>email}" />
+                        <Input id="_IDGenInput3" type="Email" value="{/email}" />
+
+                        <Label id="_IDGenLabel4" text="{i18n>phone}" />
+                        <Input id="_IDGenInput4" type="Tel" value="{/phone}" />
+
+                        <Button id="_IDGenButton"
+                            text="{i18n>Register}"
+                            press="onRegisterPress"
+                            class="sapUiSmallMarginTop"/>
+                    </VBox>
+                </VBox>
+
+                <!-- RIGHT : IMAGE -->
+                <VBox id="_IDGenVBox2"
+                    width="50%"
+                    justifyContent="Center"
+                    alignItems="Center"
+                    visible="{= !${device>/system/phone} }">
+
+                    <Image id="_IDGenImage"
+                        src="img/alimco_logo.jpg"
+                        width="50%"
+                        height="auto"
+                        densityAware="false"/>
+                </VBox>
+
+            </HBox>
+
+        </FlexBox>
+
+    </Page>
+</mvc:View> -->
+
+
+
+
+
+<mvc:View controllerName="com.sap.zeuser.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    <Page id="idMainPage" title="{i18n>title}">
+
+        <FlexBox id="_IDGenFlexBox1">
+            <HBox id="_IDGenHBox" width="50%" justifyContent="Start" alignItems="Center">
+                <VBox id="_IDGenVBox" class="sapUiMediumMargin">
+
+                    <HBox id="_IDGenHBox1" justifyContent="Center" alignItems="Center">
+                        <Label id="_IDGenLabel" text="{i18n>username}" labelFor="usernameInput"/>
+                        <Input id="usernameInput" value="{/username}"/>
+                    </HBox>
+
+                    <HBox id="_IDGenHBox4" justifyContent="Center" alignItems="Center">
+                        <Label id="_IDGenLabel1" text="{i18n>password}" labelFor="passwordInput"/>
+                        <Input id="passwordInput" type="Password" value="{/password}"/>
+                    </HBox>
+
+                    <HBox id="_IDGenHBox5" justifyContent="Center" alignItems="Center">
+                        <Label id="_IDGenLabel2" text="{i18n>RepeatPassword}" labelFor="repeatPasswordInput"/>
+                        <Input id="repeatPasswordInput" type="Password" value="{/repeatPassword}"/>
+                    </HBox>
+
+                    <HBox id="_IDGenHBox6" justifyContent="Center" alignItems="Center">
+                        <Label id="_IDGenLabel3" text="{i18n>email}" labelFor="emailInput"/>
+                        <Input id="emailInput" type="Email" value="{/email}"/>
+                    </HBox>
+
+                    <HBox id="_IDGenHBox7" justifyContent="Center" alignItems="Center">
+                        <Label id="_IDGenLabel4" text="{i18n>phone}" labelFor="phoneInput"/>
+                        <Input id="phoneInput" type="Tel" value="{/phone}"/>
+                    </HBox>
+
+                    <Button id="_IDGenButton" text="{i18n>Register}" press="onLoginPress"/>
+                </VBox>
+            </HBox>
+
+            <HBox id="_IDGenHBox2" width="50%" justifyContent="End" alignItems="Center">
+                <VBox id="_IDGenVBox1">
+                    <Image id="_IDGenImage" src="img/alimco_logo.jpg" height="calc(100vh - 45px)" width="auto"/>
+                </VBox>
+            </HBox>
+        </FlexBox>
+
+    </Page>
+</mvc:View>
+
