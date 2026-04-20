@@ -145,10 +145,10 @@ with sync_playwright() as p:
 
                 #  Submit — uncomment when ready
 
-                # page.on("dialog", lambda dialog: dialog.accept())
-                # page.get_by_role("link", name="Submit").click()
+                page.on("dialog", lambda dialog: dialog.accept())
+                page.get_by_role("link", name="Submit").click()
 
-                page.goto("https://ess.highbartech.com/hrms/procs/TimesheetRecord.aspx") # for testing without submit, to reset form for next entry
+                # page.goto("https://ess.highbartech.com/hrms/procs/TimesheetRecord.aspx") # for testing without submit, to reset form for next entry
                 page.wait_for_load_state("networkidle")
 
             except Exception as row_error:
