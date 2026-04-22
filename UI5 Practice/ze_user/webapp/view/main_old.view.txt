@@ -1,0 +1,61 @@
+<mvc:View controllerName="com.sap.zeuser.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.ui.layout.form">
+
+    <Page id="_IDGenPage1" title="{i18n>title}">
+
+        <HBox id="_IDGenHBox" width="100%" alignItems="Center" justifyContent="Center">
+
+            <!-- FORM SECTION -->
+            <VBox id="_IDGenVBox" width="50%" class="sapUiLargeMargin">
+
+                <f:SimpleForm id="_IDGenSimpleForm"
+                    editable="true"
+                    layout="ResponsiveGridLayout"
+                    labelSpanL="2"
+                    labelSpanM="2"
+                    columnsL="1"
+                    columnsM="1"
+                    emptySpanL="0"
+                    emptySpanM="0">
+
+                    <Label id="_IDGenLabel" text="{i18n>username}" />
+                    <Input id="_IDGenInput" value="{/username}" />
+
+                    <Label id="_IDGenLabel1" text="{i18n>password}" />
+                    <Input id="_IDGenInput1" type="Password" value="{/password}" />
+
+                    <Label id="_IDGenLabel2" text="{i18n>repeatpassword}" />
+                    <Input id="_IDGenInput2" type="Password" value="{/repeatpassword}" />
+
+                    <Label id="_IDGenLabel3" text="{i18n>email}" />
+                    <Input id="_IDGenInput3" type="Email" value="{/email}" />
+
+                    <Label id="_IDGenLabel4" text="{i18n>phone}" />
+                    <Input id="_IDGenInput4" type="Tel" value="{/phone}" />
+
+                </f:SimpleForm>
+
+                <Button id="_IDGenButton" text="{i18n>Register}"
+                        press="onLoginPress"
+                        width="200px"
+                        class="sapUiMediumMarginTop"/>
+
+            </VBox>
+
+            <!-- LOGO SECTION -->
+            <VBox id="_IDGenVBox1" width="50%"
+                  alignItems="Center"
+                  justifyContent="Center">
+
+                <Image id="_IDGenImage" src="img/alimco_logo.jpg"
+                       width="80%"
+                       height="90%"
+                       densityAware="false"/>
+            </VBox>
+
+        </HBox>
+
+    </Page>
+</mvc:View>
