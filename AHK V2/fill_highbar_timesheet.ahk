@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0.18+
 #SingleInstance Force
+SetWorkingDir A_ScriptDir  ; Ensure the script runs in its own directory
 
 ; --- Declare global variable properly ---
 global pyPID
@@ -17,7 +18,7 @@ pyPID := 0
         ; pythonPath := "C:\Users\Jayasurya Lakkoju\AppData\Local\Programs\Python\Python314\python.exe"
         pythonPath := "python"
         scriptPath := "D:\New\VS Code\Python\Fill_OneHr_Highbar_timesheet\Project File\main.py"
-
+                    
         Run '"' pythonPath '" "' scriptPath '"'
 
         ; --- Optional confirmation ---

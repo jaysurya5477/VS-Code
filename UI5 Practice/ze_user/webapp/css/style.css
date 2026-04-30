@@ -1,1 +1,75 @@
-/* Enter your custom styles here */
+/* Ensures the image scales dynamically and never overlaps the left side */
+
+/* .responsiveImage {
+    max-width: 80%;       
+    max-height: 80vh;     
+    object-fit: contain;  
+} */
+
+/* Responsive styles for login page */
+@media screen and (max-width: 1024px) {
+    /* Hide the logo box on screens <= 1024px */
+    .logoBoxResponsive {
+        display: none !important;
+    }
+    
+    /* Make form box take full width and center it */
+    .formBoxResponsive {
+        width: 80% !important;
+        margin: 0 auto !important;
+    }
+}
+
+@media screen and (min-width: 1025px) {
+    /* Maintain 50-50 split on larger screens */
+    .formBoxResponsive {
+        width: 50% !important;
+    }
+    
+    .logoBoxResponsive {
+        width: 50% !important;
+        display: flex !important;
+    }
+}
+
+/* Additional responsive adjustments */
+@media screen and (max-width: 768px) {
+    .formBoxResponsive {
+        width: 90% !important;
+        padding: 20px;
+    }
+}
+
+/* Ensure image scales properly without overflow */
+.logoBoxResponsive .sapMImage {
+    max-width: 90%;
+    max-height: 80%;
+    object-fit: contain;
+}
+
+/* Fix for flexbox alignment */
+.sapMFlexBox {
+    overflow: hidden;
+}
+
+#_IDGenFlexbox {
+    overflow: auto;
+}
+
+/* Full page container */
+.loginPage {
+    height: 100%;
+    width: 100%;
+    background: #f5f6f7; /* light SAP-like background */
+}
+
+/* Center box */
+.loginBox {
+    width: 350px;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+
+    /* subtle shadow */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}

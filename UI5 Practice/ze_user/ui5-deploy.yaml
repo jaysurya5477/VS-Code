@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+
+specVersion: "4.0"
+metadata:
+  name: com.sap.zeuser
+type: application
+builder:
+  resources:
+    excludes:
+      - /test/**
+      - /localService/**
+  customTasks:
+    - name: deploy-to-abap
+      afterTask: generateCachebusterInfo
+      configuration:
+        target:
+          url: https://vhafbmedap01.hec.erp.alimco.in/
+          client: '120'
+        app:
+          name: ZE_USER
+          description: E-User/Sub User
+          package: ze_user
+          transport: MEDK911930
+        exclude:
+          - /test/
