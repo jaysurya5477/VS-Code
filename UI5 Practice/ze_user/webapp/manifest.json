@@ -17,6 +17,7 @@
     }
   },
   "sap.ui": {
+    "fullWidth": true,
     "technology": "UI5",
     "icons": {
       "icon": "",
@@ -48,9 +49,7 @@
     "models": {
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
-        "settings": {
-          "bundleName": "com.sap.zeuser.i18n.i18n"
-        }
+        "uri": "i18n/i18n.properties"
       }
     },
     "resources": {

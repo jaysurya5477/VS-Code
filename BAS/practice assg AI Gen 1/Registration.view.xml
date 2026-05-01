@@ -1,0 +1,156 @@
+<mvc:View
+    controllerName="sap.ui5.beginner.registration.controller.Registration"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form"
+    displayBlock="true">
+
+    <!-- ============================================================
+         SAP UI5 Beginner Assignment — Student Registration Form
+         Concepts covered:
+           1. SimpleForm with labels and fields
+           2. Input placeholders
+           3. Buttons (Submit, Reset, Cancel)
+           4. Select (Dropdown)
+           5. i18n binding using resource model
+           6. sap.m and sap.ui.layout libraries
+    ============================================================ -->
+
+    <Page
+        title="{i18n>appTitle}"
+        showHeader="true"
+        class="sapUiResponsiveContentPadding">
+
+        <!-- ── CONTENT ── -->
+        <content>
+
+            <f:SimpleForm
+                id="registrationForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                title="{i18n>appTitle}"
+                labelSpanXL="3"
+                labelSpanL="3"
+                labelSpanM="3"
+                labelSpanS="12"
+                adjustLabelSpan="false"
+                emptySpanXL="4"
+                emptySpanL="4"
+                emptySpanM="4"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+
+                <f:content>
+
+                    <!-- ── 1. FIRST NAME ── -->
+                    <Label text="{i18n>firstNameLabel}" required="true" />
+                    <Input
+                        id="firstNameInput"
+                        placeholder="{i18n>firstNamePlaceholder}"
+                        valueLiveUpdate="true"
+                        maxLength="50" />
+
+                    <!-- ── 2. LAST NAME ── -->
+                    <Label text="{i18n>lastNameLabel}" required="true" />
+                    <Input
+                        id="lastNameInput"
+                        placeholder="{i18n>lastNamePlaceholder}"
+                        valueLiveUpdate="true"
+                        maxLength="50" />
+
+                    <!-- ── 3. EMAIL ── -->
+                    <Label text="{i18n>emailLabel}" required="true" />
+                    <Input
+                        id="emailInput"
+                        type="Email"
+                        placeholder="{i18n>emailPlaceholder}"
+                        valueLiveUpdate="true" />
+
+                    <!-- ── 4. COURSE DROPDOWN ── -->
+                    <Label text="{i18n>courseLabel}" required="true" />
+                    <Select
+                        id="courseSelect"
+                        forceSelection="false"
+                        width="100%">
+                        <items>
+                            <core:Item
+                                xmlns:core="sap.ui.core"
+                                key=""
+                                text="{i18n>coursePlaceholder}" />
+                            <core:Item
+                                xmlns:core="sap.ui.core"
+                                key="UI5"
+                                text="{i18n>courseUI5}" />
+                            <core:Item
+                                xmlns:core="sap.ui.core"
+                                key="ABAP"
+                                text="{i18n>courseABAP}" />
+                            <core:Item
+                                xmlns:core="sap.ui.core"
+                                key="FIORI"
+                                text="{i18n>courseFiori}" />
+                            <core:Item
+                                xmlns:core="sap.ui.core"
+                                key="BTP"
+                                text="{i18n>courseBTP}" />
+                        </items>
+                    </Select>
+
+                    <!-- ── 5. GENDER RADIO BUTTONS (SegmentedButton) ── -->
+                    <Label text="{i18n>genderLabel}" />
+                    <SegmentedButton id="genderSegment" width="auto">
+                        <items>
+                            <SegmentedButtonItem
+                                key="M"
+                                text="{i18n>genderMale}" />
+                            <SegmentedButtonItem
+                                key="F"
+                                text="{i18n>genderFemale}" />
+                            <SegmentedButtonItem
+                                key="O"
+                                text="{i18n>genderOther}" />
+                        </items>
+                    </SegmentedButton>
+
+                </f:content>
+            </f:SimpleForm>
+
+        </content>
+
+        <!-- ── FOOTER BUTTONS ── -->
+        <footer>
+            <OverflowToolbar>
+                <ToolbarSpacer />
+
+                <!-- Cancel Button -->
+                <Button
+                    id="cancelBtn"
+                    text="{i18n>cancelButton}"
+                    type="Default"
+                    icon="sap-icon://decline"
+                    press="onCancel" />
+
+                <!-- Reset Button -->
+                <Button
+                    id="resetBtn"
+                    text="{i18n>resetButton}"
+                    type="Emphasized"
+                    icon="sap-icon://reset"
+                    press="onReset" />
+
+                <!-- Submit Button -->
+                <Button
+                    id="submitBtn"
+                    text="{i18n>submitButton}"
+                    type="Accept"
+                    icon="sap-icon://save"
+                    press="onSubmit" />
+
+            </OverflowToolbar>
+        </footer>
+
+    </Page>
+
+</mvc:View>

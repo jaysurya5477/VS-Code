@@ -1,0 +1,39 @@
+<mvc:View controllerName="com.sap.zeuser.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:f="sap.ui.layout.form" height="100%" width="100%">
+    <Page id="_IDGenPage1" title="{i18n>title}" showHeader="false" class="sapUiNoContentPadding" enableScrolling="true">
+        <FlexBox id="_IDGenFlexbox" width="100%" height="100%" justifyContent="Center" alignItems="Center">
+            <!-- Left Form Box - will center when right box is hidden -->
+            <VBox id="FormBox" width="50%" class="formBoxResponsive" justifyContent="Center" alignItems="Center">
+
+                <f:SimpleForm id="_IDGenSimpleForm" editable="true" layout="ResponsiveGridLayout" labelSpanL="2" labelSpanM="2" columnsL="1" columnsM="1" emptySpanL="0" emptySpanM="0" class="loginBox">
+
+                    <Label id="_IDGenLabel" text="{i18n>username}" />
+                    <Input id="_IDGenInput" value="{/username}" />
+
+                    <Label id="_IDGenLabel1" text="{i18n>password}" />
+                    <Input id="_IDGenInput1" type="Password" value="{/password}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword"/>
+
+                    <Label id="_IDGenLabel2" text="{i18n>repeatpassword}" />
+                    <Input id="_IDGenInput2" type="Password" value="{/repeatpassword}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword"/>
+
+                    <Label id="_IDGenLabel3" text="{i18n>email}" />
+                    <Input id="_IDGenInput3" type="Email" value="{/email}" />
+
+                    <Label id="_IDGenLabel4" text="{i18n>phone}" />
+                    <Input id="_IDGenInput4" type="Tel" value="{/phone}" />
+
+                    <Button id="registerButton" text="Register" type="Emphasized" class="sapUiSmallMarginTop" width="100%"/>
+
+                </f:SimpleForm>
+            </VBox>
+
+            <!-- Right Logo Box - will hide on smaller screens -->
+            <VBox id="LogoBox" width="50%" height="100%" justifyContent="Center" alignItems="Center" class="logoBoxResponsive">
+                <Image id="logoImage" src="{imgModel>/logoPath}" width="100%" height="auto" densityAware="false" class="sapUiResponsiveMargin" />
+            </VBox>
+        </FlexBox>
+    </Page>
+</mvc:View>

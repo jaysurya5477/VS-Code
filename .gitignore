@@ -1,0 +1,34 @@
+# ignore everything
+*
+ 
+# allow folders
+!*/
+ 
+# source code
+!*.py
+!*.ahk
+!*.html
+!*.css 
+!*.js
+!*.yaml
+!*.xml
+!*.gitignore
+!*.properties
+ 
+# config
+!*.json
+!*.ini
+
+# docs
+!*.md
+!*.txt
+
+ 
+# force ignore folders
+**/compiled/
+**/__pycache__/
+**/user_data/
+
+# ignore logs
+debug_output.txt
+TRs.txt

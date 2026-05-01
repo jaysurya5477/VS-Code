@@ -1,0 +1,275 @@
+<mvc:View
+    controllerName="com.nexora.registration.controller.Register"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+
+    <Page showHeader="false" backgroundDesign="Transparent">
+
+        <!-- Root FlexBox: splits the screen into left and right panels -->
+        <FlexBox
+            id="rootFlex"
+            height="100%"
+            width="100%"
+            alignItems="Stretch"
+            justifyContent="Start"
+            class="nexoraRoot">
+
+            <!-- ═══════════════════════════════════════════
+                 LEFT PANEL — Brand / Logo Section
+            ═══════════════════════════════════════════ -->
+            <items>
+                <FlexBox
+                    id="leftPanel"
+                    direction="Column"
+                    alignItems="Center"
+                    justifyContent="Center"
+                    class="leftPanel">
+
+                    <items>
+                        <!-- Logo Icon -->
+                        <FlexBox
+                            alignItems="Center"
+                            justifyContent="Center"
+                            class="logoIconBox">
+                            <items>
+                                <core:Icon
+                                    src="sap-icon://cloud"
+                                    size="3rem"
+                                    class="logoIcon" />
+                            </items>
+                        </FlexBox>
+
+                        <!-- Company Name -->
+                        <Title
+                            text="Nexora Cloud"
+                            level="H1"
+                            class="companyName" />
+
+                        <!-- Divider -->
+                        <HBox class="brandDivider"><items/></HBox>
+
+                        <!-- Tagline -->
+                        <Text
+                            text="Your intelligent enterprise platform, built for tomorrow"
+                            class="companyTagline"
+                            textAlign="Center"
+                            wrapping="true" />
+
+                        <!-- Feature list -->
+                        <VBox class="featureList">
+                            <items>
+                                <HBox alignItems="Center" class="featureItem">
+                                    <items>
+                                        <core:Icon src="sap-icon://accept" class="featureDot" />
+                                        <Text text="Unified data across your organisation" class="featureText" />
+                                    </items>
+                                </HBox>
+                                <HBox alignItems="Center" class="featureItem">
+                                    <items>
+                                        <core:Icon src="sap-icon://accept" class="featureDot" />
+                                        <Text text="AI-powered insights and automation" class="featureText" />
+                                    </items>
+                                </HBox>
+                                <HBox alignItems="Center" class="featureItem">
+                                    <items>
+                                        <core:Icon src="sap-icon://accept" class="featureDot" />
+                                        <Text text="Enterprise-grade security and compliance" class="featureText" />
+                                    </items>
+                                </HBox>
+                                <HBox alignItems="Center" class="featureItem">
+                                    <items>
+                                        <core:Icon src="sap-icon://accept" class="featureDot" />
+                                        <Text text="Seamless SAP and third-party integrations" class="featureText" />
+                                    </items>
+                                </HBox>
+                            </items>
+                        </VBox>
+                    </items>
+                </FlexBox>
+
+                <!-- ═══════════════════════════════════════════
+                     RIGHT PANEL — Registration Form
+                ═══════════════════════════════════════════ -->
+                <ScrollContainer
+                    id="rightPanel"
+                    vertical="true"
+                    horizontal="false"
+                    class="rightPanel">
+
+                    <content>
+                        <VBox class="formContainer">
+
+                            <!-- Form Header -->
+                            <VBox class="formHeader">
+                                <items>
+                                    <Title text="Create your account" level="H2" class="formTitle" />
+                                    <Text text="Fill in the details below to get started" class="formSubtitle" />
+                                </items>
+                            </VBox>
+
+                            <!-- ─── Form Fields ─── -->
+                            <VBox class="formFields">
+                                <items>
+
+                                    <!-- User ID -->
+                                    <VBox class="fieldGroup">
+                                        <items>
+                                            <Label
+                                                text="User ID"
+                                                required="true"
+                                                labelFor="userIdInput"
+                                                class="fieldLabel" />
+                                            <Input
+                                                id="userIdInput"
+                                                placeholder="e.g. john.doe"
+                                                width="100%"
+                                                liveChange=".onFieldChange"
+                                                class="fieldInput"
+                                                icon="sap-icon://person-placeholder" />
+                                            <Text id="userIdMsg" text="" class="fieldMsg" visible="false" />
+                                        </items>
+                                    </VBox>
+
+                                    <!-- Password Row (two columns) -->
+                                    <l:Grid
+                                        defaultSpan="L6 M6 S12"
+                                        class="passwordGrid">
+                                        <content>
+
+                                            <!-- Password -->
+                                            <VBox class="fieldGroup">
+                                                <items>
+                                                    <Label
+                                                        text="Password"
+                                                        required="true"
+                                                        labelFor="passwordInput"
+                                                        class="fieldLabel" />
+                                                    <Input
+                                                        id="passwordInput"
+                                                        type="Password"
+                                                        placeholder="Min. 8 characters"
+                                                        width="100%"
+                                                        liveChange=".onPasswordChange"
+                                                        class="fieldInput" />
+
+                                                    <!-- Strength Bar -->
+                                                    <HBox id="strengthBar" class="strengthBar">
+                                                        <items>
+                                                            <HBox id="seg1" class="strengthSeg" />
+                                                            <HBox id="seg2" class="strengthSeg" />
+                                                            <HBox id="seg3" class="strengthSeg" />
+                                                            <HBox id="seg4" class="strengthSeg" />
+                                                        </items>
+                                                    </HBox>
+                                                    <Text id="strengthLabel" text="Password strength" class="strengthLabel" />
+                                                </items>
+                                            </VBox>
+
+                                            <!-- Repeat Password -->
+                                            <VBox class="fieldGroup">
+                                                <items>
+                                                    <Label
+                                                        text="Repeat Password"
+                                                        required="true"
+                                                        labelFor="repeatPwdInput"
+                                                        class="fieldLabel" />
+                                                    <Input
+                                                        id="repeatPwdInput"
+                                                        type="Password"
+                                                        placeholder="Re-enter password"
+                                                        width="100%"
+                                                        liveChange=".onRepeatPasswordChange"
+                                                        class="fieldInput" />
+                                                    <Text id="pwdMatchMsg" text="" class="fieldMsg" visible="false" />
+                                                </items>
+                                            </VBox>
+
+                                        </content>
+                                    </l:Grid>
+
+                                    <!-- Mobile Number -->
+                                    <VBox class="fieldGroup">
+                                        <items>
+                                            <Label
+                                                text="Mobile Number"
+                                                required="true"
+                                                labelFor="mobileInput"
+                                                class="fieldLabel" />
+                                            <Input
+                                                id="mobileInput"
+                                                placeholder="+91 00000 00000"
+                                                width="100%"
+                                                liveChange=".onFieldChange"
+                                                class="fieldInput" />
+                                            <Text id="mobileMsg" text="" class="fieldMsg" visible="false" />
+                                        </items>
+                                    </VBox>
+
+                                    <!-- Email ID -->
+                                    <VBox class="fieldGroup">
+                                        <items>
+                                            <Label
+                                                text="Email ID"
+                                                required="true"
+                                                labelFor="emailInput"
+                                                class="fieldLabel" />
+                                            <Input
+                                                id="emailInput"
+                                                placeholder="you@company.com"
+                                                width="100%"
+                                                liveChange=".onEmailChange"
+                                                class="fieldInput" />
+                                            <Text id="emailMsg" text="" class="fieldMsg" visible="false" />
+                                        </items>
+                                    </VBox>
+
+                                </items>
+                            </VBox>
+
+                            <!-- Divider -->
+                            <HBox class="formDivider"><items/></HBox>
+
+                            <!-- Terms & Conditions -->
+                            <HBox alignItems="Start" class="termsRow">
+                                <items>
+                                    <CheckBox
+                                        id="termsCheckbox"
+                                        select=".onTermsChange"
+                                        class="termsCheck" />
+                                    <FormattedText
+                                        htmlText="I agree to the &lt;a href='#' class='termsLink'&gt;Terms of Service&lt;/a&gt; and &lt;a href='#' class='termsLink'&gt;Privacy Policy&lt;/a&gt;. Nexora Cloud may send me product updates."
+                                        class="termsText" />
+                                </items>
+                            </HBox>
+
+                            <!-- Register Button -->
+                            <Button
+                                id="registerBtn"
+                                text="Create Account"
+                                type="Emphasized"
+                                width="100%"
+                                enabled="false"
+                                press=".onRegister"
+                                class="registerBtn" />
+
+                            <!-- Login Link -->
+                            <HBox justifyContent="Center" class="loginLinkRow">
+                                <items>
+                                    <Text text="Already have an account? " class="loginText" />
+                                    <Link text="Sign in" press=".onSignIn" class="loginLink" />
+                                </items>
+                            </HBox>
+
+                        </VBox>
+                    </content>
+                </ScrollContainer>
+
+            </items>
+        </FlexBox>
+
+    </Page>
+</mvc:View>
