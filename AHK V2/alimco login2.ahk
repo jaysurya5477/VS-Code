@@ -55,7 +55,11 @@ CoordMode("Pixel", "Window")
     Send("{Enter}")
 }
 
-^Esc::ExitApp()
+^!Esc::{
+    MsgBox("Exiting...", "Exit", "T0.5")
+    ExitApp()
+}
+
 
 ^0::
 {

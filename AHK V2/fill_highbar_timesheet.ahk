@@ -8,6 +8,8 @@ pyPID := 0
 
 ^!t::  ; Ctrl + Alt + T
 {
+
+    global pyPID
     ; --- Change this to your tracker window title ---
     trackerTitle := "Daily Work Book.xlsx"   ; partial match works
 
@@ -18,11 +20,11 @@ pyPID := 0
         ; pythonPath := "C:\Users\Jayasurya Lakkoju\AppData\Local\Programs\Python\Python314\python.exe"
         pythonPath := "python"
         scriptPath := "D:\New\VS Code\Python\Fill_OneHr_Highbar_timesheet\Project File\main.py"
-                    
-        Run '"' pythonPath '" "' scriptPath '"'
+
+        Run('"' pythonPath '" "' scriptPath '"', , , &pyPID)
 
         ; --- Optional confirmation ---
-        TrayTip "Timesheet Automation", "Python script started...", 3
+        TrayTip "Timesheet Automation", "Python script started...", 1
 
     }
     else {
@@ -31,15 +33,35 @@ pyPID := 0
 
 }
 
-; --- ESC to kill Python script ---
-Esc::
+^!a::  ; Ctrl + Alt + A
 {
     global pyPID
 
-    if (pyPID)
-    {
-        ProcessClose pyPID
-        TrayTip "Timesheet Automation", "Python process stopped!", 2
-        pyPID := 0
+    pythonPath := "python"
+    scriptPath := "D:\New\VS Code\Python\Fill_OneHr_Tasks\Project FIle\main.py"
+
+    Run('"' pythonPath '" "' scriptPath '"', , , &pyPID)
+
+    ; --- Optional confirmation ---
+    TrayTip "ABAP Task Automation", "Python script started...", 1
+
+}
+
+; --- ESC to kill Python script ---
+^Esc::
+{
+    global pyPID
+    if pyPID and ProcessExist(pyPID) {
+        try {
+            ProcessClose pyPID
+            TrayTip("Python", "Script killed." pyPID, 2)
+        } catch {
+            TrayTip("Python", "Failed to kill script." pyPID, 2)
+        }
+    } else {
+        TrayTip("Python", "No script running on " pyPID, 2)
+        return
     }
+
+    pyPID := 0
 }
