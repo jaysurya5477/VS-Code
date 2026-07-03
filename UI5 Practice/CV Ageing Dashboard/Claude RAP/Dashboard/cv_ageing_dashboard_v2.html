@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ageing 360°</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#ffffff; --ink:#0f172a; --ink2:#475569; --mut:#94a3b8;
+    --line:#eceef3; --accent:#6366f1; --accent2:#0ea5e9;
+    --shadow:0 1px 3px rgba(15,23,42,.06),0 8px 24px -12px rgba(15,23,42,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+
+  /* ---------- Sidebar ---------- */
+  .side{position:fixed;top:0;left:0;bottom:0;width:264px;background:linear-gradient(180deg,#1e293b,#0f172a);
+        color:#cbd5e1;display:flex;flex-direction:column;padding:22px 18px;overflow-y:auto;}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:26px;}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;font-weight:800;}
+  .brand h1{font-size:17px;color:#fff;margin:0;font-weight:700;letter-spacing:.3px;}
+  .brand span{font-size:11px;color:#64748b;}
+
+  .seg{display:flex;background:#0b1322;border:1px solid #1e293b;border-radius:10px;padding:4px;margin-bottom:22px;}
+  .seg button{flex:1;border:0;background:transparent;color:#94a3b8;padding:9px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;}
+  .seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+
+  .side .lbl{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:#64748b;margin:16px 0 8px;font-weight:700;}
+  .fg{margin-bottom:11px;}
+  .fg label{display:block;font-size:10.5px;color:#7c8aa0;margin-bottom:4px;font-weight:600;}
+  .fg input,.fg select{width:100%;padding:9px 10px;border:1px solid #243348;border-radius:8px;background:#0b1322;color:#e2e8f0;font-size:13px;}
+  .fg input:focus,.fg select:focus{outline:none;border-color:var(--accent);}
+  .apply{width:100%;margin-top:6px;padding:11px;border:0;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+         color:#fff;font-weight:700;cursor:pointer;font-size:13.5px;}
+  .side-foot{margin-top:auto;padding-top:18px;}
+  .linkbtn{width:100%;text-align:left;background:#0b1322;border:1px solid #1e293b;color:#cbd5e1;padding:11px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;}
+  .mode{margin-top:12px;font-size:10.5px;color:#64748b;text-align:center;}
+  .mode b{padding:3px 9px;border-radius:10px;}
+
+  /* ---------- Main ---------- */
+  .main{margin-left:264px;padding:24px 30px 40px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;}
+  .topbar h2{margin:0;font-size:23px;font-weight:700;}
+  .topbar .crumb{font-size:12.5px;color:var(--ink2);margin-top:4px;}
+  .url{font-family:'Roboto Mono',ui-monospace,monospace;font-size:11px;color:var(--mut);max-width:560px;text-align:right;word-break:break-all;}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:22px;}
+  .kpi{background:var(--card);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .kpi.k1::before{background:var(--accent);} .kpi.k2::before{background:var(--accent2);}
+  .kpi.k3::before{background:#10b981;} .kpi.k4::before{background:#e11d48;}
+  .kpi .cap{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);font-weight:700;}
+  .kpi .num{font-size:27px;font-weight:800;margin-top:7px;letter-spacing:-.5px;}
+  .kpi .meta{font-size:11.5px;color:var(--ink2);margin-top:4px;}
+
+  .row{display:grid;gap:18px;margin-bottom:18px;}
+  .row.a{grid-template-columns:1.7fr 1fr;}
+  .card{background:var(--card);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .card h3{margin:0;font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .card h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+  .card .hint{font-size:11.5px;color:var(--mut);margin:2px 0 12px 17px;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;}
+  td{padding:11px 14px;border-bottom:1px solid #f4f5f8;font-size:13px;}
+  tbody tr:hover td{background:#fafbff;}
+  .amt{font-family:'Roboto Mono',monospace;text-align:right;font-weight:600;}
+  .neg{color:#e11d48;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;}
+  .pill.normal{background:#eef2ff;color:#4f46e5;} .pill.advance{background:#fff7ed;color:#c2410c;}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:7px;vertical-align:middle;}
+
+  /* ---------- Modal ---------- */
+  .ov{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:60;}
+  .ov.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;width:700px;max-width:94vw;max-height:88vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.4);}
+  .mh{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .mh h3{margin:0;font-size:17px;} .mh small{color:var(--mut);font-weight:600;}
+  .mb{padding:20px 24px;}
+  .x{border:0;background:#f1f5f9;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;}
+  .addrow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:end;background:#f8fafc;border:1px solid var(--line);padding:14px;border-radius:12px;margin-top:14px;}
+  .addrow .fg label{color:var(--ink2);} .addrow .fg input,.addrow .fg select{background:#fff;color:var(--ink);border:1px solid #cbd5e1;}
+  .addrow .apply{margin:0;}
+  .note{font-size:11.5px;color:var(--ink2);margin-top:12px;line-height:1.6;background:#f8fafc;border:1px dashed #cbd5e1;padding:11px 13px;border-radius:10px;}
+  code{background:#eef2ff;color:#4338ca;padding:1px 5px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="side">
+  <div class="brand">
+    <div class="logo">◷</div>
+    <div><h1>Ageing 360°</h1><span>Customer / Vendor Analytics</span></div>
+  </div>
+
+  <div class="seg">
+    <button id="sgC" class="on" onclick="setEntity('Customer')">Customer</button>
+    <button id="sgV" onclick="setEntity('Vendor')">Vendor</button>
+  </div>
+
+  <div class="lbl">Context</div>
+  <div class="fg"><label>Open Date (As-on)</label><input type="date" id="fDate" value="2026-06-30"></div>
+  <div class="fg"><label>Company Code</label><input type="text" id="fComp" value="1000"></div>
+  <div class="fg"><label>Bucket Variant</label><input type="text" id="fVar" value="Debtors"></div>
+
+  <div class="lbl">Filters</div>
+  <div class="fg"><label>Profit Center</label><input type="text" id="fPC" placeholder="All"></div>
+  <div class="fg"><label id="lblPartner">Customer ID</label><input type="text" id="fPartner" placeholder="All"></div>
+  <div class="fg"><label>Bucket</label><select id="fBucket"></select></div>
+  <div class="fg"><label>Status</label><select id="fStatus"><option value="">All</option><option>Normal</option><option>Advance</option></select></div>
+  <button class="apply" onclick="render()">Apply Filters</button>
+
+  <div class="side-foot">
+    <button class="linkbtn" onclick="openBuckets()">⚙&nbsp; Manage Ageing Buckets</button>
+    <div class="mode">Source: <b id="modeLabel"></b></div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h2 id="pageTitle">Customer Ageing Overview</h2>
+      <div class="crumb">Finance › Receivables › Ageing as on <span id="crumbDate">30 Jun 2026</span></div>
+    </div>
+    <div class="url" id="urlbar"></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi k1"><div class="cap">Total Outstanding</div><div class="num" id="kTotal">–</div><div class="meta">across all buckets</div></div>
+    <div class="kpi k2"><div class="cap" id="kCountLbl">Active Customers</div><div class="num" id="kCount">–</div><div class="meta" id="kRows">– line groups</div></div>
+    <div class="kpi k3"><div class="cap">Current · 0–30 Days</div><div class="num" id="kCurrent" style="color:#10b981">–</div><div class="meta" id="kCurrentPct">– of total</div></div>
+    <div class="kpi k4"><div class="cap">Critical · &gt;180 Days</div><div class="num" id="kCritical" style="color:#e11d48">–</div><div class="meta" id="kCriticalPct">– of total</div></div>
+  </div>
+
+  <div class="row a">
+    <div class="card">
+      <h3><span class="dot"></span>Ageing Profile</h3>
+      <div class="hint">Total outstanding by bucket (oldest = warmer)</div>
+      <div id="chProfile" style="height:360px;"></div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--accent2)"></span>Distribution</h3>
+      <div class="hint">Share of portfolio</div>
+      <div id="chDonut" style="height:360px;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3><span class="dot" style="background:#10b981"></span>Top 15 by Exposure</h3>
+      <div class="hint">Stacked by ageing bucket</div>
+      <div id="chTop" style="height:440px;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3><span class="dot" style="background:#f59e0b"></span>Outstanding by Profit Center</h3>
+      <div class="hint">Drag the slider to scan all profit centers</div>
+      <div id="chPC" style="height:380px;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3><span class="dot" style="background:#e11d48"></span>Detailed Breakdown</h3>
+      <div class="hint" id="tblCount"></div>
+      <table>
+        <thead><tr>
+          <th id="thPartner">Customer</th><th>Profit Center</th><th>GL Account</th>
+          <th>Status</th><th>Bucket</th><th style="text-align:right;">Amount (INR)</th>
+        </tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Manage buckets -->
+<div class="ov" id="bkOverlay">
+  <div class="modal">
+    <div class="mh"><h3>Manage Ageing Buckets <small>— variant <span id="bkVar"></span></small></h3><button class="x" onclick="closeBuckets()">✕</button></div>
+    <div class="mb">
+      <table>
+        <thead><tr><th>Seq</th><th>From</th><th>To</th><th>Type</th><th>Label</th><th></th></tr></thead>
+        <tbody id="bkBody"></tbody>
+      </table>
+      <div class="addrow">
+        <div class="fg"><label>Seq</label><input type="number" id="nSeq"></div>
+        <div class="fg"><label>From</label><input type="number" id="nFrom"></div>
+        <div class="fg"><label>To</label><input type="number" id="nTo" placeholder="blank = +"></div>
+        <div class="fg"><label>Type</label><select id="nType"><option>D</option><option>D+</option><option>Y</option><option>Y+</option></select></div>
+        <button class="apply" onclick="addBucket()">+ Add</button>
+      </div>
+      <div class="note">
+        <b>Demo:</b> changes here update the in-page bucket list for preview.
+        In the Fiori app this maps to a writable RAP BO over <code>zfi_cv_bucket</code> exposed in the same service:
+        <code>POST .../ZC_CV_Bucket</code> with <code>{Variant, Sno, FromSel, ToSel, DurationType}</code>.
+        D+/Y+ leave <i>To</i> empty (open-ended). Keep ranges contiguous and non-overlapping.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== CONFIG — set USE_MOCK:false for the live OData V4 service ===== */
+const CONFIG={
+  USE_MOCK:true,
+  BASE:'https://vhafbmedap01.hec.erp.alimco.in:443/sap/opu/odata4/sap/zfi_cv_ageing_o4/srvd_a2x/sap/zfi_cv_ageing_o4/0001',
+  ENTITY:{Customer:'CVAgeingCustomer',Vendor:'CVAgeingVendor'}
+};
+
+/* teal → rose ageing gradient */
+let BUCKETS=[
+  {key:'0TO30D',seq:1,label:'0-30 Days',from:0,to:30,dur:'D',color:'#14b8a6'},
+  {key:'31TO60D',seq:2,label:'31-60 Days',from:31,to:60,dur:'D',color:'#84cc16'},
+  {key:'61TO90D',seq:3,label:'61-90 Days',from:61,to:90,dur:'D',color:'#eab308'},
+  {key:'91TO180D',seq:4,label:'91-180 Days',from:91,to:180,dur:'D',color:'#f59e0b'},
+  {key:'181TO365D',seq:5,label:'181-365 Days',from:181,to:365,dur:'D',color:'#f97316'},
+  {key:'1TO2Y',seq:6,label:'1-2 Years',from:1,to:2,dur:'Y',color:'#ef4444'},
+  {key:'2TO3Y',seq:7,label:'2-3 Years',from:2,to:3,dur:'Y',color:'#e11d48'},
+  {key:'3YPLUS',seq:8,label:'3+ Years',from:3,to:null,dur:'Y+',color:'#9f1239'},
+];
+const palette=BUCKETS.map(b=>b.color);
+const bucketByKey=()=>Object.fromEntries(BUCKETS.map(b=>[b.key,b]));
+const state={entity:'Customer'};
+
+function fmtINR(v){const a=Math.abs(v),s=v<0?'-':'';
+  if(a>=1e7)return s+'₹'+(a/1e7).toFixed(2)+' Cr';
+  if(a>=1e5)return s+'₹'+(a/1e5).toFixed(2)+' L';
+  return s+'₹'+Math.round(a).toLocaleString('en-IN');}
+function pct(part,tot){return tot?((part/tot)*100).toFixed(1)+'% of total':'–';}
+
+/* ===== Mock (same shape as OData /Set) ===== */
+const NAMES={
+  Customer:['ADIP-UTTAR PRADESH','ADIP-MAHARASHTRA','ADIP DELHI','ADIP-BIHAR','ADIP-GUJARAT','ADIP-RAJASTHAN',
+    'ADIP-MADHYA PRADESH','ADIP-KARNATAKA','ADIP-TAMIL NADU','ADIP-WEST BENGAL','ADIP-PUNJAB','ADIP-HARYANA',
+    'ADIP-KERALA','ADIP-ODISHA','ADIP-ASSAM','SSA-NEW DELHI','SSA-MUMBAI','CSR-RELIANCE FOUNDATION',
+    'CSR-TATA TRUST','STATE GOVT-UP','STATE GOVT-MH','DISTRICT HOSPITAL-LKO','RED CROSS SOCIETY','NHFDC'],
+  Vendor:['STEELCO INDUSTRIES','BHARAT ALLOYS','POLYMER TECH PVT','PRECISION CASTINGS','NATIONAL RUBBER',
+    'ASHOK FOUNDRY','SHAKTI ENGINEERING','UNITY PLASTICS','METRO LOGISTICS','SRI BALAJI TRADERS',
+    'HINDUSTAN COMPONENTS','GLOBAL FASTENERS','APEX HARDWARE','RELIABLE COURIERS','VENUS PACKAGING',
+    'ORIENT ELECTRICALS','PIONEER TOOLS','SUNRISE CHEMICALS','EASTERN TIMBER','DECCAN MACHINERY']
+};
+const PCS=Array.from({length:26},(_,i)=>`713PC${(i+1).toString().padStart(2,'0')}M`);
+const GLS={Customer:'10804100',Vendor:'21100100'};
+function genMock(entity){
+  const rows=[],names=NAMES[entity];
+  names.forEach((nm,i)=>{
+    const id=(entity==='Customer'?'00210000':'00500000')+String(i).padStart(2,'0');
+    const npc=2+Math.floor(Math.random()*5);
+    for(let p=0;p<npc;p++){
+      const pc=PCS[Math.floor(Math.random()*PCS.length)];
+      BUCKETS.forEach(b=>{
+        if(Math.random()<0.45)return;
+        let amt=Math.round(Math.random()*9e6+5e4);
+        if(b.seq>=6&&Math.random()<0.3)amt=-Math.round(Math.random()*3e5);
+        if(i<3&&b.seq<=4)amt+=Math.round(Math.random()*1.5e7);
+        rows.push({partnerId:id,partnerName:nm,ProfitCenter:pc,GLAccount:GLS[entity],
+          AgingStatus:Math.random()<0.12?'Advance':'Normal',BucketKey:b.key,BucketSeq:String(b.seq),
+          BucketLabel:b.label,DurationType:b.dur,AgingAmount:amt,Currency:'INR'});
+      });
+    }
+  });
+  return rows;
+}
+
+function getFilters(){return{
+  date:fDate.value,comp:fComp.value.trim(),variant:fVar.value.trim(),
+  pc:fPC.value.trim(),partner:fPartner.value.trim(),bucket:fBucket.value,status:fStatus.value};}
+
+function buildUrl(){
+  const f=getFilters(),ent=CONFIG.ENTITY[state.entity];
+  const idF=state.entity==='Customer'?'CustomerID':'VendorID';
+  const flt=[];
+  if(f.partner)flt.push(`${idF} eq '${f.partner}'`);
+  if(f.pc)flt.push(`ProfitCenter eq '${f.pc}'`);
+  if(f.bucket)flt.push(`BucketKey eq '${f.bucket}'`);
+  if(f.status)flt.push(`AgingStatus eq '${f.status}'`);
+  let u=`${CONFIG.BASE}/${ent}(P_KeyDate=${f.date},P_CompanyCode='${f.comp}',P_Variant='${f.variant}')/Set?$orderby=BucketSeq`;
+  if(flt.length)u+='&$filter='+encodeURIComponent(flt.join(' and '));
+  return u;
+}
+function setMode(t,c){modeLabel.textContent=t;modeLabel.style.background=c+'22';modeLabel.style.color=c;}
+
+async function loadData(){
+  const url=buildUrl();urlbar.innerHTML='GET '+url;
+  if(CONFIG.USE_MOCK){setMode('MOCK','#f59e0b');return genMock(state.entity);}
+  try{
+    const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw new Error(r.status);
+    const j=await r.json();setMode('LIVE','#10b981');
+    return j.value.map(x=>({partnerId:x.CustomerID||x.VendorID,partnerName:x.CustomerName||x.VendorName,
+      ProfitCenter:x.ProfitCenter,GLAccount:x.GLAccount,AgingStatus:x.AgingStatus,BucketKey:x.BucketKey,
+      BucketSeq:x.BucketSeq,BucketLabel:x.BucketLabel,DurationType:x.DurationType,
+      AgingAmount:Number(x.AgingAmount),Currency:x.Currency}));
+  }catch(e){setMode('LIVE FAILED→MOCK','#e11d48');return genMock(state.entity);}
+}
+function clientFilter(rows){const f=getFilters();return rows.filter(r=>
+  (!f.partner||r.partnerId.includes(f.partner))&&(!f.pc||r.ProfitCenter===f.pc)&&
+  (!f.bucket||r.BucketKey===f.bucket)&&(!f.status||r.AgingStatus===f.status));}
+
+let cP,cD,cT,cC;
+function charts(){cP=cP||echarts.init(chProfile);cD=cD||echarts.init(chDonut);cT=cT||echarts.init(chTop);cC=cC||echarts.init(chPC);}
+
+async function render(){
+  charts();
+  const all=await loadData();
+  const rows=CONFIG.USE_MOCK?clientFilter(all):all;
+  const bk=bucketByKey();
+  const byB={};BUCKETS.forEach(b=>byB[b.key]=0);
+  const partners={},pcs={};let total=0;
+  rows.forEach(r=>{total+=r.AgingAmount;byB[r.BucketKey]=(byB[r.BucketKey]||0)+r.AgingAmount;
+    (partners[r.partnerId]||={name:r.partnerName,total:0,bk:{}});
+    partners[r.partnerId].total+=r.AgingAmount;
+    partners[r.partnerId].bk[r.BucketKey]=(partners[r.partnerId].bk[r.BucketKey]||0)+r.AgingAmount;
+    pcs[r.ProfitCenter]=(pcs[r.ProfitCenter]||0)+r.AgingAmount;});
+
+  const current=byB['0TO30D']||0;
+  const critical=BUCKETS.filter(b=>b.seq>=5).reduce((s,b)=>s+(byB[b.key]||0),0);
+  kTotal.textContent=fmtINR(total);
+  kCount.textContent=Object.keys(partners).length.toLocaleString('en-IN');
+  kRows.textContent=rows.length.toLocaleString('en-IN')+' line groups';
+  kCurrent.textContent=fmtINR(current);kCurrentPct.textContent=pct(current,total);
+  kCritical.textContent=fmtINR(critical);kCriticalPct.textContent=pct(critical,total);
+
+  /* Ageing profile (vertical bars, per-bucket colour) */
+  cP.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].axisValue}</b><br/>${fmtINR(p[0].value)}`},
+    grid:{left:'2%',right:'3%',top:'8%',bottom:'3%',containLabel:true},
+    xAxis:{type:'category',data:BUCKETS.map(b=>b.label),axisLabel:{interval:0,fontSize:10,rotate:25,color:'#64748b'},axisTick:{show:false}},
+    yAxis:{type:'value',axisLabel:{formatter:v=>(v/1e7).toFixed(0)+'Cr',color:'#94a3b8'},splitLine:{lineStyle:{color:'#eef1f6'}}},
+    series:[{type:'bar',barWidth:'58%',data:BUCKETS.map(b=>({value:Math.max(byB[b.key]||0,0),itemStyle:{color:b.color,borderRadius:[6,6,0,0]}})),
+      label:{show:true,position:'top',fontSize:10,color:'#64748b',formatter:p=>p.value?fmtINR(p.value):''}}]
+  },true);
+
+  /* Donut */
+  cD.setOption({
+    tooltip:{trigger:'item',formatter:p=>`${p.marker}${p.name}<br/><b>${fmtINR(p.value)}</b> (${p.percent}%)`},
+    legend:{type:'scroll',orient:'vertical',right:4,top:'center',textStyle:{fontSize:10}},
+    series:[{type:'pie',radius:['48%','76%'],center:['36%','50%'],itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:2},
+      label:{show:false},emphasis:{label:{show:true,fontSize:15,fontWeight:'bold',formatter:p=>p.percent+'%'}},
+      data:BUCKETS.map(b=>({name:b.label,value:Math.max(byB[b.key]||0,0),itemStyle:{color:b.color}}))}]
+  },true);
+
+  /* Top 15 stacked */
+  const top=Object.values(partners).sort((a,b)=>b.total-a.total).slice(0,15);
+  cT.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:ps=>{
+      const tot=ps.reduce((s,p)=>s+p.value,0);let h=`<b>${ps[0].axisValue}</b><br/><b>Total: ${fmtINR(tot)}</b><br/>`;
+      ps.slice().reverse().forEach(p=>{if(p.value)h+=`${p.marker}${p.seriesName}: ${fmtINR(p.value)}<br/>`;});return h;}},
+    legend:{type:'scroll',bottom:0,textStyle:{fontSize:10}},
+    grid:{left:'2%',right:'4%',top:'2%',bottom:'13%',containLabel:true},
+    xAxis:{type:'value',axisLabel:{formatter:v=>(v/1e7).toFixed(0)+'Cr',color:'#94a3b8'},splitLine:{lineStyle:{color:'#eef1f6'}}},
+    yAxis:{type:'category',data:top.map(p=>p.name).reverse(),axisLabel:{fontSize:10,width:140,overflow:'truncate'}},
+    series:BUCKETS.map(b=>({name:b.label,type:'bar',stack:'t',barWidth:'62%',itemStyle:{color:b.color},
+      emphasis:{focus:'series'},data:top.map(p=>p.bk[b.key]||0).reverse()}))
+  },true);
+
+  /* Profit centers */
+  const pcS=Object.entries(pcs).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v);
+  const win=Math.min(100,Math.max(18,Math.round(1800/Math.max(pcS.length,1))));
+  cC.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`<b>${p[0].name}</b><br/>${fmtINR(p[0].value)}`},
+    grid:{left:'2%',right:'5%',top:'2%',bottom:'3%',containLabel:true},
+    xAxis:{type:'value',axisLabel:{formatter:v=>(v/1e7).toFixed(0)+'Cr',color:'#94a3b8'},splitLine:{lineStyle:{color:'#eef1f6'}}},
+    yAxis:{type:'category',data:pcS.map(p=>p.k).reverse()},
+    dataZoom:[{type:'slider',yAxisIndex:0,start:100-win,end:100,width:13,right:5},{type:'inside',yAxisIndex:0,start:100-win,end:100}],
+    series:[{type:'bar',data:pcS.map(p=>p.v).reverse(),itemStyle:{borderRadius:[0,5,5,0],
+      color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#6366f1'},{offset:1,color:'#0ea5e9'}])}}]
+  },true);
+
+  /* Table */
+  const sorted=[...rows].sort((a,b)=>Math.abs(b.AgingAmount)-Math.abs(a.AgingAmount));
+  tbl.innerHTML=sorted.slice(0,200).map(r=>{const c=(bk[r.BucketKey]||{}).color||'#999';
+    return `<tr><td>${r.partnerName}</td><td>${r.ProfitCenter}</td><td>${r.GLAccount}</td>
+    <td><span class="pill ${r.AgingStatus.toLowerCase()}">${r.AgingStatus}</span></td>
+    <td><span class="sw" style="background:${c}"></span>${r.BucketLabel}</td>
+    <td class="amt ${r.AgingAmount<0?'neg':''}">${fmtINR(r.AgingAmount)}</td></tr>`;}).join('');
+  tblCount.textContent=rows.length.toLocaleString('en-IN')+' rows'+(rows.length>200?' (top 200 by amount)':'');
+  crumbDate.textContent=new Date(getFilters().date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function setEntity(e){state.entity=e;
+  sgC.classList.toggle('on',e==='Customer');sgV.classList.toggle('on',e==='Vendor');
+  lblPartner.textContent=e+' ID';thPartner.textContent=e;kCountLbl.textContent='Active '+e+'s';
+  pageTitle.textContent=e+' Ageing Overview';render();}
+
+function fillBucketDropdown(){fBucket.innerHTML='<option value="">All Buckets</option>'+
+  BUCKETS.map(b=>`<option value="${b.key}">${b.label}</option>`).join('');}
+
+function openBuckets(){bkVar.textContent=fVar.value;renderBuckets();bkOverlay.classList.add('open');}
+function closeBuckets(){bkOverlay.classList.remove('open');}
+function renderBuckets(){bkBody.innerHTML=BUCKETS.sort((a,b)=>a.seq-b.seq).map((b,i)=>
+  `<tr><td>${b.seq}</td><td>${b.from}</td><td>${b.to??'—'}</td><td>${b.dur}</td>
+   <td><span class="sw" style="background:${b.color}"></span>${b.label}</td>
+   <td><button class="x" onclick="delBucket(${i})">🗑</button></td></tr>`).join('');}
+function delBucket(i){BUCKETS.splice(i,1);renderBuckets();fillBucketDropdown();}
+function addBucket(){
+  const seq=+nSeq.value,from=+nFrom.value,toRaw=nTo.value,dur=nType.value;
+  const to=toRaw===''?null:+toRaw,plus=dur.endsWith('+'),unit=dur.startsWith('Y')?'Years':'Days';
+  const label=plus?`${from}+ ${unit}`:`${from}-${to} ${unit}`;
+  const key=(plus?`${from}${dur.startsWith('Y')?'YPLUS':'DPLUS'}`:`${from}TO${to}${dur.startsWith('Y')?'Y':'D'}`).toUpperCase();
+  BUCKETS.push({key,seq,label,from,to,dur,color:palette[Math.min(seq-1,palette.length-1)]||'#9f1239'});
+  renderBuckets();fillBucketDropdown();
+}
+
+fillBucketDropdown();render();
+addEventListener('resize',()=>{cP&&cP.resize();cD&&cD.resize();cT&&cT.resize();cC&&cC.resize();});
+</script>
+</body>
+</html>

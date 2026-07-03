@@ -1,0 +1,190 @@
+/* ===== Zone Sales Dashboard ===== */
+
+/* Force a light look in EVERY theme (incl. sap_horizon_dark): light page,
+   white cards, dark text. Keeps the dashboard readable regardless of the
+   launchpad/browser theme. */
+.dashPage,
+.dashPage .sapMPageScroll,
+.dashScroll {
+    background: #f5f7fa !important;
+}
+.dashWrap,
+.dashWrap .sapMText,
+.dashWrap .sapMLabel,
+.dashWrap .sapMTitle {
+    color: #333 !important;
+}
+.chartCard.sapMPanel,
+.chartCard .sapMPanelHdr,
+.chartCard .sapMPanelWrappingDivTb {
+    background: #fff !important;
+}
+.chartCard .sapMPanelHdr,
+.chartCard .sapMPanelHdr .sapMText,
+.chartTitle.sapMTitle {
+    color: #333 !important;
+}
+
+.dashScroll {
+    background: #f5f7fa;
+}
+.dashWrap {
+    padding: 16px 20px 28px;
+    gap: 18px;
+}
+
+/* Filter bar (moved out of the page header) */
+.filterBar.sapMTB {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 4px 14px;
+}
+.filterLabel { color: #666 !important; }
+
+/* Force the Select fields + refresh button light in every theme (they render
+   dark under sap_horizon_dark). */
+.filterBar .sapMSlt,
+.monthPick .sapMSlt {
+    background: #fff !important;
+    border: 1px solid #c4ccd6 !important;
+    border-radius: 6px !important;
+}
+.filterBar .sapMSlt .sapMSltLabel,
+.filterBar .sapMSlt .sapMSltArrow,
+.filterBar .sapMSlt .sapUiIcon,
+.monthPick .sapMSlt .sapMSltLabel,
+.monthPick .sapMSlt .sapMSltArrow,
+.monthPick .sapMSlt .sapUiIcon {
+    color: #333 !important;
+}
+.filterBar .sapMBtn .sapMBtnInner {
+    background: #fff !important;
+    border: 1px solid #c4ccd6 !important;
+}
+.filterBar .sapMBtn .sapMBtnIcon {
+    color: #333 !important;
+}
+/* Keep the closed Select light through hover / focus / pressed states too. */
+.filterBar .sapMSlt:hover,
+.filterBar .sapMSlt.sapMSltHoverable:hover,
+.filterBar .sapMSlt:focus,
+.filterBar .sapMSltPressed,
+.monthPick .sapMSlt:hover,
+.monthPick .sapMSlt:focus {
+    background: #f5f7fa !important;
+    border-color: #8a94a6 !important;
+}
+
+/* The opened Select dropdown renders in a popover appended to the body, OUTSIDE
+   .filterBar — so it isn't reached by the scoped rules above and stays dark under
+   a dark launchpad theme. Force the whole picker + list light. The popover carries
+   the .sapMSltPicker style class; the list is .sapMSelectList. */
+.sapMSltPicker.sapMPopover,
+.sapMSltPicker .sapMPopoverCont,
+.sapMSltPicker .sapMPopoverScroll,
+.sapMSltPicker .sapMPopoverWrapper,
+.sapMSltPicker .sapMSelectList,
+.sapMSelectList,
+.sapMSelectList .sapMSelectListItemBase,
+.sapMSelectListItemBase {
+    background-color: #fff !important;
+    color: #333 !important;
+    border-color: #e2e6ec !important;
+}
+/* Popover arrow (the little pointer) — keep it white too. */
+.sapMSltPicker .sapMPopoverArr:after {
+    background-color: #fff !important;
+    border-color: #c4ccd6 !important;
+}
+/* Selected + hovered items get a light-blue highlight instead of dark. */
+.sapMSelectList .sapMSelectListItemBaseSelected,
+.sapMSelectListItemBaseSelected,
+.sapMSelectList .sapMSelectListItemBase:hover,
+.sapMSelectListItemBase:hover,
+.sapMLIBHoverable:hover {
+    background-color: #eaf1fb !important;
+    color: #0a3d91 !important;
+}
+
+/* KPI row */
+.kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 20px;
+    margin-bottom: 4px;
+}
+.kpiCard {
+    background: #fff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    gap: 5px;
+}
+.kpiLabel {
+    font-size: 0.85rem;
+    color: #666;
+}
+.kpiValue {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #333;
+}
+/* higher specificity (+!important) so these beat the blanket dark-text override */
+.kpiCard .kpiValue--primary { color: #0277bd !important; }
+.kpiCard .kpiValue--success { color: #5cb85c !important; }
+.kpiDelta {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 600;
+}
+.kpiCard .kpiDelta--danger { color: #d9534f !important; }
+
+/* Achievement % progress bar (orange, like the mockup) */
+.achBar { margin-top: 8px; }
+.achBar .sapMPIBar {
+    background-color: #f0ad4e;
+    border-color: #f0ad4e;
+}
+.achBar .sapMPIBarRemaining {
+    background-color: #eee;
+}
+
+/* Chart grid — 2 x 2 of equal cards */
+.chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 20px;
+}
+.chartCard.sapMPanel {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 8px 12px 14px;
+}
+.chartCard .sapMPanelHdr,
+.chartCard .sapMPanelWrappingDivTb .sapMPanelHdr {
+    font-size: 1rem;
+    font-weight: 700;
+}
+/* ECharts sizes to its container, so a height is required here (ApexCharts
+   used to set it in JS). */
+.chartBox { width: 100%; height: 320px; }
+
+/* Daily tile controls row — month picker (left) + mini KPIs (right), under title */
+.dailyBar.sapMFlexBox { padding: 6px 2px 10px; gap: 16px; }
+.monthPick.sapMFlexBox { gap: 8px; }
+.miniKpis.sapMFlexBox { gap: 32px; }
+.miniKpiBox { line-height: 1.25; }
+.miniKpis .miniKpiLabel { font-size: 0.72rem; color: #666 !important; }
+.miniKpis .miniKpiVal { font-size: 1.05rem; font-weight: 700; line-height: 1.25; }
+.miniKpis .miniKpiVal--y { color: #ee6666 !important; }
+.miniKpis .miniKpiVal--mtd { color: #5470c6 !important; }
+
+/* Responsive collapse */
+@media (max-width: 1100px) {
+    .chartsGrid { grid-template-columns: 1fr; }
+    .kpiGrid { grid-template-columns: 1fr; }
+}

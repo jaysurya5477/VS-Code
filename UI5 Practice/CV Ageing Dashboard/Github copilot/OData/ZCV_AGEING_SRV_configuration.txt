@@ -1,0 +1,168 @@
+OData Service Configuration: ZCV_AGEING_SRV
+========================================================
+
+Purpose:
+  Exposes CV Ageing Query View (Q_CV_AGEING_OD) via OData Protocol V4
+  Used by Fiori dashboard to fetch aging data in real-time
+
+Steps to Create Service in Gateway (Transaction: /IWFND/MAINT_SERVICE):
+
+1. Service Creation
+   ─────────────────
+   Service Name:    ZCV_AGEING_SRV
+   Service Package: Z_CV_AGEING
+   Technical Name:  SRV_CV_AGEING (in SEGW)
+   
+2. Add Data Model
+   ───────────────
+   Project:  ZCV_AGEING
+   Operation: Right-click "Data Model" → Add Model
+   
+3. Add Entity Set
+   ───────────────
+   Entity Type:     CVAgeing
+   Entity Set Name: CVAgeingSet
+   Query View:      Q_CV_AGEING_OD (DDL)
+   
+4. Add Navigation Properties
+   ─────────────────────────
+   Property:  CustomerDetails
+   Multiplicity: 1
+   Target: Customer (via CustomerID)
+   
+   Property:  VendorDetails
+   Multiplicity: 1
+   Target: Vendor (via VendorID)
+
+5. Publish Service
+   ────────────────
+   Transaction: /IWFND/MAINT_SERVICE
+   Activate Service
+   Generate Runtime
+
+6. Test URL Patterns
+   ──────────────────
+   Base URL: /sap/opu/odata/sap/ZCV_AGEING_SRV
+
+   a) Get All Aging Data:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet
+      
+   b) Filter by Variant (Company Code):
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000'
+      
+   c) Filter by Customer:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CustomerID eq 'CUST001'
+      
+   d) Filter by Bucket (Aging Range):
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=BucketKey eq '0TO30DAYS'
+      
+   e) Filter by Status (Advance/Normal):
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=Status eq 'Normal'
+      
+   f) Combined Filters:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and CustomerID eq 'CUST001'
+      
+   g) Projection (Select Specific Fields):
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$select=CustomerID,CustomerName,BucketKey,AgingAmount
+      
+   h) Sorting:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$orderby=AgingAmount desc
+      
+   i) Pagination:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$top=100&$skip=0
+      
+   j) Count:
+      GET /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet/$count
+
+7. Expected Response Format (JSON)
+   ────────────────────────────────
+   
+   {
+     "d": {
+       "results": [
+         {
+           "__metadata": {
+             "type": "ZCV_AGEING_SRV.CVAgeing"
+           },
+           "CompanyCode": "1000",
+           "CustomerID": "CUST001",
+           "CustomerName": "ABC Manufacturing Ltd",
+           "VendorID": "",
+           "VendorName": "",
+           "ProfitCenter": "PC001",
+           "GLAccount": "4110000",
+           "AccountDescription": "Sales Revenue",
+           "Status": "Normal",
+           "BucketKey": "0TO30DAYS",
+           "BucketLabel": "0 to 30 Days",
+           "DurationType": "D",
+           "AgingAmount": "50000.00",
+           "TotalPerGroup": "200000.00",
+           "MinDaysOld": 0,
+           "MaxDaysOld": 30,
+           "Currency": "USD"
+         },
+         {
+           "CompanyCode": "1000",
+           "CustomerID": "CUST001",
+           "CustomerName": "ABC Manufacturing Ltd",
+           "VendorID": "",
+           "VendorName": "",
+           "ProfitCenter": "PC001",
+           "GLAccount": "4110000",
+           "AccountDescription": "Sales Revenue",
+           "Status": "Normal",
+           "BucketKey": "31TO60DAYS",
+           "BucketLabel": "31 to 60 Days",
+           "DurationType": "D",
+           "AgingAmount": "75000.00",
+           "TotalPerGroup": "200000.00",
+           "MinDaysOld": 31,
+           "MaxDaysOld": 60,
+           "Currency": "USD"
+         }
+       ]
+     }
+   }
+
+8. Postman Test Configuration
+   ─────────────────────────────
+   
+   Method: GET
+   URL: http://your-sap-system/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet
+   
+   Headers:
+   ────────
+   Authorization: Basic <base64(user:password)>
+   Accept: application/json
+   Content-Type: application/json
+   X-CSRF-Token: Fetch
+   
+   Test Query 1 (All Data):
+   ────────────────────────
+   URL: /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet
+   
+   Test Query 2 (Customer Aging):
+   ──────────────────────────────
+   URL: /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and CustomerID ne ''
+   
+   Test Query 3 (Vendor Aging):
+   ──────────────────────────────
+   URL: /sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and VendorID ne ''
+
+9. Security / Authorization
+   ─────────────────────────
+   Add Authorization Check to CDS View:
+   @AccessControl.authorizationCheck: #CHECK
+   
+   Create Authorization Objects:
+   - Object: F_ACDOC (Accounting Document)
+   - Activity: 03 (Display)
+   - Company Code: s_bukrs
+
+10. Performance Optimization
+    ───────────────────────────
+    - Index on: variant, company_code, customer_id, vendor_id
+    - Partition ZFI_CV_BUCKET by variant
+    - Cache ACDOCA data for known company codes
+    - Consider material view if data grows > 1M rows/month

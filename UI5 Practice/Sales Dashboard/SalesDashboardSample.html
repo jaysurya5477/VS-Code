@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Dashboard Sample</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f4f5f7;
+      color: #1f2937;
+    }
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .dashboard-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      width: 100%;
+      margin-top: 16px;
+    }
+    .kpi-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+      min-height: 110px;
+    }
+    .kpi-label {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0;
+      color: #111827;
+    }
+    .kpi-note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .chart-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    }
+    .chart-title {
+      font-size: 18px;
+      margin: 0 0 16px;
+      color: #111827;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">Sales Dashboard Sample</h1>
+      <p>Center/Plant-wise sales summary with target comparison, ranking, trend, and scheme mix.</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Gross</div>
+      <div class="kpi-value">₹ 687,500</div>
+      <div class="kpi-note">Aggregated gross sales across zones and offices.</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Target</div>
+      <div class="kpi-value">₹ 720,000</div>
+      <div class="kpi-note">Total target amount for the selected fiscal year and schemes.</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Achievement</div>
+      <div class="kpi-value">95.5%</div>
+      <div class="kpi-note">Gross vs target achievement percentage.</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Zones Below Target</div>
+      <div class="kpi-value">2</div>
+      <div class="kpi-note">EAST and SOUTH are below the target threshold.</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card full-width">
+      <h2 class="chart-title">Actual vs Target by Zone</h2>
+      <div id="chart-actual-vs-target"></div>
+    </div>
+    <div class="chart-card">
+      <h2 class="chart-title">Sales Office Ranking</h2>
+      <div id="chart-office-ranking"></div>
+    </div>
+    <div class="chart-card">
+      <h2 class="chart-title">Monthly Gross Trend by Zone</h2>
+      <div id="chart-monthly-trend"></div>
+    </div>
+    <div class="chart-card">
+      <h2 class="chart-title">Scheme Mix by Zone</h2>
+      <div id="chart-scheme-mix"></div>
+    </div>
+  </div>
+
+  <script>
+    const actualVsTargetOptions = {
+      chart: { type: 'line', height: 360, stacked: false },
+      stroke: { width: [0, 4] },
+      plotOptions: { bar: { columnWidth: '55%' } },
+      dataLabels: { enabled: false },
+      markers: { size: 5 },
+      series: [
+        { name: 'Gross', type: 'column', data: [120000, 85000, 91000, 76000, 67000] },
+        { name: 'Target', type: 'line', data: [100000, 90000, 92000, 80000, 70000] }
+      ],
+      xaxis: { categories: ['CENTER', 'EAST', 'WEST', 'NORTH', 'SOUTH'] },
+      yaxis: [{ title: { text: 'Gross / Target (₹)' } }],
+      tooltip: { shared: true, intersect: false, y: { formatter: val => '₹ ' + val.toLocaleString() } },
+      colors: ['#2563eb', '#f97316'],
+      legend: { position: 'top' }
+    };
+
+    const officeRankingOptions = {
+      chart: { type: 'bar', height: 320 },
+      plotOptions: { bar: { horizontal: true, distributed: false, barHeight: '62%' } },
+      dataLabels: { enabled: false },
+      series: [{ name: 'Gross', data: [250000, 180000, 145000, 98000, 78000] }],
+      xaxis: { categories: ['HQ', 'AAPC JBL', 'CHENNAI', 'DELHI', 'KOLKATA'] },
+      tooltip: { y: { formatter: val => '₹ ' + val.toLocaleString() } },
+      colors: ['#14b8a6']
+    };
+
+    const monthlyTrendOptions = {
+      chart: { type: 'line', height: 320 },
+      stroke: { curve: 'smooth', width: 3 },
+      markers: { size: 4 },
+      series: [
+        { name: 'CENTER', data: [12000, 13000, 11500, 14000, 13500, 15000] },
+        { name: 'EAST', data: [9000, 9200, 8800, 9400, 9100, 9800] },
+        { name: 'WEST', data: [11000,10800,11200,11800,11600,12100] },
+        { name: 'NORTH', data: [8000, 8200, 7900, 8600, 8400, 8800] },
+        { name: 'SOUTH', data: [7000, 7200, 7300, 7600, 7500, 7800] }
+      ],
+      xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] },
+      tooltip: { y: { formatter: val => '₹ ' + val.toLocaleString() } },
+      colors: ['#2563eb', '#ea580c', '#10b981', '#8b5cf6', '#facc15']
+    };
+
+    const schemeMixOptions = {
+      chart: { type: 'bar', height: 320, stacked: true },
+      plotOptions: { bar: { horizontal: false } },
+      dataLabels: { enabled: false },
+      series: [
+        { name: 'Scheme A', data: [35000, 28000, 24000, 18000, 15000] },
+        { name: 'Scheme B', data: [42000, 32000, 30000, 22000, 21000] },
+        { name: 'Scheme C', data: [28000, 21000, 18000, 13000, 12000] }
+      ],
+      xaxis: { categories: ['CENTER', 'EAST', 'WEST', 'NORTH', 'SOUTH'] },
+      yaxis: { title: { text: 'Gross (₹)' } },
+      tooltip: { y: { formatter: val => '₹ ' + val.toLocaleString() } },
+      colors: ['#2563eb', '#14b8a6', '#f97316']
+    };
+
+    new ApexCharts(document.querySelector('#chart-actual-vs-target'), actualVsTargetOptions).render();
+    new ApexCharts(document.querySelector('#chart-office-ranking'), officeRankingOptions).render();
+    new ApexCharts(document.querySelector('#chart-monthly-trend'), monthlyTrendOptions).render();
+    new ApexCharts(document.querySelector('#chart-scheme-mix'), schemeMixOptions).render();
+  </script>
+</body>
+</html>

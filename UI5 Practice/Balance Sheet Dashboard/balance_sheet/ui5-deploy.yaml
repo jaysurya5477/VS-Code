@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+
+specVersion: "4.0"
+metadata:
+  name: com.sap.balancesheet
+type: application
+builder:
+  # Chart.js is a pre-built third-party UMD bundle. Keep it out of UI5's
+  # minifier (already minified, no source map) and out of the Component preload
+  # analysis (its modern syntax e.g. new.target breaks the module analyzer).
+  # The file is still copied into dist/ and loaded at runtime via libs/.
+  minification:
+    excludes:
+      - "com/sap/balancesheet/libs/**"
+  componentPreload:
+    excludes:
+      - "com/sap/balancesheet/libs/**"
+  resources:
+    excludes:
+      - /test/**
+      - /localService/**
+  customTasks:
+    - name: deploy-to-abap
+      afterTask: generateCachebusterInfo
+      configuration:
+        target:
+          url: https://vhafbmedap01.hec.erp.alimco.in:443/
+          client: '120'
+          auth: basic
+        credentials:
+          username: env:med_user
+          password: env:med_pass
+        app:
+          name: ZFI_BS_PIE
+          description: Balance Sheet Pie Chart Dashboard
+          package: ZFI
+          transport: MEDK912835
+        exclude:
+          - /test/

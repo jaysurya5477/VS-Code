@@ -1,0 +1,60 @@
+TABLE: ZFI_CV_BUCKET
+Description: Customer/Vendor Ageing Report - Bucket Configuration
+
+Key Structure (4 fields):
+┌──────────────┬──────────┬────────────────────────────────┐
+│ Field Name   │ Data Type│ Description                    │
+├──────────────┼──────────┼────────────────────────────────┤
+│ VARIANT      │ CHAR(4)  │ Bucket Variant ID (Primary Key)│
+│ SNO          │ INT4     │ Sequence Number (Primary Key)  │
+│ FROM_SEL     │ INT3     │ From Value (days/years)        │
+│ TO_SEL       │ INT3     │ To Value (days/years)          │
+│ DURATION_TYPE│ CHAR(2)  │ D,Y,D+,Y+ (Primary Key)        │
+│ FROM_TO      │ CHAR(30) │ Bucket Key (0TO30DAYS, etc)    │
+│ FROM_TO_DESC │ CHAR(60) │ Bucket Label (0 to 30 Days)    │
+│ CREATED_BY   │ CHAR(12) │ User who created/modified      │
+│ CREATED_DATE │ DATS     │ Creation date                  │
+└──────────────┴──────────┴────────────────────────────────┘
+
+Duration Types:
+- D  = Days range (0-30 days, 31-60 days, etc.)
+- Y  = Years range (1-2 years old, 2-3 years old, etc.)
+- D+ = Days and older, open-ended (90+ days, etc.)
+- Y+ = Years and older, open-ended (2+ years old, etc.)
+
+ABAP Dictionary Syntax:
+────────────────────────────────────────────────────────────
+
+*& Custom Table Structure
+TABLES: zfi_cv_bucket.
+
+TYPE-POOL: abap.
+
+CONSTANTS:
+  c_table_name TYPE tabname VALUE 'ZFI_CV_BUCKET'.
+
+TYPES: BEGIN OF zfi_cv_bucket,
+         variant      TYPE char4,
+         sno          TYPE i,
+         from_sel     TYPE int3,
+         to_sel       TYPE int3,
+         duration_type TYPE char2,
+         from_to      TYPE char30,
+         from_to_desc TYPE char60,
+         created_by   TYPE char12,
+         created_date TYPE dats,
+       END OF zfi_cv_bucket.
+
+Example Records:
+────────────────────────────────────────────────────────────
+VARIANT | SNO | FROM_SEL | TO_SEL | DURATION_TYPE | FROM_TO    | FROM_TO_DESC
+--------|-----|----------|--------|---------------|------------|-------------------------
+001     | 10  |    0     |   30   |      D        | 0TO30DAYS  | 0 to 30 Days
+001     | 20  |   31     |   60   |      D        | 31TO60DAYS | 31 to 60 Days
+001     | 30  |   61     |   90   |      D        | 61TO90DAYS | 61 to 90 Days
+001     | 40  |   91     |   NULL |      D+       | 90PLUS     | 90+ Days
+002     | 10  |    1     |    1   |      Y        | 1YEAR      | 1 Year Old
+002     | 20  |    2     |    3   |      Y        | 2TO3YEARS  | 2 to 3 Years Old
+002     | 30  |    3     |   NULL |      Y+       | 3PLUS      | 3+ Years Old
+
+Note: TO_SEL is ignored when DURATION_TYPE = D+ or Y+

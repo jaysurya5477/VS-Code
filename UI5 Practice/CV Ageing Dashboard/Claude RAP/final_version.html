@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customer / Vendor Ageing Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1d2733; --ink2:#5b6b7c; --muted:#8a97a6;
+    --line:#e4e8ee; --accent:#0a6ed1; --accentbg:#eaf2fb;
+    --good:#107e3e; --warn:#e9730c; --bad:#bb0000;
+    --radius:12px; --sans:"72","Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;}
+  .shell{max-width:1200px;margin:0 auto;padding:20px 20px 60px;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .title{font-size:22px;font-weight:600;}
+  .subtitle{font-size:13px;color:var(--ink2);margin-top:2px;}
+  button{font-family:var(--sans);font-size:13px;padding:8px 14px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);border-radius:8px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accentbg);border-color:var(--accent);color:var(--accent);}
+  select,input[type=date]{font-family:var(--sans);font-size:13px;padding:8px 10px;width:100%;
+    border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);}
+  select:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accentbg);}
+  label.fl{display:block;font-size:12px;color:var(--ink2);margin-bottom:5px;}
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
+  .kpi .lbl{font-size:12px;color:var(--ink2);}
+  .kpi .val{font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;}
+  .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .val.good{color:var(--good);} .val.bad{color:var(--bad);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;}
+  .card h3{margin:0;font-size:15px;font-weight:600;}
+  .card .desc{font-size:12px;color:var(--ink2);margin:2px 0 10px;}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;}
+  .bars{display:flex;flex-direction:column;gap:11px;}
+  .bar-row .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;}
+  .bar-track{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--accent);}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:660px;}
+  th{padding:8px;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--line);text-align:right;}
+  th:first-child{text-align:left;}
+  td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
+  td:first-child{text-align:left;}
+  tbody tr{cursor:pointer;transition:.12s;}
+  tbody tr:hover{background:var(--accentbg);}
+  tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none;}
+  .neg{color:var(--bad);}
+  .tblwrap{overflow-x:auto;}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accentbg);color:var(--accent);}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .toggle-group{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-shrink:0;}
+  .toggle-btn{border:none;border-radius:0;padding:6px 12px;font-size:12px;background:var(--card);color:var(--ink2);}
+  .toggle-btn:hover{background:var(--accentbg);color:var(--accent);}
+  .toggle-btn.active{background:var(--accent);color:#fff;}
+  .toggle-btn.active:hover{background:var(--accent);color:#fff;}
+  .scroll-hint{font-size:11px;color:var(--accent);background:var(--accentbg);padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap;}
+  .exposure-scroll{max-height:340px;overflow-y:auto;}
+  .matrix-scroll{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:8px;}
+  .matrix-table{width:100%;border-collapse:collapse;font-size:12px;min-width:920px;}
+  .matrix-table thead th{position:sticky;top:0;background:#fff;z-index:2;padding:10px 12px;
+    font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink2);
+    border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;}
+  .matrix-table td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle;}
+  .matrix-table tbody tr:hover{background:#fafbfc;}
+  .entity-cell{min-width:170px;}
+  .entity-name{font-weight:600;color:var(--ink);font-size:12.5px;}
+  .entity-id{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .amt-cell{position:relative;min-width:112px;}
+  .amt-bar{position:absolute;left:0;top:5px;bottom:5px;border-radius:4px;z-index:0;}
+  .amt-val{position:relative;z-index:1;font-variant-numeric:tabular-nums;padding-left:8px;font-size:11.5px;}
+  .amt-dash{color:var(--muted);padding-left:8px;}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--accentbg);color:var(--accent);
+    font-size:11.5px;padding:3px 6px 3px 10px;border-radius:14px;line-height:1.6;}
+  .chip-x{border:none;background:none;padding:0;margin:0;color:inherit;cursor:pointer;font-size:14px;
+    line-height:1;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+  .chip-x:hover{background:var(--accent);color:#fff;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div>
+      <div class="title">Customer / Vendor Ageing</div>
+      <div class="subtitle">Company 1000 · key date 30 Jun 2026 · all figures in INR · <span class="tag" id="modeTag">Customer (Debtors)</span></div>
+    </div>
+    <button id="exportBtn">&#8681; Export CSV</button>
+  </div>
+
+  <div class="filters">
+    <div>
+      <label class="fl">Party type</label>
+      <select id="fType">
+        <option value="Debtors">Customer (Debtors)</option>
+        <option value="Creditors">Vendor (Creditors)</option>
+      </select>
+    </div>
+    <div>
+      <label class="fl">Profit centre</label>
+      <select id="fPC"><option value="__ALL__">All profit centres</option></select>
+    </div>
+    <div>
+      <label class="fl">Bucket variant</label>
+      <select id="fVariant">
+        <option value="ALL" selected>All buckets</option>
+        <option value="D">Daily buckets</option>
+        <option value="Y">Yearly buckets</option>
+      </select>
+    </div>
+    <div>
+      <label class="fl">Open before</label>
+      <input type="date" id="fDate" value="2026-06-30" />
+    </div>
+    <div>
+      <label class="fl" id="fPartyLabel">Customer</label>
+      <input type="text" id="fPartyInput" list="partyDatalist" placeholder="Type name or ID, press Enter" />
+      <datalist id="partyDatalist"></datalist>
+      <div id="partyTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Total outstanding</div><div class="val" id="kTotal">—</div><div class="sub" id="kTotalSub"></div></div>
+    <div class="kpi"><div class="lbl">Not yet overdue (0–30)</div><div class="val good" id="kCurrent">—</div><div class="sub" id="kCurrentSub"></div></div>
+    <div class="kpi"><div class="lbl">Overdue &gt; 180 days</div><div class="val bad" id="kOld">—</div><div class="sub" id="kOldSub"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Outstanding by ageing bucket</h3>
+        <div class="desc">Green is current, deepening to red as debt ages</div>
+      </div>
+      <div class="toggle-group">
+        <button id="bucketBarBtn" class="toggle-btn active">Bar</button>
+        <button id="bucketDonutBtn" class="toggle-btn">Donut</button>
+      </div>
+    </div>
+    <div id="bucketChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3 id="exposureTitle">Top 15 customer exposure by bucket</h3>
+        <div class="desc" id="exposureDesc">Largest balances, broken down by ageing bucket</div>
+      </div>
+    </div>
+    <div id="exposureChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Profit centre exposure</h3>
+        <div class="desc">Total outstanding by profit centre, all buckets</div>
+      </div>
+      <span class="scroll-hint" id="pcExposureHint">Scroll to view all</span>
+    </div>
+    <div class="exposure-scroll"><div id="pcExposureChart"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Entity ageing matrix (top 50)</h3>
+        <div class="desc" id="matrixDesc">Sorted by total outstanding, descending</div>
+      </div>
+      <span class="scroll-hint">Bar length indicates amount magnitude</span>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead><tr id="matrixHead"></tr></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- Mock data (shape mirrors OData CVAgeing Set) ----------
+// [ProfitCenter, PartyID, PartyName, BucketKey, BucketSeq, BucketLabel, DurationType, Amount]
+const DATA = {
+  Debtors: [
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","0TO30D",1,"0 to 30 Days","D",204914.00],
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",9807427.13],
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","91TO180D",4,"91 to 180 Days","D",4131991.86],
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","181TO365D",5,"181 to 365 Days","D",479284.02],
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","1TO2Y",6,"1 to 2 Years","Y",-20619.98],
+    ["713PC00M","0021000000","ADIP-UTTAR PRADESH","3YPLUS",8,"3+ Years","Y+",645820.00],
+    ["713PC05M","0021000000","ADIP-UTTAR PRADESH","91TO180D",4,"91 to 180 Days","D",16717866.45],
+    ["713PC06M","0021000000","ADIP-UTTAR PRADESH","1TO2Y",6,"1 to 2 Years","Y",1616330.71],
+    ["713PC08M","0021000000","ADIP-UTTAR PRADESH","1TO2Y",6,"1 to 2 Years","Y",50298.00],
+    ["713PC111M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",1360020.16],
+    ["713PC112M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",198402.03],
+    ["713PC117M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",2211681.46],
+    ["713PC117M","0021000000","ADIP-UTTAR PRADESH","61TO90D",3,"61 to 90 Days","D",1530200.97],
+    ["713PC125M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",1643022.01],
+    ["713PC12M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",18696611.85],
+    ["713PC12M","0021000000","ADIP-UTTAR PRADESH","61TO90D",3,"61 to 90 Days","D",4767391.17],
+    ["713PC31M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",109676.06],
+    ["713PC44M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",1230909.48],
+    ["713PC44M","0021000000","ADIP-UTTAR PRADESH","61TO90D",3,"61 to 90 Days","D",525324.68],
+    ["713PC67M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",529851.04],
+    ["713PC94M","0021000000","ADIP-UTTAR PRADESH","31TO60D",2,"31 to 60 Days","D",152213.98],
+    ["713PC00M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",2611909.21],
+    ["713PC00M","0021000001","ADIP-MAHARASHTRA","61TO90D",3,"61 to 90 Days","D",11112733.99],
+    ["713PC00M","0021000001","ADIP-MAHARASHTRA","91TO180D",4,"91 to 180 Days","D",15633984.30],
+    ["713PC00M","0021000001","ADIP-MAHARASHTRA","181TO365D",5,"181 to 365 Days","D",452601.02],
+    ["713PC00M","0021000001","ADIP-MAHARASHTRA","1TO2Y",6,"1 to 2 Years","Y",27675869.18],
+    ["713PC02M","0021000001","ADIP-MAHARASHTRA","91TO180D",4,"91 to 180 Days","D",80000.00],
+    ["713PC05M","0021000001","ADIP-MAHARASHTRA","91TO180D",4,"91 to 180 Days","D",217500.00],
+    ["713PC05M","0021000001","ADIP-MAHARASHTRA","1TO2Y",6,"1 to 2 Years","Y",89949.00],
+    ["713PC107M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",363028.01],
+    ["713PC107M","0021000001","ADIP-MAHARASHTRA","61TO90D",3,"61 to 90 Days","D",90000.00],
+    ["713PC10M","0021000001","ADIP-MAHARASHTRA","91TO180D",4,"91 to 180 Days","D",2052.00],
+    ["713PC113M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",200000.00],
+    ["713PC113M","0021000001","ADIP-MAHARASHTRA","61TO90D",3,"61 to 90 Days","D",13938.01],
+    ["713PC22M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",13344.36],
+    ["713PC22M","0021000001","ADIP-MAHARASHTRA","91TO180D",4,"91 to 180 Days","D",198000.00],
+    ["713PC38M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",1155356.06],
+    ["713PC40M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",57648.01],
+    ["713PC40M","0021000001","ADIP-MAHARASHTRA","61TO90D",3,"61 to 90 Days","D",271987.98],
+    ["713PC90M","0021000001","ADIP-MAHARASHTRA","31TO60D",2,"31 to 60 Days","D",222606.01],
+    ["713PC90M","0021000001","ADIP-MAHARASHTRA","61TO90D",3,"61 to 90 Days","D",545900.27],
+    ["713PC00M","0021000002","ADIP DELHI","3YPLUS",8,"3+ Years","Y+",1429071.00],
+    ["713PC05M","0021000002","ADIP DELHI","1TO2Y",6,"1 to 2 Years","Y",76774.00],
+    ["713PC08M","0021000002","ADIP DELHI","31TO60D",2,"31 to 60 Days","D",504465.58],
+    ["713PC08M","0021000002","ADIP DELHI","61TO90D",3,"61 to 90 Days","D",825203.77],
+    ["713PC08M","0021000002","ADIP DELHI","1TO2Y",6,"1 to 2 Years","Y",50938.00],
+    ["713PC20M","0021000002","ADIP DELHI","31TO60D",2,"31 to 60 Days","D",1195184.30],
+    ["713PC20M","0021000002","ADIP DELHI","61TO90D",3,"61 to 90 Days","D",1220948.20],
+    ["713PC20M","0021000002","ADIP DELHI","1TO2Y",6,"1 to 2 Years","Y",1675907.06],
+    ["713PC24M","0021000002","ADIP DELHI","31TO60D",2,"31 to 60 Days","D",2660462.27]
+  ],
+  Creditors: [
+    ["713PC00M","0031000010","STEEL AUTHORITY OF INDIA","0TO30D",1,"0 to 30 Days","D",3820500.00],
+    ["713PC00M","0031000010","STEEL AUTHORITY OF INDIA","31TO60D",2,"31 to 60 Days","D",1250300.00],
+    ["713PC00M","0031000010","STEEL AUTHORITY OF INDIA","61TO90D",3,"61 to 90 Days","D",640000.00],
+    ["713PC08M","0031000011","BHARAT ELECTRONICS LTD","0TO30D",1,"0 to 30 Days","D",2110000.00],
+    ["713PC08M","0031000011","BHARAT ELECTRONICS LTD","91TO180D",4,"91 to 180 Days","D",560250.00],
+    ["713PC08M","0031000011","BHARAT ELECTRONICS LTD","1TO2Y",6,"1 to 2 Years","Y",120000.00],
+    ["713PC12M","0031000012","LARSEN & TOUBRO","0TO30D",1,"0 to 30 Days","D",5400000.00],
+    ["713PC12M","0031000012","LARSEN & TOUBRO","31TO60D",2,"31 to 60 Days","D",980000.00],
+    ["713PC12M","0031000012","LARSEN & TOUBRO","181TO365D",5,"181 to 365 Days","D",315000.00],
+    ["713PC20M","0031000013","TATA STEEL LIMITED","0TO30D",1,"0 to 30 Days","D",1760000.00],
+    ["713PC20M","0031000013","TATA STEEL LIMITED","31TO60D",2,"31 to 60 Days","D",-45000.00],
+    ["713PC20M","0031000013","TATA STEEL LIMITED","3YPLUS",8,"3+ Years","Y+",88000.00],
+    ["713PC05M","0031000014","SIEMENS INDIA","0TO30D",1,"0 to 30 Days","D",930000.00],
+    ["713PC05M","0031000014","SIEMENS INDIA","61TO90D",3,"61 to 90 Days","D",410000.00],
+    ["713PC44M","0031000015","GODREJ & BOYCE","31TO60D",2,"31 to 60 Days","D",275000.00],
+    ["713PC44M","0031000015","GODREJ & BOYCE","91TO180D",4,"91 to 180 Days","D",190000.00]
+  ]
+};
+
+// Canonical buckets: seq, key, short label, duration type, colour (green -> red)
+const BUCKETS = [
+  {seq:1,key:"0TO30D",label:"0–30d",dur:"D",c:"#107e3e"},
+  {seq:2,key:"31TO60D",label:"31–60d",dur:"D",c:"#5f9e1e"},
+  {seq:3,key:"61TO90D",label:"61–90d",dur:"D",c:"#e9a800"},
+  {seq:4,key:"91TO180D",label:"91–180d",dur:"D",c:"#e9730c"},
+  {seq:5,key:"181TO365D",label:"181–365d",dur:"D",c:"#e34948"},
+  {seq:6,key:"1TO2Y",label:"1–2y",dur:"Y",c:"#c0392b"},
+  {seq:7,key:"2TO3Y",label:"2–3y",dur:"Y",c:"#a32d2d"},
+  {seq:8,key:"3YPLUS",label:"3+y",dur:"Y+",c:"#791f1f"}
+];
+
+const fmtCr = v => { const cr=v/1e7; return Math.abs(cr)>=1 ? '₹'+cr.toFixed(2)+' Cr' : '₹'+(v/1e5).toFixed(2)+' L'; };
+const fmtFull = v => '₹'+Math.round(v).toLocaleString('en-IN');
+
+const $ = id => document.getElementById(id);
+let bucketChart, exposureChart, pcExposureChart;
+let bucketView = 'bar';
+let selectedParties = [];
+
+function matchesParty(r){
+  if(!selectedParties.length) return true;
+  const idL = r[1].toLowerCase(), nameL = r[2].toLowerCase();
+  return selectedParties.some(p=>{
+    const pl = p.toLowerCase();
+    return idL.includes(pl) || nameL.includes(pl);
+  });
+}
+function rows(){
+  const src = DATA[$('fType').value];
+  const pc = $('fPC').value;
+  return src.filter(r => (pc==='__ALL__' || r[0]===pc) && matchesParty(r));
+}
+function activeBuckets(){
+  const v = $('fVariant').value;
+  return BUCKETS.filter(b => v==='ALL' ? true : v==='D' ? b.dur==='D' : (b.dur==='Y'||b.dur==='Y+'));
+}
+function buildPCFilter(){
+  const src = DATA[$('fType').value];
+  const pcs = [...new Set(src.map(r=>r[0]))].sort();
+  const sel = $('fPC'); const cur = sel.value;
+  sel.innerHTML = '<option value="__ALL__">All profit centres</option>';
+  pcs.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+function buildPartyFilter(){
+  const isDebtor = $('fType').value === 'Debtors';
+  $('fPartyLabel').textContent = isDebtor ? 'Customer' : 'Vendor';
+  $('fPartyInput').placeholder = 'Type '+(isDebtor?'customer':'vendor')+' name or ID, press Enter';
+  const src = DATA[$('fType').value];
+  const names = [...new Set(src.map(r=>r[2]))].sort();
+  $('partyDatalist').innerHTML = names.map(n=>`<option value="${n}">`).join('');
+}
+function addPartyTag(val){
+  const v = val.trim();
+  if(!v) return;
+  if(selectedParties.some(p=>p.toLowerCase()===v.toLowerCase())) return;
+  selectedParties.push(v);
+  renderPartyTags();
+  render();
+}
+function renderPartyTags(){
+  $('partyTags').innerHTML = selectedParties.map((p,i)=>
+    `<span class="chip">${p}<button class="chip-x" data-i="${i}" aria-label="Remove ${p}">&times;</button></span>`
+  ).join('');
+  document.querySelectorAll('.chip-x').forEach(btn=>{
+    btn.onclick = ()=>{ selectedParties.splice(+btn.dataset.i,1); renderPartyTags(); render(); };
+  });
+}
+
+function render(){
+  const data = rows();
+  const bkts = activeBuckets();
+  $('modeTag').textContent = $('fType').value==='Debtors' ? 'Customer (Debtors)' : 'Vendor (Creditors)';
+
+  const totals = {}; bkts.forEach(b=>totals[b.seq]=0);
+  data.forEach(r=>{ if(r[4] in totals) totals[r[4]]+=r[7]; });
+  const grand = Object.values(totals).reduce((a,b)=>a+b,0);
+
+  const current = totals[1]||0;
+  const old = (totals[6]||0)+(totals[7]||0)+(totals[8]||0);
+
+  $('kTotal').textContent = fmtCr(grand);
+  $('kTotalSub').textContent = data.length+' line items';
+  $('kCurrent').textContent = fmtCr(current);
+  $('kCurrentSub').textContent = grand? (current/grand*100).toFixed(1)+'% of book' : '';
+  $('kOld').textContent = fmtCr(old);
+  $('kOldSub').textContent = grand? (old/grand*100).toFixed(1)+'% of book' : '';
+
+  const labels = bkts.map(b=>b.label);
+  const vals = bkts.map(b=>+(totals[b.seq]/1e5).toFixed(2));
+  const colors = bkts.map(b=>b.c);
+
+  // Bucket chart - bar or donut, depending on toggle
+  const bOpts = bucketView === 'bar' ? {
+    chart:{type:'bar',height:300,fontFamily:'inherit',toolbar:{show:false}},
+    series:[{name:'Outstanding',data:vals}],
+    plotOptions:{bar:{distributed:true,borderRadius:4,columnWidth:'55%'}},
+    colors:colors, legend:{show:false}, dataLabels:{enabled:false},
+    xaxis:{categories:labels,labels:{style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{formatter:v=>'₹'+Math.round(v)+'L',style:{colors:'#8a97a6'}}},
+    grid:{borderColor:'#e4e8ee'},
+    tooltip:{y:{formatter:v=>fmtFull(v*1e5)}}
+  } : {
+    chart:{type:'donut',height:340,fontFamily:'inherit',toolbar:{show:false}},
+    series:vals, labels:labels, colors:colors,
+    dataLabels:{enabled:true,formatter:(v,{seriesIndex})=> vals[seriesIndex] ? Math.round(v)+'%' : '',
+      style:{fontSize:'11px',fontWeight:600}, dropShadow:{enabled:false}},
+    legend:{position:'bottom',fontSize:'12px',labels:{colors:'#1d2733'},
+      formatter:(seriesName,opts)=> seriesName+' — '+fmtFull(vals[opts.seriesIndex]*1e5)},
+    plotOptions:{pie:{donut:{size:'62%',labels:{show:true,
+      total:{show:true,label:'Total',formatter:()=>fmtCr(grand)},
+      value:{formatter:v=>fmtFull(v*1e5)}}}}},
+    stroke:{width:2,colors:['#ffffff']},
+    tooltip:{y:{formatter:v=>fmtFull(v*1e5)}}
+  };
+  if(bucketChart){ bucketChart.destroy(); }
+  bucketChart = new ApexCharts($('bucketChart'), bOpts);
+  bucketChart.render();
+
+  // Chart 3 - top 15 entities stacked by ageing bucket (own style colors, matches bucket ramp)
+  const isDebtor = $('fType').value === 'Debtors';
+  $('exposureTitle').textContent = 'Top 15 '+(isDebtor?'customer':'vendor')+' exposure by bucket';
+  $('exposureDesc').textContent = 'Largest balances, broken down by ageing bucket';
+
+  const byParty={};
+  data.forEach(r=>{
+    byParty[r[1]] = byParty[r[1]] || {name:r[2], cells:{}, total:0};
+    if(bkts.some(b=>b.seq===r[4])){
+      byParty[r[1]].cells[r[4]] = (byParty[r[1]].cells[r[4]]||0) + r[7];
+      byParty[r[1]].total += r[7];
+    }
+  });
+  const top15 = Object.values(byParty).sort((a,b)=>b.total-a.total).slice(0,15).reverse();
+
+  const stackedSeries = bkts.map(b => ({
+    name: b.label,
+    data: top15.map(p => +((p.cells[b.seq]||0)/1e5).toFixed(2))
+  }));
+
+  const eOpts = {
+    chart:{type:'bar',height:Math.max(top15.length*30+60,260),fontFamily:'inherit',toolbar:{show:false},stacked:true},
+    series:stackedSeries,
+    plotOptions:{bar:{horizontal:true,borderRadius:2,barHeight:'62%'}},
+    colors:bkts.map(b=>b.c), dataLabels:{enabled:false},
+    xaxis:{categories:top15.map(p=>p.name),labels:{formatter:v=>'₹'+Math.round(v)+'L',style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{style:{colors:'#5b6b7c',fontSize:'11px'}}},
+    grid:{borderColor:'#e4e8ee'},
+    legend:{position:'bottom',fontSize:'11px',labels:{colors:'#5b6b7c'},markers:{radius:3}},
+    tooltip:{y:{formatter:v=>fmtFull(v*1e5)}}
+  };
+  if(exposureChart){ exposureChart.destroy(); }
+  exposureChart = new ApexCharts($('exposureChart'), eOpts);
+  exposureChart.render();
+
+  // Profit centre exposure - ranked, scrollable, independent of the profit-centre filter
+  const pcSrc = DATA[$('fType').value];
+  const pcTotals = {};
+  pcSrc.forEach(r=>{ if(bkts.some(b=>b.seq===r[4])){ pcTotals[r[0]] = (pcTotals[r[0]]||0) + r[7]; } });
+  const pcList = Object.entries(pcTotals).map(([pc,amt])=>({pc,amt})).sort((a,b)=>b.amt-a.amt);
+  $('pcExposureHint').textContent = 'Scroll to view all '+pcList.length+' profit centres';
+
+  const pcVals = pcList.map(p=>+(p.amt/1e7).toFixed(2));
+  const pcBarHeight = 26;
+  const pcChartHeight = Math.max(pcList.length*pcBarHeight+40, 200);
+
+  const pcOpts = {
+    chart:{type:'bar',height:pcChartHeight,fontFamily:'inherit',toolbar:{show:false}},
+    series:[{name:'Outstanding',data:pcVals}],
+    plotOptions:{bar:{horizontal:true,borderRadius:3,barHeight:'65%'}},
+    fill:{type:'gradient',gradient:{shade:'light',type:'horizontal',shadeIntensity:0.3,gradientToColors:['#4db8ff'],opacityFrom:1,opacityTo:1,stops:[0,100]}},
+    colors:['#0a6ed1'], dataLabels:{enabled:false},
+    xaxis:{categories:pcList.map(p=>p.pc),labels:{formatter:v=>Math.round(v*100)/100+'Cr',style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{style:{colors:'#5b6b7c',fontSize:'11px'}}},
+    grid:{borderColor:'#e4e8ee'},
+    tooltip:{y:{formatter:(v,{dataPointIndex})=> fmtFull(pcList[dataPointIndex].amt)}}
+  };
+  if(pcExposureChart){ pcExposureChart.destroy(); }
+  pcExposureChart = new ApexCharts($('pcExposureChart'), pcOpts);
+  pcExposureChart.render();
+
+  // Entity ageing matrix - one row per customer/vendor, in-cell bars, top 50 by total
+  const entities = {};
+  data.forEach(r=>{
+    const key = r[1];
+    entities[key] = entities[key] || {name:r[2], id:r[1], cells:{}, total:0};
+    if(bkts.some(b=>b.seq===r[4])){
+      entities[key].cells[r[4]] = (entities[key].cells[r[4]]||0) + r[7];
+      entities[key].total += r[7];
+    }
+  });
+  const entityList = Object.values(entities).sort((a,b)=>b.total-a.total).slice(0,50);
+  $('matrixDesc').textContent = 'Sorted by total outstanding, descending — showing top '+entityList.length+' of '+Object.keys(entities).length+' '+(isDebtor?'customers':'vendors');
+
+  $('matrixHead').innerHTML = ['Entity name','Total outstanding',...bkts.map(b=>b.label.toUpperCase())]
+    .map(h=>`<th>${h}</th>`).join('');
+
+  const totalMax = Math.max(...entityList.map(p=>Math.abs(p.total)), 1);
+  const colMax = {};
+  bkts.forEach(b=>{ colMax[b.seq] = Math.max(...entityList.map(p=>Math.abs(p.cells[b.seq]||0)), 1); });
+
+  $('matrixBody').innerHTML = entityList.map(p=>{
+    const totalW = Math.max(4, Math.round(Math.abs(p.total)/totalMax*100));
+    let html = `<tr>
+      <td class="entity-cell"><div class="entity-name">${p.name}</div><div class="entity-id">ID: ${p.id}</div></td>
+      <td class="amt-cell"><div class="amt-bar" style="width:${totalW}%;background:rgba(10,110,209,0.18);"></div><span class="amt-val">${fmtFull(p.total)}</span></td>`;
+    bkts.forEach(b=>{
+      const v = p.cells[b.seq]||0;
+      if(!v){
+        html += `<td class="amt-cell"><span class="amt-dash">–</span></td>`;
+      } else {
+        const w = Math.max(4, Math.round(Math.abs(v)/colMax[b.seq]*100));
+        const early = b.dur === 'D';
+        const bg = early ? 'rgba(10,110,209,0.14)' : 'rgba(226,73,72,0.14)';
+        const col = v<0 ? 'var(--bad)' : (early ? '#0a4a8a' : '#8a1f1f');
+        html += `<td class="amt-cell"><div class="amt-bar" style="width:${w}%;background:${bg};"></div><span class="amt-val" style="color:${col};">${fmtFull(v)}</span></td>`;
+      }
+    });
+    return html+'</tr>';
+  }).join('');
+}
+
+function exportCSV(){
+  const data = rows(); const bkts = activeBuckets();
+  const header = ['ProfitCenter','PartyID','PartyName','Bucket','DurationType','Amount'];
+  const lines = [header.join(',')];
+  data.forEach(r=>{ if(bkts.some(b=>b.seq===r[4])) lines.push([r[0],r[1],'"'+r[2]+'"',r[5],r[6],r[7]].join(',')); });
+  const blob = new Blob([lines.join('\n')],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cv_ageing_'+$('fType').value+'.csv'; a.click();
+}
+
+['fType','fPC','fVariant','fDate'].forEach(id=>$(id).addEventListener('change',()=>{
+  if(id==='fType'){ buildPCFilter(); buildPartyFilter(); selectedParties=[]; renderPartyTags(); }
+  render();
+}));
+$('exportBtn').addEventListener('click',exportCSV);
+
+$('fPartyInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter' || e.key===','){
+    e.preventDefault();
+    addPartyTag($('fPartyInput').value);
+    $('fPartyInput').value='';
+  }
+});
+$('fPartyInput').addEventListener('blur', ()=>{
+  if($('fPartyInput').value.trim()){ addPartyTag($('fPartyInput').value); $('fPartyInput').value=''; }
+});
+
+$('bucketBarBtn').addEventListener('click',()=>{
+  bucketView='bar';
+  $('bucketBarBtn').classList.add('active');
+  $('bucketDonutBtn').classList.remove('active');
+  render();
+});
+$('bucketDonutBtn').addEventListener('click',()=>{
+  bucketView='donut';
+  $('bucketDonutBtn').classList.add('active');
+  $('bucketBarBtn').classList.remove('active');
+  render();
+});
+
+buildPCFilter();
+buildPartyFilter();
+render();
+</script>
+</body>
+</html>

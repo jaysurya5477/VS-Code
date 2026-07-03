@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customer / Vendor Ageing</title>
+<script src="thirdparty/apexcharts.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1d2733; --ink2:#5b6b7c; --muted:#8a97a6;
+    --line:#e4e8ee; --accent:#0a6ed1; --accentbg:#eaf2fb;
+    --good:#107e3e; --warn:#e9730c; --bad:#bb0000;
+    --radius:12px; --sans:"72","Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;}
+  .shell{max-width:none;margin:0;padding:20px 24px 60px;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .title{font-size:22px;font-weight:600;}
+  .subtitle{font-size:13px;color:var(--ink2);margin-top:2px;}
+  button{font-family:var(--sans);font-size:13px;padding:8px 14px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);border-radius:8px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--accentbg);border-color:var(--accent);color:var(--accent);}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
+  .kpi .lbl{font-size:12px;color:var(--ink2);}
+  .kpi .val{font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;}
+  .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .val.good{color:var(--good);} .val.bad{color:var(--bad);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;}
+  .card h3{margin:0;font-size:15px;font-weight:600;}
+  .card .desc{font-size:12px;color:var(--ink2);margin:2px 0 10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:660px;}
+  th{padding:8px;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--line);text-align:right;}
+  th:first-child{text-align:left;}
+  td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
+  td:first-child{text-align:left;}
+  tbody tr{cursor:pointer;transition:.12s;}
+  tbody tr:hover{background:var(--accentbg);}
+  .neg{color:var(--bad);}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accentbg);color:var(--accent);}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .toggle-group{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-shrink:0;}
+  .toggle-btn{border:none;border-radius:0;padding:6px 12px;font-size:12px;background:var(--card);color:var(--ink2);}
+  .toggle-btn:hover{background:var(--accentbg);color:var(--accent);}
+  .toggle-btn.active{background:var(--accent);color:#fff;}
+  .toggle-btn.active:hover{background:var(--accent);color:#fff;}
+  .scroll-hint{font-size:11px;color:var(--accent);background:var(--accentbg);padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap;}
+  .exposure-scroll{max-height:340px;overflow-y:auto;}
+  .matrix-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;}
+  .matrix-table{width:100%;border-collapse:collapse;font-size:12px;min-width:920px;}
+  .matrix-table thead th{position:sticky;top:0;background:#fff;z-index:2;padding:10px 12px;
+    font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink2);
+    border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;}
+  .matrix-table td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle;}
+  .matrix-table tbody tr:hover{background:#fafbfc;}
+  .entity-cell{min-width:170px;}
+  .entity-name{font-weight:600;color:var(--ink);font-size:12.5px;}
+  .entity-id{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .amt-cell{position:relative;min-width:112px;}
+  .amt-bar{position:absolute;left:0;top:5px;bottom:5px;border-radius:4px;z-index:0;}
+  .amt-val{position:relative;z-index:1;font-variant-numeric:tabular-nums;padding-left:8px;font-size:11.5px;}
+  .amt-dash{color:var(--muted);padding-left:8px;}
+  #statusBar{font-size:12.5px;padding:8px 14px;border-radius:8px;margin-bottom:14px;display:none;}
+  #statusBar.busy{display:block;background:var(--accentbg);color:var(--accent);}
+  #statusBar.err{display:block;background:#fbe6e6;color:var(--bad);}
+  #statusBar.ok{display:block;background:#e6f3ec;color:var(--good);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div>
+      <div class="title">Customer / Vendor Ageing</div>
+      <div class="subtitle">Company 1000 · key date <span id="subDate">30 Jun 2026</span> · all figures in INR · <span class="tag" id="modeTag">Customer</span></div>
+    </div>
+    <button id="exportBtn">&#8681; Export CSV</button>
+  </div>
+
+  <div id="statusBar"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Total outstanding</div><div class="val" id="kTotal">—</div><div class="sub" id="kTotalSub"></div></div>
+    <div class="kpi"><div class="lbl">Not yet overdue (0–30)</div><div class="val good" id="kCurrent">—</div><div class="sub" id="kCurrentSub"></div></div>
+    <div class="kpi"><div class="lbl">Overdue &gt; 180 days</div><div class="val bad" id="kOld">—</div><div class="sub" id="kOldSub"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Outstanding by ageing bucket</h3>
+        <div class="desc">Green is current, deepening to red as debt ages</div>
+      </div>
+      <div class="toggle-group">
+        <button id="bucketBarBtn" class="toggle-btn active">Bar</button>
+        <button id="bucketDonutBtn" class="toggle-btn">Donut</button>
+      </div>
+    </div>
+    <div id="bucketChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3 id="exposureTitle">Top 15 customer exposure by bucket</h3>
+        <div class="desc" id="exposureDesc">Largest balances, broken down by ageing bucket</div>
+      </div>
+    </div>
+    <div id="exposureChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Profit centre exposure</h3>
+        <div class="desc">Total outstanding by profit centre, all buckets</div>
+      </div>
+      <span class="scroll-hint" id="pcExposureHint">Scroll to view all</span>
+    </div>
+    <div class="exposure-scroll"><div id="pcExposureChart"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Entity ageing matrix</h3>
+        <div class="desc" id="matrixDesc">Sorted by total outstanding, descending</div>
+      </div>
+      <span class="scroll-hint">Bar length indicates amount magnitude</span>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead><tr id="matrixHead"></tr></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  Live data from the RAP OData V4 service (relative -> proxied)
+//  Charts plot MAGNITUDE (abs) so negative-heavy vendor data renders;
+//  every value label/tooltip/KPI/table shows the ACTUAL signed value (audit).
+//
+//  Filters live in the parent UI5 view (native Select/MultiComboBox controls)
+//  and are bridged in over window.postMessage - this document owns the fetched
+//  data and reports its available filter options back up to the parent.
+// ============================================================
+const SVC = "/sap/opu/odata4/sap/zfi_cv_ageing_o4/srvd_a2x/sap/zfi_cv_ageing_o4/0001";
+const MAP = {
+  Debtors:   { set:"CVAgeingCustomer", idF:"CustomerID", nameF:"CustomerName" },
+  Creditors: { set:"CVAgeingVendor",   idF:"VendorID",   nameF:"VendorName" }
+};
+// row shape: [ProfitCenter, PartyID, PartyName, BucketKey, BucketSeq, BucketLabel, DurationType, Amount]
+const DATA = { Debtors: [], Creditors: [] };
+
+// Buckets are derived from the service per fetch -> correct labels/colours for ANY variant
+let BUCKETS = [];
+const RAMP = ["#107e3e","#5f9e1e","#e9a800","#e9730c","#e34948","#c0392b","#a32d2d","#791f1f"];
+const OVERDUE_DAYS = 180;   // threshold for the "Overdue > 180 days" KPI
+// Lower bound of a bucket in DAYS. The BucketKey starts with the from-value
+// (e.g. 181TO365D, 91TO180D, 1TO2Y, 365DPLUS, 2YPLUS); DurationType gives the
+// unit - D/D+ are already days, Y/Y+ are years (converted with ~365).
+function bucketFromDays(b){
+  const n = parseInt((String(b.key).match(/\d+/) || ['0'])[0], 10) || 0;
+  return (b.dur === 'Y' || b.dur === 'Y+') ? n * 365 : n;
+}
+function deriveBuckets(list){
+  const m = {};
+  list.forEach(r=>{ if(!(r[4] in m)){ m[r[4]] = {seq:r[4], key:r[3], label:r[5], dur:r[6]}; } });
+  const arr = Object.values(m).sort((a,b)=>a.seq-b.seq);
+  arr.forEach((b,i)=>{ b.c = RAMP[Math.min(i, RAMP.length-1)]; b.fromDays = bucketFromDays(b); });
+  return arr;
+}
+
+const fmtCr = v => { const cr=v/1e7; return Math.abs(cr)>=1 ? '₹'+cr.toFixed(2)+' Cr' : '₹'+(v/1e5).toFixed(2)+' L'; };
+const fmtFull = v => (v<0?'-':'')+'₹'+Math.round(Math.abs(v)).toLocaleString('en-IN');
+const $ = id => document.getElementById(id);
+let bucketChart, exposureChart, pcExposureChart;
+let bucketView = 'bar';
+
+// ---- Filter state (mirrors the parent view's UI5 model) ----
+// "Open Before" defaults to today (yyyy-MM-dd, Edm.Date literal)
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+let currentPartyType = 'Debtors';
+let currentDate = todayISO();
+let currentBucketVariant = 'Debtors';
+let currentBucket = 'ALL';
+let selectedPCs = [];
+let selectedParties = [];
+let showAdvance = true;    // special-GL (advance/down-payment) items
+let showNormal = true;     // regular open items
+let defaultVariant = '';   // user's saved default variant (reported to the parent)
+let variantList = ['Debtors','Creditors Month'];   // static fallback until loadVariants() resolves
+let pcOptions = [];
+let partyOptions = [];
+let pcMap = {};   // code -> description, for the current dataset
+
+function setBusy(on){ const b=$('statusBar'); if(on){b.className='busy';b.textContent='Loading data…';} else if(b.className==='busy'){b.className='';b.style.display='none';} }
+function showError(msg){ const b=$('statusBar'); b.className='err'; b.textContent='Could not load data: '+msg; }
+
+async function loadData(type){
+  const m = MAP[type];
+  const date = currentDate;                       // yyyy-MM-dd -> Edm.Date literal
+  const variant = currentBucketVariant;            // shared variant for customer & vendor
+  const url = `${SVC}/${m.set}(P_KeyDate=${date},P_CompanyCode='1000',P_Variant='${encodeURIComponent(variant)}')/Set?$top=5000`;
+  const res = await fetch(url, { headers:{ Accept:"application/json" } });
+  if(!res.ok){ throw new Error("HTTP "+res.status); }
+  const j = await res.json();
+  DATA[type] = j.value.map(x => [
+    x.ProfitCenter, x[m.idF], x[m.nameF], x.BucketKey, Number(x.BucketSeq),
+    x.BucketLabel, x.DurationType, Number(x.AgingAmount), x.ProfitCenterName || '',
+    x.AgingStatus || ''   // r[9]: 'Advance' (special GL) or 'Normal'
+  ]);
+}
+async function refresh(){
+  setBusy(true);
+  try {
+    await loadData(currentPartyType);
+    BUCKETS = deriveBuckets(DATA[currentPartyType]);
+    buildBucketFilter();
+    buildPCFilter();
+    buildPartyFilter();
+    render();
+    postStateToParent();
+  }
+  catch(e){ showError(e.message || e); }
+  finally { setBusy(false); }
+}
+
+function matchesParty(r){
+  if(!selectedParties.length) return true;
+  return selectedParties.includes(r[1]);
+}
+function matchesStatus(r){
+  const st = r[9];
+  if(st === 'Advance') return showAdvance;
+  if(st === 'Normal')  return showNormal;
+  return true;   // unknown/blank status is never hidden
+}
+function rows(){
+  const src = DATA[currentPartyType];
+  return src.filter(r =>
+    (!selectedPCs.length || selectedPCs.includes(r[0])) &&
+    (currentBucket==='ALL' || r[3]===currentBucket) && matchesParty(r) && matchesStatus(r));
+}
+function activeBuckets(){ return BUCKETS; }
+function buildBucketFilter(){
+  const valid = currentBucket==='ALL' || BUCKETS.some(b=>b.key===currentBucket);
+  if(!valid){ currentBucket = 'ALL'; }
+}
+function buildPCFilter(){
+  const src = DATA[currentPartyType];
+  pcMap = {};
+  src.forEach(r=>{ if(!(r[0] in pcMap)){ pcMap[r[0]] = r[8] || ''; } });
+  pcOptions = Object.keys(pcMap).sort().map(p => ({ key:p, text: pcMap[p] ? p+' – '+pcMap[p] : p }));
+  // drop any selected PCs no longer present (e.g. after switching party type)
+  selectedPCs = selectedPCs.filter(p=> p in pcMap);
+}
+function buildPartyFilter(){
+  const src = DATA[currentPartyType];
+  const seen = {};
+  partyOptions = [];
+  src.forEach(r=>{ if(!(r[1] in seen)){ seen[r[1]]=1; partyOptions.push({ key:r[1], text:`${r[2]} (${r[1]})` }); } });
+  partyOptions.sort((a,b)=>a.text.localeCompare(b.text));
+  selectedParties = selectedParties.filter(id=> id in seen);
+}
+
+function render(){
+  const data = rows();
+  const bkts = activeBuckets();
+  const isDebtor = currentPartyType === 'Debtors';
+  $('modeTag').textContent = isDebtor ? 'Customer' : 'Vendor';
+  if(currentDate){ $('subDate').textContent = new Date(currentDate).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+
+  // signed totals per bucket (actual, for labels/KPIs)
+  const totals = {}; bkts.forEach(b=>totals[b.seq]=0);
+  data.forEach(r=>{ if(r[4] in totals) totals[r[4]]+=r[7]; });
+  const grand = Object.values(totals).reduce((a,b)=>a+b,0);
+  const minSeq = bkts.length ? Math.min.apply(null, bkts.map(b=>b.seq)) : 1;
+  const current = totals[minSeq]||0;
+  // "Overdue > 180 days" = every bucket whose lower bound is beyond 180 days.
+  // Keyed off the actual day range (not DurationType), so bounded-days buckets
+  // like "181-365 days" are included, not just year/open-ended ones.
+  const old = bkts.filter(b=> b.fromDays > OVERDUE_DAYS).reduce((s,b)=> s+(totals[b.seq]||0), 0);
+
+  $('kTotal').textContent = fmtCr(grand);
+  $('kTotalSub').textContent = data.length+' line items';
+  $('kCurrent').textContent = fmtCr(current);
+  $('kCurrentSub').textContent = grand ? (current/grand*100).toFixed(1)+'% of book' : '';
+  $('kOld').textContent = fmtCr(old);
+  $('kOldSub').textContent = grand ? (old/grand*100).toFixed(1)+'% of book' : '';
+
+  const labels = bkts.map(b=>b.label);
+  const valsSigned = bkts.map(b=> totals[b.seq]||0);                        // actual
+  const valsAbs = bkts.map(b=> +(Math.abs(totals[b.seq]||0)/1e5).toFixed(2)); // magnitude (in L) for plotting
+  const colors = bkts.map(b=>b.c);
+
+  // ---- Bucket chart (bar/donut) : plot magnitude, tooltip actual ----
+  const bOpts = bucketView === 'bar' ? {
+    chart:{type:'bar',height:300,fontFamily:'inherit',toolbar:{show:false}},
+    series:[{name:'Outstanding',data:valsAbs}],
+    plotOptions:{bar:{distributed:true,borderRadius:4,columnWidth:'55%'}},
+    colors:colors, legend:{show:false}, dataLabels:{enabled:false},
+    xaxis:{categories:labels,labels:{style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{formatter:v=>'₹'+Math.round(v)+'L',style:{colors:'#8a97a6'}}},
+    grid:{borderColor:'#e4e8ee'},
+    tooltip:{y:{formatter:(v,{dataPointIndex})=>fmtFull(valsSigned[dataPointIndex])}}
+  } : {
+    chart:{type:'donut',height:340,fontFamily:'inherit',toolbar:{show:false}},
+    series:valsAbs, labels:labels, colors:colors,
+    dataLabels:{enabled:true,formatter:(v,{seriesIndex})=> valsAbs[seriesIndex] ? Math.round(v)+'%' : '',
+      style:{fontSize:'11px',fontWeight:600}, dropShadow:{enabled:false}},
+    legend:{position:'bottom',fontSize:'12px',labels:{colors:'#1d2733'},
+      formatter:(seriesName,opts)=> seriesName+' — '+fmtFull(valsSigned[opts.seriesIndex])},
+    plotOptions:{pie:{donut:{size:'62%',labels:{show:true,
+      total:{show:true,label:'Total',formatter:()=>fmtCr(grand)}}}}},
+    stroke:{width:2,colors:['#ffffff']},
+    tooltip:{y:{formatter:(v,{seriesIndex})=>fmtFull(valsSigned[seriesIndex])}}
+  };
+  if(bucketChart){ bucketChart.destroy(); }
+  bucketChart = new ApexCharts($('bucketChart'), bOpts); bucketChart.render();
+
+  // ---- Top 15 exposure stacked : magnitude bars, actual tooltip ----
+  $('exposureTitle').textContent = 'Top 15 '+(isDebtor?'customer':'vendor')+' exposure by bucket';
+
+  const byParty={};
+  data.forEach(r=>{
+    byParty[r[1]] = byParty[r[1]] || {name:r[2], cells:{}, total:0};
+    if(bkts.some(b=>b.seq===r[4])){ byParty[r[1]].cells[r[4]] = (byParty[r[1]].cells[r[4]]||0)+r[7]; byParty[r[1]].total += r[7]; }
+  });
+  const top15 = Object.values(byParty).sort((a,b)=>Math.abs(b.total)-Math.abs(a.total)).slice(0,15).reverse();
+  const stackedSigned = bkts.map(b => top15.map(p => p.cells[b.seq]||0));
+  const stackedSeries = bkts.map((b,i) => ({ name:b.label, data: stackedSigned[i].map(v=>+(Math.abs(v)/1e5).toFixed(2)) }));
+
+  const eOpts = {
+    chart:{type:'bar',height:Math.max(top15.length*30+60,260),fontFamily:'inherit',toolbar:{show:false},stacked:true},
+    series:stackedSeries,
+    plotOptions:{bar:{horizontal:true,borderRadius:2,barHeight:'62%'}},
+    colors:bkts.map(b=>b.c), dataLabels:{enabled:false},
+    xaxis:{categories:top15.map(p=>p.name),labels:{formatter:v=>'₹'+Math.round(v)+'L',style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{style:{colors:'#5b6b7c',fontSize:'11px'}}},
+    grid:{borderColor:'#e4e8ee'},
+    legend:{position:'bottom',fontSize:'11px',labels:{colors:'#5b6b7c'},markers:{radius:3}},
+    tooltip:{y:{formatter:(v,{seriesIndex,dataPointIndex})=> fmtFull(stackedSigned[seriesIndex][dataPointIndex])}}
+  };
+  if(exposureChart){ exposureChart.destroy(); }
+  exposureChart = new ApexCharts($('exposureChart'), eOpts); exposureChart.render();
+
+  // ---- Profit centre exposure : magnitude bars, actual tooltip (respects filters) ----
+  const pcSrc = data;
+  const pcTotals = {}; const pcName = {};
+  pcSrc.forEach(r=>{ if(bkts.some(b=>b.seq===r[4])){ pcTotals[r[0]] = (pcTotals[r[0]]||0)+r[7]; if(!(r[0] in pcName)){ pcName[r[0]] = r[8] || ''; } } });
+  const pcList = Object.entries(pcTotals).map(([pc,amt])=>({pc,amt,name:pcName[pc]||''})).sort((a,b)=>Math.abs(b.amt)-Math.abs(a.amt));
+  $('pcExposureHint').textContent = 'Scroll to view all '+pcList.length+' profit centres';
+
+  const pcVals = pcList.map(p=>+(Math.abs(p.amt)/1e7).toFixed(2));
+  const pcChartHeight = Math.max(pcList.length*26+40, 200);
+  const pcOpts = {
+    chart:{type:'bar',height:pcChartHeight,fontFamily:'inherit',toolbar:{show:false}},
+    series:[{name:'Outstanding',data:pcVals}],
+    plotOptions:{bar:{horizontal:true,borderRadius:3,barHeight:'65%'}},
+    fill:{type:'gradient',gradient:{shade:'light',type:'horizontal',shadeIntensity:0.3,gradientToColors:['#4db8ff'],opacityFrom:1,opacityTo:1,stops:[0,100]}},
+    colors:['#0a6ed1'], dataLabels:{enabled:false},
+    xaxis:{categories:pcList.map(p=> p.name ? p.pc+' – '+p.name : p.pc),labels:{formatter:v=>Math.round(v*100)/100+'Cr',style:{colors:'#8a97a6'}}},
+    yaxis:{labels:{maxWidth:260,style:{colors:'#5b6b7c',fontSize:'11px'}}},
+    grid:{borderColor:'#e4e8ee'},
+    tooltip:{y:{formatter:(v,{dataPointIndex})=> fmtFull(pcList[dataPointIndex].amt)}}
+  };
+  if(pcExposureChart){ pcExposureChart.destroy(); }
+  pcExposureChart = new ApexCharts($('pcExposureChart'), pcOpts); pcExposureChart.render();
+
+  // ---- Entity ageing matrix : magnitude bars, actual signed values ----
+  const entities = {};
+  data.forEach(r=>{
+    const key = r[1];
+    entities[key] = entities[key] || {name:r[2], id:r[1], cells:{}, total:0};
+    if(bkts.some(b=>b.seq===r[4])){ entities[key].cells[r[4]] = (entities[key].cells[r[4]]||0)+r[7]; entities[key].total += r[7]; }
+  });
+  const entityList = Object.values(entities).sort((a,b)=>Math.abs(b.total)-Math.abs(a.total));
+  $('matrixDesc').textContent = 'Sorted by total outstanding, descending — all '+entityList.length+' '+(isDebtor?'customers':'vendors');
+
+  $('matrixHead').innerHTML = ['Entity name','Total outstanding',...bkts.map(b=>b.label.toUpperCase())].map(h=>`<th>${h}</th>`).join('');
+  const totalMax = Math.max(...entityList.map(p=>Math.abs(p.total)), 1);
+  const colMax = {}; bkts.forEach(b=>{ colMax[b.seq] = Math.max(...entityList.map(p=>Math.abs(p.cells[b.seq]||0)), 1); });
+
+  $('matrixBody').innerHTML = entityList.map(p=>{
+    const totalW = Math.max(4, Math.round(Math.abs(p.total)/totalMax*100));
+    let html = `<tr>
+      <td class="entity-cell"><div class="entity-name">${p.name}</div><div class="entity-id">ID: ${p.id}</div></td>
+      <td class="amt-cell"><div class="amt-bar" style="width:${totalW}%;background:rgba(10,110,209,0.18);"></div><span class="amt-val">${fmtFull(p.total)}</span></td>`;
+    bkts.forEach(b=>{
+      const v = p.cells[b.seq]||0;
+      if(!v){ html += `<td class="amt-cell"><span class="amt-dash">–</span></td>`; }
+      else {
+        const w = Math.max(4, Math.round(Math.abs(v)/colMax[b.seq]*100));
+        const early = b.dur === 'D';
+        const bg = early ? 'rgba(10,110,209,0.14)' : 'rgba(226,73,72,0.14)';
+        const col = v<0 ? 'var(--bad)' : (early ? '#0a4a8a' : '#8a1f1f');
+        html += `<td class="amt-cell"><div class="amt-bar" style="width:${w}%;background:${bg};"></div><span class="amt-val" style="color:${col};">${fmtFull(v)}</span></td>`;
+      }
+    });
+    return html+'</tr>';
+  }).join('');
+}
+
+function exportCSV(){
+  const data = rows(); const bkts = activeBuckets();
+  const header = ['ProfitCenter','PartyID','PartyName','Bucket','DurationType','Status','Amount'];
+  const lines = [header.join(',')];
+  data.forEach(r=>{ if(bkts.some(b=>b.seq===r[4])) lines.push([r[0],r[1],'"'+r[2]+'"',r[5],r[6],r[9],r[7]].join(',')); });
+  const blob = new Blob([lines.join('\n')],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cv_ageing_'+currentPartyType+'.csv'; a.click();
+}
+
+$('exportBtn').addEventListener('click', exportCSV);
+$('bucketBarBtn').addEventListener('click',()=>{ bucketView='bar'; $('bucketBarBtn').classList.add('active'); $('bucketDonutBtn').classList.remove('active'); render(); });
+$('bucketDonutBtn').addEventListener('click',()=>{ bucketView='donut'; $('bucketDonutBtn').classList.add('active'); $('bucketBarBtn').classList.remove('active'); render(); });
+
+/* ============================================================
+   Parent (UI5 filter bar) <-> this document bridge
+============================================================ */
+function postStateToParent(){
+  if(window.parent === window){ return; }
+  window.parent.postMessage({
+    source: 'cv-ageing-dashboard',
+    type: 'cv-state',
+    payload: {
+      partyType: currentPartyType,
+      bucketVariant: currentBucketVariant,
+      bucket: currentBucket,
+      date: currentDate,
+      selectedPCs: selectedPCs.slice(),
+      selectedParties: selectedParties.slice(),
+      partyLabel: currentPartyType === 'Debtors' ? 'Customer' : 'Vendor',
+      pcList: pcOptions,
+      partyList: partyOptions,
+      bucketList: [{key:'ALL',text:'All buckets'}, ...BUCKETS.map(b=>({key:b.key,text:b.label}))],
+      variantList: variantList.map(v=>({key:v,text:v})),
+      showAdvance: showAdvance,
+      showNormal: showNormal,
+      defaultVariant: defaultVariant
+    }
+  }, '*');
+}
+
+function applyFiltersFromParent(payload){
+  if(!payload) return;
+  const needsRefetch =
+    payload.partyType !== currentPartyType ||
+    payload.date !== currentDate ||
+    payload.bucketVariant !== currentBucketVariant;
+
+  currentPartyType = payload.partyType || currentPartyType;
+  currentDate = payload.date || currentDate;
+  currentBucketVariant = payload.bucketVariant || currentBucketVariant;
+  currentBucket = payload.bucket || 'ALL';
+  selectedPCs = Array.isArray(payload.selectedPCs) ? payload.selectedPCs.slice() : [];
+  selectedParties = Array.isArray(payload.selectedParties) ? payload.selectedParties.slice() : [];
+  if(typeof payload.showAdvance === 'boolean'){ showAdvance = payload.showAdvance; }
+  if(typeof payload.showNormal === 'boolean'){ showNormal = payload.showNormal; }
+
+  // Advance/Normal is a client-side filter over already-fetched rows, so it
+  // never needs a re-fetch - only party type, key date or variant do.
+  if(needsRefetch){ refresh(); }
+  else { render(); postStateToParent(); }
+}
+
+window.addEventListener('message', e=>{
+  const d = e.data;
+  if(!d || d.source !== 'cv-ageing-host' || d.type !== 'cv-filters') return;
+  applyFiltersFromParent(d.payload);
+});
+
+// Report our full content height so the parent can grow the iframe to fit and
+// let the OUTER page own the scroll (filter bar scrolls away; prints in full).
+function reportHeight(){
+  if(window.parent === window){ return; }
+  window.parent.postMessage({
+    source: 'cv-ageing-dashboard',
+    type: 'cv-height',
+    height: Math.ceil(document.body.scrollHeight)
+  }, '*');
+}
+window.addEventListener('load', reportHeight);
+window.addEventListener('resize', reportHeight);
+// body size changes on async chart renders and on any filter-driven re-render
+if(window.ResizeObserver){ new ResizeObserver(reportHeight).observe(document.body); }
+
+// Populate the Bucket Variant list from the OData service (distinct variants).
+// Falls back to the static list above if the BucketVariant entity isn't published yet.
+async function loadVariants(){
+  try{
+    const res = await fetch(`${SVC}/BucketVariant?$orderby=Variant`, { headers:{ Accept:"application/json" } });
+    if(!res.ok){ return; }
+    const j = await res.json();
+    if(!j.value || !j.value.length){ return; }
+    variantList = j.value.map(v=>v.Variant);
+    if(!variantList.includes(currentBucketVariant)){ currentBucketVariant = variantList[0]; }
+  }catch(e){ /* keep the static fallback list */ }
+}
+
+// Logged-in user's default variant (zfi_cv_usr_pref via $session.user)
+async function loadUserDefault(){
+  try{
+    const res = await fetch(`${SVC}/UserDefault`, { headers:{ Accept:"application/json" } });
+    if(!res.ok){ return; }
+    const j = await res.json();
+    const def = (j.value && j.value[0] && (j.value[0].Variant||'').trim()) || '';
+    if(def && variantList.includes(def)){ currentBucketVariant = def; defaultVariant = def; }
+  }catch(e){ /* no user default -> keep current selection */ }
+}
+
+async function init(){ await loadVariants(); await loadUserDefault(); await refresh(); }
+init();
+</script>
+</body>
+</html>

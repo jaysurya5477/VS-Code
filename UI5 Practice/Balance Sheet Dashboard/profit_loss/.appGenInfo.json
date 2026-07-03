@@ -1,0 +1,23 @@
+{
+  "generationParameters": {
+    "generationDate": "Thu Jun 25 2026 13:43:56 GMT+0530 (India Standard Time)",
+    "generatorPlatform": "Visual Studio Code",
+    "serviceType": "OData URL",
+    "metadataFilename": "",
+    "serviceUrl": "https://vhafbmedap01.hec.erp.alimco.in/sap/opu/odata4/sap/zfi_pl_srv/default/iwbep/common/0001",
+    "appName": "zprofit_loss",
+    "appTitle": "Profit & Loss Statement Dashboard",
+    "appDescription": "Profit & Loss Statement Dashboard",
+    "appNamespace": "com.sap",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.102.8",
+    "enableEslint": false,
+    "enableTypeScript": false,
+    "showMockDataInfo": true,
+    "generatorVersion": "1.21.0",
+    "template": "Basic V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [],
+    "launchText": "To launch the generated application, run the following from the generated application root folder:\n\n```\n    npm start\n```"
+  }
+}

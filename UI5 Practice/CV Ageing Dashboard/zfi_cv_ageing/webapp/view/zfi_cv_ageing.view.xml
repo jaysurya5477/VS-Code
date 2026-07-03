@@ -1,0 +1,102 @@
+<mvc:View
+	controllerName="com.sap.zficvageing.controller.zfi_cv_ageing"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+	displayBlock="true">
+	<Page id="page" showHeader="false" enableScrolling="true" class="sapUiNoContentPadding">
+		<VBox class="dashboardRoot">
+
+			<!-- ===== Filter bar ===== -->
+			<HBox class="filterBar" alignItems="End" wrap="Wrap">
+				<VBox class="filterField">
+					<Label text="{i18n>filterPartyType}" class="filterLabel"/>
+					<Select id="selPartyType"
+						selectedKey="{ui>/partyType}"
+						items="{ui>/partyTypeList}"
+						change="onPartyTypeChange"
+						forceSelection="true"
+						width="9rem">
+						<core:Item key="{ui>key}" text="{ui>text}"/>
+					</Select>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{i18n>filterProfitCenter}" class="filterLabel"/>
+					<MultiComboBox id="mcbProfitCenter"
+						selectedKeys="{ui>/selectedPCs}"
+						items="{ui>/pcList}"
+						selectionFinish="onFilterChange"
+						selectionChange="onPCSelectionChange"
+						showSelectAll="true"
+						placeholder="{i18n>filterAll}"
+						width="16rem">
+						<core:Item key="{ui>key}" text="{ui>text}"/>
+					</MultiComboBox>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{i18n>filterBucketVariant}" class="filterLabel"/>
+					<HBox alignItems="Center">
+						<Select id="selBucketVariant"
+							selectedKey="{ui>/bucketVariant}"
+							items="{ui>/variantList}"
+							change="onBucketVariantChange"
+							forceSelection="true"
+							width="11rem">
+							<core:Item key="{ui>key}" text="{ui>text}"/>
+						</Select>
+						<core:Icon
+							src="{= ${ui>/bucketVariant} === ${ui>/defaultVariant} ? 'sap-icon://favorite' : 'sap-icon://unfavorite' }"
+							color="{= ${ui>/bucketVariant} === ${ui>/defaultVariant} ? '#F0AB00' : '#8a8d91' }"
+							tooltip="{i18n>btnSetDefault}"
+							press="onSaveDefaultVariant"
+							class="filterIconBtn"/>
+					</HBox>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{i18n>filterBucket}" class="filterLabel"/>
+					<Select id="selBucket"
+						selectedKey="{ui>/bucket}"
+						items="{ui>/bucketList}"
+						change="onFilterChange"
+						forceSelection="true"
+						width="11rem">
+						<core:Item key="{ui>key}" text="{ui>text}"/>
+					</Select>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{i18n>filterOpenBefore}" class="filterLabel"/>
+					<DatePicker id="dpOpenBefore"
+						value="{ui>/date}"
+						valueFormat="yyyy-MM-dd"
+						displayFormat="dd MMM yyyy"
+						change="onFilterChange"
+						width="10rem"/>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{ui>/partyLabel}" class="filterLabel"/>
+					<MultiComboBox id="mcbParty"
+						selectedKeys="{ui>/selectedParties}"
+						items="{ui>/partyList}"
+						selectionFinish="onFilterChange"
+						selectionChange="onPartySelectionChange"
+						placeholder="{i18n>filterAll}"
+						width="18rem">
+						<core:Item key="{ui>key}" text="{ui>text}"/>
+					</MultiComboBox>
+				</VBox>
+				<VBox class="filterField">
+					<Label text="{i18n>filterInclude}" class="filterLabel"/>
+					<HBox alignItems="Center" class="scopeCheckBox">
+						<CheckBox id="chkAdvance" text="{i18n>chkAdvance}" selected="{ui>/showAdvance}" select="onScopeChange"/>
+						<CheckBox id="chkNormal" text="{i18n>chkNormal}" selected="{ui>/showNormal}" select="onScopeChange"/>
+					</HBox>
+				</VBox>
+				<Button text="{i18n>btnReset}" icon="sap-icon://clear-filter" press="onResetFilters" class="filterReset"/>
+			</HBox>
+
+			<!-- ===== Charts / KPIs (unchanged, rendered by dashboard.html in an iframe) ===== -->
+			<core:HTML id="dashHost" class="dashHost"/>
+
+		</VBox>
+	</Page>
+</mvc:View>

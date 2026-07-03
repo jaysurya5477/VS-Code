@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CV Ageing Dashboard - Modern Enterprise</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        :root {
+            --primary: #0070f2;
+            --bg: #f5f7f9;
+            --card-bg: #ffffff;
+            --text-main: #1d2d3e;
+            --text-sub: #6a6d70;
+            --border: #ebebeb;
+        }
+        body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text-main); }
+        
+        /* Header & Filters */
+        .header { background: var(--card-bg); padding: 15px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .header h2 { margin: 0; font-size: 20px; font-weight: 600; }
+        .filters { display: flex; gap: 15px; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 11px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; }
+        .filter-group input, .filter-group select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; min-width: 130px; transition: border 0.2s; }
+        .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); outline: none; }
+        .btn { background: var(--primary); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; height: 36px; }
+
+        /* Layout */
+        .container { padding: 24px 30px; }
+        .kpi-row { display: flex; gap: 20px; margin-bottom: 24px; }
+        .kpi-card { background: var(--card-bg); padding: 18px 24px; border-radius: 10px; flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .kpi-text h4 { margin: 0; font-size: 12px; color: var(--text-sub); text-transform: uppercase; font-weight: 600; }
+        .kpi-text h1 { margin: 5px 0 0 0; font-size: 26px; color: var(--text-main); }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff; }
+        .bg-blue { background: #e6f0ff; color: var(--primary); }
+        .bg-green { background: #e6f7ed; color: #00b81c; }
+        .bg-red { background: #ffe6e6; color: #ff4d4f; }
+
+        /* Charts Grid */
+        .chart-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .full-row { grid-column: 1 / -1; }
+        .chart-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-title { font-size: 16px; font-weight: 600; }
+        .chart-subtitle { font-size: 12px; color: var(--text-sub); }
+        
+        /* Table */
+        .table-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 15px; border-bottom: 2px solid var(--border); color: var(--text-sub); font-size: 12px; text-transform: uppercase; }
+        td { padding: 14px 15px; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        tr:hover { background: #fafbfc; }
+        .amount { font-family: 'Roboto Mono', monospace; font-weight: 500; text-align: right; }
+        .neg { color: #ff4d4f; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Customer/Vendor Ageing Analytics</h2>
+        <div class="filters">
+            <div class="filter-group">
+                <label>Open Date</label>
+                <input type="date" value="2026-06-30">
+            </div>
+            <div class="filter-group">
+                <label>Variant</label>
+                <select><option>DASHBOARD</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Profit Center</label>
+                <input type="text" placeholder="All">
+            </div>
+            <div class="filter-group">
+                <label>Customer ID</label>
+                <input type="text" placeholder="All">
+            </div>
+            <button class="btn">Apply</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- KPIs -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-text">
+                    <h4>Total Outstanding</h4>
+                    <h1>₹ 128.4 Cr</h1>
+                </div>
+                <div class="kpi-icon bg-blue">₹</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-text">
+                    <h4>Active Customers</h4>
+                    <h1>4,812</h1>
+                </div>
+                <div class="kpi-icon bg-blue">👥</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-text">
+                    <h4>Current (0-30 Days)</h4>
+                    <h1 style="color: #00b81c;">₹ 24.2 Cr</h1>
+                </div>
+                <div class="kpi-icon bg-green">✓</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-text">
+                    <h4>Critical (>180 Days)</h4>
+                    <h1 style="color: #ff4d4f;">₹ 42.1 Cr</h1>
+                </div>
+                <div class="kpi-icon bg-red">!</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="chart-grid">
+            <!-- Top Customers with Gradient Buckets -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Top 15 Customers by Exposure</div>
+                    <div class="chart-subtitle">Aging Bucket Breakdown</div>
+                </div>
+                <div id="topCustomersChart" style="height: 400px;"></div>
+            </div>
+            
+            <!-- Overall Distribution Donut -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Overall Aging Distribution</div>
+                    <div class="chart-subtitle">Total Portfolio Health</div>
+                </div>
+                <div id="donutChart" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Profit Center Bar Chart with Slider -->
+        <div class="chart-grid">
+            <div class="chart-card full-row">
+                <div class="chart-header">
+                    <div class="chart-title">Outstanding by Profit Center</div>
+                    <div class="chart-subtitle">Scroll to view all 100+ Profit Centers</div>
+                </div>
+                <div id="profitCenterChart" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="chart-header">
+                <div class="chart-title">Detailed Breakdown</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Profit Center</th>
+                        <th>Bucket Label</th>
+                        <th style="text-align: right;">Amount (INR)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. Mock Data Generation (Simulating thousands of records)
+        const buckets = ["0-30 Days", "31-60 Days", "61-90 Days", "91-180 Days", "181-365 Days", "1-2 Years", "2-3 Years", "3+ Years"];
+        const colors = ["#10b981", "#84cc16", "#eab308", "#f97316", "#ef4444", "#dc2626", "#b91c1c", "#7f1d1d"]; // Green to Red gradient
+        
+        const mockData = [];
+        const customers = Array.from({length: 2000}, (_, i) => `CUST_${(i+1).toString().padStart(4, '0')}`);
+        const profitCenters = Array.from({length: 120}, (_, i) => `PC_${(i+1).toString().padStart(3, '0')}`);
+        
+        const tableData = [];
+
+        // Generate records
+        for(let i=0; i<5000; i++) {
+            let cust = customers[Math.floor(Math.random() * customers.length)];
+            let pc = profitCenters[Math.floor(Math.random() * profitCenters.length)];
+            let bucketIdx = Math.floor(Math.random() * buckets.length);
+            let amount = Math.floor(Math.random() * 5000000) + 5000;
+            if (i % 100 === 0) amount = Math.floor(Math.random() * 40000000) + 10000000; // Some huge outliers
+
+            mockData.push({ cust, pc, bucketIdx, amount });
+            if (i < 10) tableData.push({ cust, pc, bucket: buckets[bucketIdx], amount }); // Add first 10 to table
+        }
+
+        // Render Table
+        const tbody = document.getElementById('dataTable');
+        tableData.forEach(item => {
+            tbody.innerHTML += `<tr><td>${item.cust}</td><td>${item.pc}</td><td>${item.bucket}</td><td class="amount">${item.amount.toLocaleString('en-IN')}</td></tr>`;
+        });
+
+        // ==========================================
+        // CHART 1: Top 15 Customers (Horizontal Stacked Bar)
+        // ==========================================
+        const topCustChart = echarts.init(document.getElementById('topCustomersChart'));
+        
+        // Aggregate by customer
+        const custTotals = {};
+        mockData.forEach(item => {
+            if(!custTotals[item.cust]) custTotals[item.cust] = Array(buckets.length).fill(0);
+            custTotals[item.cust][item.bucketIdx] += item.amount;
+        });
+
+        // Sort by total amount and take top 15
+        let sortedCusts = Object.entries(custTotals)
+            .map(([cust, vals]) => ({ cust, vals, total: vals.reduce((a,b) => a+b, 0) }))
+            .sort((a,b) => b.total - a.total)
+            .slice(0, 15);
+
+        const series1 = buckets.map((bucket, idx) => ({
+            name: bucket,
+            type: 'bar',
+            stack: 'total',
+            barWidth: '60%',
+            itemStyle: { color: colors[idx], borderRadius: idx === buckets.length-1 ? [0, 4, 4, 0] : 0 },
+            emphasis: { focus: 'series' },
+            data: sortedCusts.map(c => c.vals[idx])
+        }));
+
+        topCustChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: params => {
+                let html = `<b>${params[0].name}</b><br/>Total: ₹${(params[0].data + params.reduce((s,p)=>s+p.data,0) - params[0].data).toLocaleString('en-IN')}<br/>`; // quick total hack
+                let total = 0;
+                params.forEach(p => { total += p.data; });
+                html = `<b>${params[0].name}</b><br/><b>Total: ₹${total.toLocaleString('en-IN')}</b><br/>`;
+                params.reverse().forEach(p => { if(p.data > 0) html += `${p.marker} ${p.seriesName}: ₹${p.data.toLocaleString('en-IN')}<br/>`; });
+                return html;
+            }},
+            legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 11 } },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { formatter: val => (val/10000000).toFixed(1) + 'Cr' } },
+            yAxis: { type: 'category', data: sortedCusts.map(c => c.cust).reverse(), axisLabel: { fontSize: 11 } },
+            series: series1
+        });
+
+        // ==========================================
+        // CHART 2: Donut Chart (Overall Distribution)
+        // ==========================================
+        const donutChart = echarts.init(document.getElementById('donutChart'));
+        const bucketTotals = Array(buckets.length).fill(0);
+        mockData.forEach(item => bucketTotals[item.bucketIdx] += item.amount);
+
+        donutChart.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: <b>₹{c}</b> ({d}%)' },
+            legend: { type: 'scroll', orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 } },
+            series: [{
+                type: 'pie',
+                radius: ['45%', '75%'],
+                center: ['35%', '50%'],
+                avoidLabelOverlap: false,
+                itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 },
+                label: { show: false },
+                emphasis: { label: { show: true, fontSize: '16', fontWeight: 'bold', formatter: '{b}\n{d}%' } },
+                data: buckets.map((b, i) => ({ name: b, value: bucketTotals[i], itemStyle: { color: colors[i] } }))
+            }]
+        });
+
+        // ==========================================
+        // CHART 3: Profit Center Bar Chart with Data Zoom (Scroll)
+        // ==========================================
+        const pcChart = echarts.init(document.getElementById('profitCenterChart'));
+        const pcTotals = {};
+        mockData.forEach(item => { pcTotals[item.pc] = (pcTotals[item.pc] || 0) + item.amount; });
+        
+        const sortedPCs = Object.entries(pcTotals).map(([pc, val]) => ({ pc, val })).sort((a,b) => b.val - a.val);
+
+        pcChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => `<b>${p[0].name}</b><br/>Total: ₹${p[0].value.toLocaleString('en-IN')}` },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { formatter: val => (val/10000000).toFixed(1) + 'Cr' } },
+            yAxis: { type: 'category', data: sortedPCs.map(p => p.pc) },
+            dataZoom: [
+                { type: 'slider', yAxisIndex: 0, start: 0, end: 20, width: 15, right: 5 }, // Shows top 20% (approx 24 PCs at a time)
+                { type: 'inside', yAxisIndex: 0, start: 0, end: 20 }
+            ],
+            series: [{
+                type: 'bar',
+                data: sortedPCs.map(p => p.val),
+                itemStyle: {
+                    borderRadius: [0, 6, 6, 0],
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#0070f2' },
+                        { offset: 1, color: '#4db8ff' }
+                    ])
+                }
+            }]
+        });
+
+        window.onresize = () => { topCustChart.resize(); donutChart.resize(); pcChart.resize(); };
+    </script>
+</body>
+</html>

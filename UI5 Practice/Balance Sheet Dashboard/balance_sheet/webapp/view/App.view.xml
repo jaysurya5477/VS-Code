@@ -1,0 +1,11 @@
+<mvc:View controllerName="com.sap.balancesheet.controller.App"
+    xmlns:html="http://www.w3.org/1999/xhtml"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:m="sap.m"
+    displayBlock="true">
+    <m:App id="app">
+        <m:pages>
+            <m:Page title="Balance Sheet Dashboard" />
+        </m:pages>
+    </m:App>
+</mvc:View>

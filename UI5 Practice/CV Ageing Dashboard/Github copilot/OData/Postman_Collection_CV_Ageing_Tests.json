@@ -1,0 +1,632 @@
+{
+  "info": {
+    "name": "CV Ageing Dashboard - OData API Tests",
+    "description": "Test collection for ZCV_AGEING_SRV OData service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Test Service Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/$metadata",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "$metadata"
+          ]
+        },
+        "description": "Get OData service metadata (verifies service is activated)"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Get All Aging Data (First 10 Records)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$top=10",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$top",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get first 10 aging records from service"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Filter by Company Code",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000'&$top=20",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "CompanyCode eq '1000'"
+            },
+            {
+              "key": "$top",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Get aging data for company code 1000"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Customer Aging Data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and CustomerID ne ''&$top=30",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "CompanyCode eq '1000' and CustomerID ne ''"
+            },
+            {
+              "key": "$top",
+              "value": "30"
+            }
+          ]
+        },
+        "description": "Get customer aging (exclude vendors)"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Vendor Aging Data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and VendorID ne ''&$top=30",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "CompanyCode eq '1000' and VendorID ne ''"
+            },
+            {
+              "key": "$top",
+              "value": "30"
+            }
+          ]
+        },
+        "description": "Get vendor aging (exclude customers)"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Filter by Bucket: 0-30 Days",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=BucketKey eq '0TO30DAYS'&$top=50",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "BucketKey eq '0TO30DAYS'"
+            },
+            {
+              "key": "$top",
+              "value": "50"
+            }
+          ]
+        },
+        "description": "Get all aging items in 0-30 days bucket"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Filter by Bucket: 90+ Days",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=BucketKey eq '90PLUS'&$top=50",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "BucketKey eq '90PLUS'"
+            },
+            {
+              "key": "$top",
+              "value": "50"
+            }
+          ]
+        },
+        "description": "Get all aging items overdue 90+ days"
+      },
+      "response": []
+    },
+    {
+      "name": "8. Filter by Status: Advance Payments",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=Status eq 'Advance'&$top=30",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "Status eq 'Advance'"
+            },
+            {
+              "key": "$top",
+              "value": "30"
+            }
+          ]
+        },
+        "description": "Get advance payments"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Get Specific Customer (CUST001)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and CustomerID eq 'CUST001'",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "CompanyCode eq '1000' and CustomerID eq 'CUST001'"
+            }
+          ]
+        },
+        "description": "Get aging data for customer CUST001"
+      },
+      "response": []
+    },
+    {
+      "name": "10. Select Specific Columns",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$select=CustomerID,CustomerName,BucketKey,BucketLabel,AgingAmount&$top=30",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$select",
+              "value": "CustomerID,CustomerName,BucketKey,BucketLabel,AgingAmount"
+            },
+            {
+              "key": "$top",
+              "value": "30"
+            }
+          ]
+        },
+        "description": "Select only essential columns for dashboard"
+      },
+      "response": []
+    },
+    {
+      "name": "11. Sort by Amount (Descending)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$orderby=AgingAmount desc&$top=20",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$orderby",
+              "value": "AgingAmount desc"
+            },
+            {
+              "key": "$top",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Get largest aging amounts (top overdue)"
+      },
+      "response": []
+    },
+    {
+      "name": "12. Pagination Example",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$skip=0&$top=50",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$skip",
+              "value": "0"
+            },
+            {
+              "key": "$top",
+              "value": "50"
+            }
+          ]
+        },
+        "description": "Get page 1 (records 0-50). Change $skip for next pages"
+      },
+      "response": []
+    },
+    {
+      "name": "13. Get Record Count",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet/$count",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet",
+            "$count"
+          ]
+        },
+        "description": "Get total count of aging records"
+      },
+      "response": []
+    },
+    {
+      "name": "14. Advanced: Multiple Filters",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{base64_credentials}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{sap_host}}/sap/opu/odata/sap/ZCV_AGEING_SRV/CVAgeingSet?$filter=CompanyCode eq '1000' and (BucketKey eq '90PLUS' or BucketKey eq '61TO90DAYS') and Status eq 'Normal'&$select=CustomerID,CustomerName,BucketKey,AgingAmount&$orderby=AgingAmount desc&$top=50",
+          "protocol": "http",
+          "host": [
+            "{{sap_host}}"
+          ],
+          "path": [
+            "sap",
+            "opu",
+            "odata",
+            "sap",
+            "ZCV_AGEING_SRV",
+            "CVAgeingSet"
+          ],
+          "query": [
+            {
+              "key": "$filter",
+              "value": "CompanyCode eq '1000' and (BucketKey eq '90PLUS' or BucketKey eq '61TO90DAYS') and Status eq 'Normal'"
+            },
+            {
+              "key": "$select",
+              "value": "CustomerID,CustomerName,BucketKey,AgingAmount"
+            },
+            {
+              "key": "$orderby",
+              "value": "AgingAmount desc"
+            },
+            {
+              "key": "$top",
+              "value": "50"
+            }
+          ]
+        },
+        "description": "Advanced: Overdue normal invoices (61+ days), sorted by amount"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "sap_host",
+      "value": "http://your-sap-server:8000",
+      "type": "string"
+    },
+    {
+      "key": "base64_credentials",
+      "value": "dXNlcjpwYXNzd29yZA==",
+      "type": "string"
+    }
+  ]
+}

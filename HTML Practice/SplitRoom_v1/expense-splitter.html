@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SplitRoom — Shared Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Spline+Sans+Mono:wght@400;500;600&family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --line:#252e3a;
+    --ink:#e8eef5; --ink-dim:#93a1b3; --ink-faint:#5d6b7d;
+    --accent:#ffb347; --accent2:#5fd3bc; --room:#7aa2ff; --personal:#ff9b85;
+    --danger:#ff6b6b; --ok:#5fd3bc;
+    --shadow:0 10px 40px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #1a2330 0%, var(--bg) 55%) fixed;
+    color:var(--ink); font-family:'Spline Sans',sans-serif; line-height:1.5;
+    min-height:100vh; padding:0 0 80px;
+  }
+  .mono{font-family:'Spline Sans Mono',monospace}
+  h1,h2,h3{font-family:'Fraunces',serif; font-weight:600; line-height:1.1}
+  /* Header */
+  header{
+    padding:26px 22px 20px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,179,71,.06), transparent);
+    position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background-color:rgba(14,17,22,.82);
+  }
+  .brand{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo .mark{
+    width:38px;height:38px;border-radius:11px;
+    background:conic-gradient(from 210deg, var(--accent), var(--accent2), var(--room), var(--accent));
+    display:grid;place-items:center;font-family:'Fraunces';font-weight:700;color:#0e1116;font-size:20px;
+    box-shadow:0 4px 18px rgba(255,179,71,.3);
+  }
+  .logo h1{font-size:25px;letter-spacing:-.5px}
+  .logo span{color:var(--accent)}
+  .tagline{font-size:12.5px;color:var(--ink-faint);margin-top:1px}
+  .io-btns{display:flex;gap:8px;flex-wrap:wrap}
+  /* Layout */
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+  .tabs{display:flex;gap:4px;margin:18px 0 0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{
+    padding:11px 17px;border:none;background:none;color:var(--ink-dim);cursor:pointer;
+    font-family:'Spline Sans';font-size:14.5px;font-weight:500;border-bottom:2px solid transparent;
+    white-space:nowrap;transition:.18s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .view{display:none;padding-top:22px;animation:fade .35s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* Cards & summary */
+  .grid{display:grid;gap:14px}
+  .sum-grid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px 18px;
+  }
+  .stat .label{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+  .stat .val{font-family:'Fraunces';font-size:27px;font-weight:600;margin-top:5px}
+  .stat .val small{font-size:15px;color:var(--ink-dim);font-family:'Spline Sans Mono'}
+  /* Buttons */
+  button.btn,a.btn{
+    font-family:'Spline Sans';font-weight:600;font-size:13.5px;cursor:pointer;
+    border-radius:10px;padding:9px 15px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);transition:.16s;display:inline-flex;
+    align-items:center;gap:7px;text-decoration:none;
+  }
+  button.btn:hover,a.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .btn.primary{background:var(--accent);color:#0e1116;border-color:var(--accent)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:6px 11px;font-size:12.5px}
+  .btn.danger{color:var(--danger);border-color:transparent;background:rgba(255,107,107,.1)}
+  .btn.danger:hover{border-color:var(--danger)}
+  /* Forms */
+  label.fld{display:block;margin-bottom:13px}
+  label.fld .lab{font-size:12.5px;color:var(--ink-dim);font-weight:600;margin-bottom:5px;display:block}
+  input,select,textarea{
+    width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:10px 12px;font-family:'Spline Sans';font-size:14px;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:46px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg .opt{
+    flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer;
+    transition:.16s;background:var(--bg);
+  }
+  .seg .opt:hover{border-color:var(--ink-faint)}
+  .seg .opt.sel{border-color:var(--accent);background:rgba(255,179,71,.08)}
+  .seg .opt .t{font-weight:600;font-size:14px}
+  .seg .opt .d{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+  /* Member chips for selection */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{
+    border:1px solid var(--line);border-radius:20px;padding:7px 13px;cursor:pointer;font-size:13px;
+    background:var(--bg);transition:.15s;user-select:none;display:flex;align-items:center;gap:7px;
+  }
+  .chip:hover{border-color:var(--ink-faint)}
+  .chip.on{border-color:var(--accent2);background:rgba(95,211,188,.12);color:#cdfff3}
+  .chip .av{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#0e1116}
+  .split-line{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  .split-line .nm{flex:1;font-size:13.5px}
+  .split-line input{width:110px;text-align:right}
+  /* Tables */
+  .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+  .tbl th{text-align:left;color:var(--ink-faint);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.5px;padding:9px 10px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl tr:hover td{background:rgba(255,255,255,.018)}
+  .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-block}
+  .pill.room{background:rgba(122,162,255,.15);color:var(--room)}
+  .pill.personal{background:rgba(255,155,133,.15);color:var(--personal)}
+  .amt{font-family:'Spline Sans Mono';font-weight:600}
+  .pos{color:var(--ok)} .neg{color:var(--danger)}
+  .muted{color:var(--ink-faint);font-size:12.5px}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+  .miniav{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;color:#0e1116;margin-right:-6px;border:2px solid var(--panel)}
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(5,7,10,.7);backdrop-filter:blur(4px);
+    display:none;place-items:center;z-index:100;padding:18px}
+  .modal-bg.show{display:grid;animation:fade .2s}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    max-width:540px;width:100%;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+  .modal-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--panel)}
+  .modal-h h3{font-size:19px}
+  .modal-b{padding:18px 20px}
+  .modal-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--panel)}
+  .x{background:none;border:none;color:var(--ink-dim);font-size:22px;cursor:pointer;line-height:1}
+  /* Empty / misc */
+  .empty{text-align:center;padding:50px 20px;color:var(--ink-faint)}
+  .empty .big{font-size:40px;margin-bottom:10px;opacity:.5}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .sec-head h2{font-size:21px}
+  .log-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .log-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  .log-dot.insert{background:var(--ok)} .log-dot.modify{background:var(--accent)} .log-dot.delete{background:var(--danger)}
+  .log-time{color:var(--ink-faint);font-size:11.5px;font-family:'Spline Sans Mono'}
+  .settle-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border-radius:11px;margin-bottom:8px;border:1px solid var(--line)}
+  .settle-row .arrow{color:var(--accent);font-weight:700}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel2);border:1px solid var(--accent);color:var(--ink);padding:12px 20px;
+    border-radius:11px;box-shadow:var(--shadow);z-index:200;transition:.3s;font-size:14px;font-weight:500}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .filterbar select,.filterbar input{width:auto;flex:0 0 auto}
+  @media(max-width:600px){
+    .row{grid-template-columns:1fr}
+    .logo h1{font-size:21px}
+    .stat .val{font-size:22px}
+    .hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <div class="logo">
+      <div class="mark">₹</div>
+      <div>
+        <h1>Split<span>Room</span></h1>
+        <div class="tagline">Shared room & personal expense tracker</div>
+      </div>
+    </div>
+    <div class="io-btns">
+      <button class="btn ghost sm" onclick="exportJSON()">⬇ Export</button>
+      <button class="btn ghost sm" onclick="document.getElementById('importFile').click()">⬆ Import</button>
+      <button class="btn ghost sm" onclick="exportCSV()">⊞ CSV</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" data-view="dash">Dashboard</button>
+      <button class="tab" data-view="expenses">Expenses</button>
+      <button class="tab" data-view="members">Members</button>
+      <button class="tab" data-view="settle">Settle Up</button>
+      <button class="tab" data-view="log">Activity Log</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dash">
+    <div class="grid sum-grid" id="statCards"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="sec-head"><h2>Spending by member</h2></div>
+      <div id="memberBreakdown"></div>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="view" id="view-expenses">
+    <div class="sec-head">
+      <h2>Expenses</h2>
+      <button class="btn primary" onclick="openExpense()">+ Add Expense</button>
+    </div>
+    <div class="filterbar">
+      <select id="fType" onchange="renderExpenses()">
+        <option value="">All types</option>
+        <option value="room">Room / common</option>
+        <option value="personal">Personal / partial</option>
+      </select>
+      <select id="fMember" onchange="renderExpenses()"><option value="">All members</option></select>
+      <input type="text" id="fSearch" placeholder="Search title/remarks…" oninput="renderExpenses()">
+    </div>
+    <div class="card" style="padding:6px 4px"><div id="expenseTable"></div></div>
+  </section>
+
+  <!-- MEMBERS -->
+  <section class="view" id="view-members">
+    <div class="sec-head">
+      <h2>Members</h2>
+      <button class="btn primary" onclick="openMember()">+ Add Member</button>
+    </div>
+    <div class="card" style="padding:6px 4px"><div id="memberTable"></div></div>
+    <p class="muted" style="margin-top:12px">Members who leave are set <b>inactive</b> — they stay in past expenses so totals remain correct, but won't appear in new room splits.</p>
+  </section>
+
+  <!-- SETTLE -->
+  <section class="view" id="view-settle">
+    <div class="sec-head"><h2>Settle Up</h2></div>
+    <p class="muted" style="margin-bottom:16px">Based on who <b>paid</b> vs each person's <b>share</b>. Suggested transfers minimize the number of payments.</p>
+    <div class="card"><div id="settleBox"></div></div>
+  </section>
+
+  <!-- LOG -->
+  <section class="view" id="view-log">
+    <div class="sec-head">
+      <h2>Activity Log</h2>
+      <button class="btn ghost sm danger" onclick="clearLog()">Clear log</button>
+    </div>
+    <div class="card"><div id="logBox"></div></div>
+  </section>
+</main>
+
+<!-- EXPENSE MODAL -->
+<div class="modal-bg" id="expenseModal">
+  <div class="modal">
+    <div class="modal-h"><h3 id="expModalTitle">Add Expense</h3><button class="x" onclick="closeModal('expenseModal')">×</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="expId">
+      <label class="fld"><span class="lab">What was it for?</span><input id="expTitle" placeholder="e.g. Pizza order, Maid salary"></label>
+      <div class="row">
+        <label class="fld"><span class="lab">Total amount (₹)</span><input id="expAmount" type="number" min="0" step="0.01" oninput="recalcSplit()" placeholder="0.00"></label>
+        <label class="fld"><span class="lab">Date</span><input id="expDate" type="date"></label>
+      </div>
+      <label class="fld"><span class="lab">Who paid?</span><select id="expPayer"></select></label>
+      <div class="fld">
+        <span class="lab">Expense type</span>
+        <div class="seg">
+          <div class="opt sel" id="optRoom" onclick="setType('room')">
+            <div class="t" style="color:var(--room)">🏠 Room / Common</div>
+            <div class="d">Split among everyone active</div>
+          </div>
+          <div class="opt" id="optPersonal" onclick="setType('personal')">
+            <div class="t" style="color:var(--personal)">🍕 Personal / Partial</div>
+            <div class="d">Split among selected people</div>
+          </div>
+        </div>
+      </div>
+      <div class="fld" id="participantsWrap">
+        <span class="lab">Split between <span id="partCount" class="muted"></span></span>
+        <div class="chips" id="partChips"></div>
+      </div>
+      <div class="fld">
+        <span class="lab">Split method</span>
+        <div class="seg">
+          <div class="opt sel" id="optEqual" onclick="setSplit('equal')"><div class="t">Equal</div><div class="d">Divide evenly</div></div>
+          <div class="opt" id="optCustom" onclick="setSplit('custom')"><div class="t">Custom</div><div class="d">Enter per-person</div></div>
+        </div>
+      </div>
+      <div class="fld" id="customWrap" style="display:none">
+        <span class="lab">Custom amounts (₹)</span>
+        <div id="customLines"></div>
+        <div class="muted" id="customSum" style="margin-top:6px"></div>
+      </div>
+      <label class="fld"><span class="lab">Remarks / details (optional)</span><textarea id="expRemarks" placeholder="Any notes…"></textarea></label>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeModal('expenseModal')">Cancel</button>
+      <button class="btn primary" onclick="saveExpense()">Save Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEMBER MODAL -->
+<div class="modal-bg" id="memberModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-h"><h3 id="memModalTitle">Add Member</h3><button class="x" onclick="closeModal('memberModal')">×</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="memId">
+      <label class="fld"><span class="lab">Name</span><input id="memName" placeholder="Member name"></label>
+      <label class="fld" id="memActiveWrap"><span class="lab">Status</span>
+        <select id="memActive"><option value="1">Active</option><option value="0">Inactive (left)</option></select>
+      </label>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeModal('memberModal')">Cancel</button>
+      <button class="btn primary" onclick="saveMember()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- State & persistence ---------- */
+const KEY='splitroom_v1';
+let db={members:[],expenses:[],log:[],seq:{m:0,e:0}};
+const palette=['#ffb347','#5fd3bc','#7aa2ff','#ff9b85','#c39bff','#7ee787','#ff7eb6','#f2cc60','#79c0ff','#ffa657'];
+
+function load(){ try{const r=localStorage.getItem(KEY); if(r) db=JSON.parse(r);}catch(e){} }
+function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
+function uid(p){ db.seq[p]=(db.seq[p]||0)+1; return p+db.seq[p]; }
+function money(n){ return '₹'+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function memName(id){ const m=db.members.find(x=>x.id===id); return m?m.name:'(removed)'; }
+function memColor(id){ const m=db.members.find(x=>x.id===id); return m?m.color:'#5d6b7d'; }
+function initials(n){ return n.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function activeMembers(){ return db.members.filter(m=>m.active); }
+function today(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------- Activity log ---------- */
+function logAction(action, what){
+  db.log.unshift({id:uid('e'),action,what,ts:Date.now()});
+  if(db.log.length>500) db.log.length=500;
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('view-'+t.dataset.view).classList.add('active');
+  renderAll();
+});
+
+/* ---------- Toast ---------- */
+let toastT;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* ---------- Modals ---------- */
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ---------- Member CRUD ---------- */
+function openMember(id){
+  document.getElementById('memId').value=id||'';
+  const wrap=document.getElementById('memActiveWrap');
+  if(id){ const m=db.members.find(x=>x.id===id);
+    document.getElementById('memModalTitle').textContent='Edit Member';
+    document.getElementById('memName').value=m.name;
+    document.getElementById('memActive').value=m.active?'1':'0';
+    wrap.style.display='block';
+  } else {
+    document.getElementById('memModalTitle').textContent='Add Member';
+    document.getElementById('memName').value=''; document.getElementById('memActive').value='1';
+    wrap.style.display='none';
+  }
+  document.getElementById('memberModal').classList.add('show');
+}
+function saveMember(){
+  const id=document.getElementById('memId').value;
+  const name=document.getElementById('memName').value.trim();
+  const active=document.getElementById('memActive').value==='1';
+  if(!name){ toast('Enter a name'); return; }
+  if(id){ const m=db.members.find(x=>x.id===id); const before=m.name+'/'+(m.active?'active':'inactive');
+    m.name=name; m.active=active;
+    logAction('modify','Member "'+before+'" → "'+name+'/'+(active?'active':'inactive')+'"');
+  } else {
+    const color=palette[db.members.length%palette.length];
+    db.members.push({id:uid('m'),name,active:true,color});
+    logAction('insert','Added member "'+name+'"');
+  }
+  save(); closeModal('memberModal'); renderAll(); toast('Member saved');
+}
+function deleteMember(id){
+  const m=db.members.find(x=>x.id===id);
+  const used=db.expenses.some(e=>e.payer===id||e.parts.some(p=>p.m===id));
+  if(used){ if(!confirm('"'+m.name+'" appears in existing expenses. They will be set INACTIVE instead of deleted (to keep totals correct). Continue?')){return;}
+    m.active=false; logAction('modify','Set member "'+m.name+'" inactive (has expenses)');
+  } else {
+    if(!confirm('Delete member "'+m.name+'"?')) return;
+    db.members=db.members.filter(x=>x.id!==id); logAction('delete','Deleted member "'+m.name+'"');
+  }
+  save(); renderAll(); toast('Updated');
+}
+
+/* ---------- Expense modal ---------- */
+let curType='room', curSplit='equal', curParts=new Set();
+function openExpense(id){
+  document.getElementById('expId').value=id||'';
+  const payerSel=document.getElementById('expPayer');
+  payerSel.innerHTML=db.members.map(m=>`<option value="${m.id}">${m.name}${m.active?'':' (inactive)'}</option>`).join('');
+  if(activeMembers().length<1){ toast('Add members first'); return; }
+
+  if(id){
+    const e=db.expenses.find(x=>x.id===id);
+    document.getElementById('expModalTitle').textContent='Edit Expense';
+    document.getElementById('expTitle').value=e.title;
+    document.getElementById('expAmount').value=e.amount;
+    document.getElementById('expDate').value=e.date;
+    document.getElementById('expPayer').value=e.payer;
+    document.getElementById('expRemarks').value=e.remarks||'';
+    curType=e.type; curSplit=e.split;
+    curParts=new Set(e.parts.map(p=>p.m));
+    setType(curType,true); setSplit(curSplit,true);
+    renderChips(); renderCustom(e.parts);
+  } else {
+    document.getElementById('expModalTitle').textContent='Add Expense';
+    document.getElementById('expTitle').value='';
+    document.getElementById('expAmount').value='';
+    document.getElementById('expDate').value=today();
+    document.getElementById('expRemarks').value='';
+    curType='room'; curSplit='equal';
+    curParts=new Set(activeMembers().map(m=>m.id));
+    setType('room',true); setSplit('equal',true);
+    renderChips();
+  }
+  document.getElementById('expenseModal').classList.add('show');
+}
+function setType(t,silent){
+  curType=t;
+  document.getElementById('optRoom').classList.toggle('sel',t==='room');
+  document.getElementById('optPersonal').classList.toggle('sel',t==='personal');
+  document.getElementById('participantsWrap').style.display = t==='personal'?'block':'block';
+  if(t==='room' && !silent){ curParts=new Set(activeMembers().map(m=>m.id)); }
+  renderChips();
+}
+function setSplit(s,silent){
+  curSplit=s;
+  document.getElementById('optEqual').classList.toggle('sel',s==='equal');
+  document.getElementById('optCustom').classList.toggle('sel',s==='custom');
+  document.getElementById('customWrap').style.display = s==='custom'?'block':'none';
+  if(s==='custom') renderCustom();
+  recalcSplit();
+}
+function renderChips(){
+  const wrap=document.getElementById('partChips');
+  const list = curType==='room' ? db.members : db.members; // allow choosing anyone; room defaults to all active
+  wrap.innerHTML=list.map(m=>{
+    const on=curParts.has(m.id);
+    return `<div class="chip ${on?'on':''}" onclick="togglePart('${m.id}')">
+      <span class="av" style="background:${m.color}">${initials(m.name)}</span>${m.name}${m.active?'':' <span class="muted">·left</span>'}</div>`;
+  }).join('');
+  document.getElementById('partCount').textContent='('+curParts.size+' selected)';
+  if(curSplit==='custom') renderCustom();
+  recalcSplit();
+}
+function togglePart(id){ if(curParts.has(id)) curParts.delete(id); else curParts.add(id); renderChips(); }
+function renderCustom(existing){
+  const box=document.getElementById('customLines');
+  box.innerHTML=[...curParts].map(id=>{
+    const m=db.members.find(x=>x.id===id);
+    const pre=existing?existing.find(p=>p.m===id):null;
+    return `<div class="split-line"><span class="nm"><span class="av" style="background:${m.color};display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:10px;color:#0e1116;font-weight:700">${initials(m.name)}</span> ${m.name}</span>
+      <input type="number" min="0" step="0.01" data-mid="${id}" value="${pre?pre.amt:''}" oninput="customSum()"></div>`;
+  }).join('');
+  customSum();
+}
+function customSum(){
+  let s=0; document.querySelectorAll('#customLines input').forEach(i=>s+=parseFloat(i.value)||0);
+  const total=parseFloat(document.getElementById('expAmount').value)||0;
+  const el=document.getElementById('customSum');
+  const diff=total-s;
+  el.innerHTML=`Entered: <b>${money(s)}</b> / Total: <b>${money(total)}</b> · `+
+    (Math.abs(diff)<0.01?`<span class="pos">balanced ✓</span>`:`<span class="neg">${diff>0?money(diff)+' unassigned':money(-diff)+' over'}</span>`);
+}
+function recalcSplit(){ if(curSplit==='custom') customSum(); }
+
+function saveExpense(){
+  const id=document.getElementById('expId').value;
+  const title=document.getElementById('expTitle').value.trim();
+  const amount=parseFloat(document.getElementById('expAmount').value)||0;
+  const date=document.getElementById('expDate').value||today();
+  const payer=document.getElementById('expPayer').value;
+  const remarks=document.getElementById('expRemarks').value.trim();
+  if(!title){ toast('Enter a description'); return; }
+  if(amount<=0){ toast('Enter an amount'); return; }
+  if(curParts.size===0){ toast('Select at least one person'); return; }
+
+  let parts=[];
+  if(curSplit==='equal'){
+    const each=amount/curParts.size;
+    parts=[...curParts].map(m=>({m,amt:Math.round(each*100)/100}));
+    // fix rounding remainder on last
+    const diff=amount-parts.reduce((s,p)=>s+p.amt,0);
+    if(parts.length) parts[parts.length-1].amt=Math.round((parts[parts.length-1].amt+diff)*100)/100;
+  } else {
+    let sum=0; parts=[...curParts].map(m=>{
+      const inp=document.querySelector(`#customLines input[data-mid="${m}"]`);
+      const v=parseFloat(inp?inp.value:0)||0; sum+=v; return {m,amt:v};
+    });
+    if(Math.abs(sum-amount)>0.01){ if(!confirm('Custom amounts ('+money(sum)+') don\'t match total ('+money(amount)+'). Save anyway?')) return; }
+  }
+  const rec={id:id||uid('e'),title,amount,date,payer,type:curType,split:curSplit,parts,remarks};
+  if(id){ const idx=db.expenses.findIndex(x=>x.id===id); db.expenses[idx]=rec;
+    logAction('modify','Edited expense "'+title+'" ('+money(amount)+')');
+  } else { db.expenses.push(rec); logAction('insert','Added '+curType+' expense "'+title+'" ('+money(amount)+')'); }
+  save(); closeModal('expenseModal'); renderAll(); toast('Expense saved');
+}
+function deleteExpense(id){
+  const e=db.expenses.find(x=>x.id===id);
+  if(!confirm('Delete expense "'+e.title+'"?')) return;
+  db.expenses=db.expenses.filter(x=>x.id!==id);
+  logAction('delete','Deleted expense "'+e.title+'" ('+money(e.amount)+')');
+  save(); renderAll(); toast('Deleted');
+}
+
+/* ---------- Rendering ---------- */
+function renderAll(){ renderStats(); renderBreakdown(); renderExpenses(); renderMembers(); renderSettle(); renderLog(); renderMemberFilter(); }
+
+function renderStats(){
+  const total=db.expenses.reduce((s,e)=>s+e.amount,0);
+  const room=db.expenses.filter(e=>e.type==='room').reduce((s,e)=>s+e.amount,0);
+  const pers=db.expenses.filter(e=>e.type==='personal').reduce((s,e)=>s+e.amount,0);
+  const cards=[
+    {label:'Total spent',val:money(total)},
+    {label:'Room / common',val:money(room),c:'var(--room)'},
+    {label:'Personal / partial',val:money(pers),c:'var(--personal)'},
+    {label:'Members',val:activeMembers().length+' <small>active</small>'},
+    {label:'Expenses logged',val:db.expenses.length},
+  ];
+  document.getElementById('statCards').innerHTML=cards.map(c=>
+    `<div class="card stat"><div class="label">${c.label}</div><div class="val" style="${c.c?'color:'+c.c:''}">${c.val}</div></div>`).join('');
+}
+function balances(){
+  // net = paid - owed
+  const b={}; db.members.forEach(m=>b[m.id]={paid:0,owed:0});
+  db.expenses.forEach(e=>{
+    if(b[e.payer]) b[e.payer].paid+=e.amount;
+    e.parts.forEach(p=>{ if(b[p.m]) b[p.m].owed+=p.amt; });
+  });
+  return b;
+}
+function renderBreakdown(){
+  const b=balances();
+  const rows=db.members.map(m=>{
+    const net=b[m.id].paid-b[m.id].owed;
+    return {m,paid:b[m.id].paid,owed:b[m.id].owed,net};
+  }).sort((x,y)=>y.paid-x.paid);
+  if(!db.members.length){ document.getElementById('memberBreakdown').innerHTML='<div class="empty"><div class="big">👥</div>Add members to get started.</div>'; return; }
+  document.getElementById('memberBreakdown').innerHTML=`<table class="tbl"><thead><tr>
+    <th>Member</th><th>Paid</th><th>Share owed</th><th>Net balance</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr>
+      <td><span class="miniav" style="background:${r.m.color};margin-right:8px">${initials(r.m.name)}</span>${r.m.name}${r.m.active?'':' <span class="muted">·left</span>'}</td>
+      <td class="amt">${money(r.paid)}</td>
+      <td class="amt">${money(r.owed)}</td>
+      <td class="amt ${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${money(r.net)}</td>
+    </tr>`).join('')+`</tbody></table>`;
+}
+function renderMemberFilter(){
+  const sel=document.getElementById('fMember');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All members</option>'+db.members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  sel.value=cur;
+}
+function renderExpenses(){
+  const ft=document.getElementById('fType').value;
+  const fm=document.getElementById('fMember').value;
+  const fs=(document.getElementById('fSearch').value||'').toLowerCase();
+  let list=[...db.expenses].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  if(ft) list=list.filter(e=>e.type===ft);
+  if(fm) list=list.filter(e=>e.payer===fm||e.parts.some(p=>p.m===fm));
+  if(fs) list=list.filter(e=>e.title.toLowerCase().includes(fs)||(e.remarks||'').toLowerCase().includes(fs));
+  if(!list.length){ document.getElementById('expenseTable').innerHTML='<div class="empty"><div class="big">🧾</div>No expenses yet. Click “Add Expense”.</div>'; return; }
+  document.getElementById('expenseTable').innerHTML=`<table class="tbl"><thead><tr>
+    <th>Date</th><th>Description</th><th>Type</th><th>Paid by</th><th>Split between</th><th>Amount</th><th></th></tr></thead><tbody>`+
+    list.map(e=>{
+      const avs=e.parts.map(p=>`<span class="miniav" style="background:${memColor(p.m)}" title="${memName(p.m)}: ${money(p.amt)}">${initials(memName(p.m))}</span>`).join('');
+      return `<tr>
+        <td class="muted mono">${e.date}</td>
+        <td><b>${esc(e.title)}</b>${e.remarks?`<div class="muted">${esc(e.remarks)}</div>`:''}</td>
+        <td><span class="pill ${e.type}">${e.type==='room'?'Room':'Personal'}</span></td>
+        <td><span class="miniav" style="background:${memColor(e.payer)};margin-right:6px">${initials(memName(e.payer))}</span><span class="hide-sm">${memName(e.payer)}</span></td>
+        <td><div style="display:flex">${avs}</div><div class="muted">${e.split} · ${e.parts.length}p</div></td>
+        <td class="amt">${money(e.amount)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn sm ghost" onclick="openExpense('${e.id}')">✎</button>
+          <button class="btn sm danger" onclick="deleteExpense('${e.id}')">🗑</button>
+        </td></tr>`;
+    }).join('')+`</tbody></table>`;
+}
+function renderMembers(){
+  if(!db.members.length){ document.getElementById('memberTable').innerHTML='<div class="empty"><div class="big">👥</div>No members yet. Click “Add Member”.</div>'; return; }
+  const b=balances();
+  document.getElementById('memberTable').innerHTML=`<table class="tbl"><thead><tr>
+    <th>Member</th><th>Status</th><th>Total paid</th><th>Total share</th><th></th></tr></thead><tbody>`+
+    db.members.map(m=>`<tr>
+      <td><span class="miniav" style="background:${m.color};margin-right:8px">${initials(m.name)}</span><b>${esc(m.name)}</b></td>
+      <td>${m.active?'<span class="pill" style="background:rgba(95,211,188,.15);color:var(--ok)">Active</span>':'<span class="pill" style="background:rgba(93,107,125,.2);color:var(--ink-faint)">Left</span>'}</td>
+      <td class="amt">${money(b[m.id].paid)}</td>
+      <td class="amt">${money(b[m.id].owed)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm ghost" onclick="openMember('${m.id}')">✎</button>
+        <button class="btn sm danger" onclick="deleteMember('${m.id}')">🗑</button>
+      </td></tr>`).join('')+`</tbody></table>`;
+}
+function renderSettle(){
+  const b=balances();
+  let nets=db.members.map(m=>({id:m.id,name:m.name,color:m.color,net:Math.round((b[m.id].paid-b[m.id].owed)*100)/100}))
+    .filter(n=>Math.abs(n.net)>0.01);
+  if(!nets.length){ document.getElementById('settleBox').innerHTML='<div class="empty"><div class="big">✅</div>All settled — no outstanding balances.</div>'; return; }
+  // greedy settle
+  let debt=nets.filter(n=>n.net<0).map(n=>({...n,net:-n.net})).sort((a,b)=>b.net-a.net);
+  let cred=nets.filter(n=>n.net>0).sort((a,b)=>b.net-a.net);
+  const tx=[]; let i=0,j=0;
+  while(i<debt.length&&j<cred.length){
+    const pay=Math.min(debt[i].net,cred[j].net);
+    tx.push({from:debt[i],to:cred[j],amt:Math.round(pay*100)/100});
+    debt[i].net-=pay; cred[j].net-=pay;
+    if(debt[i].net<0.01)i++; if(cred[j].net<0.01)j++;
+  }
+  document.getElementById('settleBox').innerHTML=tx.map(t=>`
+    <div class="settle-row">
+      <span class="miniav" style="background:${t.from.color}">${initials(t.from.name)}</span><b>${t.from.name}</b>
+      <span class="arrow">→ pays →</span>
+      <span class="miniav" style="background:${t.to.color}">${initials(t.to.name)}</span><b>${t.to.name}</b>
+      <span class="amt" style="margin-left:auto;color:var(--accent)">${money(t.amt)}</span>
+    </div>`).join('');
+}
+function renderLog(){
+  if(!db.log.length){ document.getElementById('logBox').innerHTML='<div class="empty"><div class="big">📋</div>No activity yet.</div>'; return; }
+  document.getElementById('logBox').innerHTML=db.log.map(l=>{
+    const d=new Date(l.ts);
+    return `<div class="log-item"><div class="log-dot ${l.action}"></div>
+      <div style="flex:1"><div>${esc(l.what)}</div><div class="log-time">${d.toLocaleString()}</div></div>
+      <div class="pill" style="background:var(--panel2);color:var(--ink-dim);height:fit-content">${l.action}</div></div>`;
+  }).join('');
+}
+function clearLog(){ if(!confirm('Clear the activity log? (expenses & members are kept)')) return; db.log=[]; save(); renderLog(); toast('Log cleared'); }
+
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- Import / Export ---------- */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='splitroom-'+today()+'.json'; a.click(); URL.revokeObjectURL(a.href);
+  toast('Exported JSON');
+}
+function importJSON(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result);
+    if(!d.members||!d.expenses) throw 0;
+    if(!confirm('Replace all current data with the imported file?')) return;
+    db=d; if(!db.log)db.log=[]; if(!db.seq)db.seq={m:0,e:0};
+    save(); renderAll(); toast('Imported successfully');
+  }catch(e){ toast('Invalid file'); } };
+  r.readAsText(f); ev.target.value='';
+}
+function exportCSV(){
+  const rows=[['Date','Description','Type','Paid by','Amount','Split','Participants','Per-person','Remarks']];
+  db.expenses.forEach(e=>rows.push([e.date,e.title,e.type,memName(e.payer),e.amount,e.split,
+    e.parts.map(p=>memName(p.m)).join(' | '),e.parts.map(p=>p.amt).join(' | '),(e.remarks||'').replace(/\n/g,' ')]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='splitroom-expenses-'+today()+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  toast('Exported CSV');
+}
+
+/* ---------- Seed demo on first run ---------- */
+function seedIfEmpty(){
+  if(db.members.length) return;
+  ['Arjun','Priya','Karthik','Sneha','Rahul','Divya'].forEach((n,i)=>db.members.push({id:uid('m'),name:n,active:true,color:palette[i%palette.length]}));
+  logAction('insert','Initialized with 6 demo members');
+  save();
+}
+
+/* ---------- Init ---------- */
+load(); seedIfEmpty(); renderAll();
+</script>
+</body>
+</html>

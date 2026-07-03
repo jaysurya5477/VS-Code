@@ -102,7 +102,7 @@
         "PP", "hemendra.patidar@alimco.in",
         "QM", "hemendra.patidar@alimco.in",
         "MM", "anurag.singh@alimco.in",
-        "SD", "vinit.makwana@highbartech.com",      ;"ameer.basha@highbartech.com",
+        "SD", "suraj.karki@highbartech.com;vishal.singh@highbartech.com",
         "HCM", "satypal.singh@highbartech.com",
         "HR", "satypal.singh@highbartech.com",
         "PM", "virendra.rathore@highbartech.com"
@@ -143,8 +143,12 @@
             ; if InStr(line, module)
             ;     CCSet[email] := true
             ; Match module as a standalone token only
-            if RegExMatch(line, "(^|\s)" module "(\s|:|$)")
-                CCSet[email] := true
+            if RegExMatch(line, "(^|\s)" module "(\s|:|$)") {
+                ; A module may map to multiple emails (semicolon-separated)
+                for addr in StrSplit(email, ";")
+                    if (Trim(addr) != "")
+                        CCSet[Trim(addr)] := true
+            }
         }
     }
     TRHtml .= "</ul>"

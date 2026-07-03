@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Dashboard — v2</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    :root {
+      --bg: #eef1f6;
+      --surface: #ffffff;
+      --ink: #1b2733;
+      --ink-soft: #5b6b7b;
+      --line: #e3e8ef;
+      --brand: #0a6ed1;        /* SAP Belize blue */
+      --brand-2: #0854a0;
+      --accent: #e9730c;       /* SAP orange (target) */
+      --good: #107e3e;
+      --bad: #bb0000;
+      --shadow: 0 10px 30px rgba(20, 40, 70, 0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "72", "Segoe UI", Tahoma, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .topbar {
+      background: linear-gradient(90deg, var(--brand-2), var(--brand));
+      color: #fff;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .topbar h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: .2px; }
+    .topbar p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filters select {
+      border: none; border-radius: 8px; padding: 8px 12px;
+      font-size: 13px; color: var(--ink); background: rgba(255,255,255,.92);
+      cursor: pointer;
+    }
+    .wrap { padding: 22px 28px 40px; }
+
+    /* KPI row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .kpi {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 16px 18px; box-shadow: var(--shadow);
+      border-left: 4px solid var(--brand);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .kpi.good { border-left-color: var(--good); }
+    .kpi.warn { border-left-color: var(--accent); }
+    .kpi.bad  { border-left-color: var(--bad); }
+    .kpi .label { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .07em; }
+    .kpi .value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+    .kpi .delta { font-size: 12px; font-weight: 600; }
+    .kpi .delta.up { color: var(--good); }
+    .kpi .delta.down { color: var(--bad); }
+    .kpi .spark { margin-top: 2px; }
+
+    /* charts */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow);
+    }
+    .card.span2 { grid-column: 1 / -1; }
+    .card h2 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+    .card .sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 8px; }
+    .hero { display: grid; grid-template-columns: 1fr 230px; gap: 12px; align-items: center; }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+    }
+    .hint { font-size: 11px; color: var(--ink-soft); margin-top: 6px; }
+    .detail {
+      margin-top: 8px; font-size: 13px; color: var(--ink-soft);
+      background: #f6f8fb; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px;
+    }
+    .detail b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Center / Plant-wise Sales Dashboard</h1>
+      <p>Source: zsdd_center_dash_cds · OData V4 aggregation · ApexCharts</p>
+    </div>
+    <div class="filters">
+      <select id="f-year"><option>FY 2026</option><option>FY 2025</option></select>
+      <select id="f-zone">
+        <option value="ALL">All Zones</option>
+        <option>CENTER</option><option>EAST</option><option>WEST</option><option>NORTH</option><option>SOUTH</option>
+      </select>
+      <select id="f-scheme"><option>All Schemes</option><option>Scheme A</option><option>Scheme B</option><option>Scheme C</option></select>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <span class="label">Total Gross</span>
+        <span class="value">₹ 6.88 Cr</span>
+        <span class="delta up">▲ 8.2% vs last period</span>
+        <div class="spark" id="spark-gross"></div>
+      </div>
+      <div class="kpi warn">
+        <span class="label">Total Target</span>
+        <span class="value">₹ 7.20 Cr</span>
+        <span class="delta">Gap: ₹ 0.32 Cr</span>
+        <div class="spark" id="spark-target"></div>
+      </div>
+      <div class="kpi good">
+        <span class="label">Achievement</span>
+        <span class="value">95.5%</span>
+        <span class="delta up">▲ 3.1 pts</span>
+        <div class="spark" id="spark-ach"></div>
+      </div>
+      <div class="kpi bad">
+        <span class="label">Zones Below Target</span>
+        <span class="value">2</span>
+        <span class="delta down">EAST · SOUTH</span>
+        <div class="spark" id="spark-zones"></div>
+      </div>
+    </div>
+
+    <!-- Hero: actual vs target + gauge -->
+    <div class="grid">
+      <div class="card span2">
+        <h2>Actual vs Target by Zone</h2>
+        <p class="sub">Columns = Gross · Line = Target · click a column to drill down</p>
+        <div class="hero">
+          <div id="chart-avt"></div>
+          <div>
+            <div id="chart-gauge"></div>
+            <div class="detail" id="drill">Click a zone column to see its breakdown.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sales Office Ranking</h2>
+        <p class="sub">Gross by office, descending</p>
+        <div id="chart-rank"></div>
+      </div>
+
+      <div class="card">
+        <h2>Scheme Mix by Zone</h2>
+        <p class="sub">Stacked Gross contribution per scheme</p>
+        <div id="chart-scheme"></div>
+      </div>
+
+      <div class="card span2">
+        <h2>Monthly Gross Trend by Zone</h2>
+        <p class="sub">Gross over the fiscal year, one line per zone</p>
+        <div id="chart-trend"></div>
+      </div>
+    </div>
+    <p class="hint">Mock data for layout review. In the UI5 app, all series bind to OData V4 <code>$apply=groupby(...)/aggregate(... with sum ...)</code> results.</p>
+  </div>
+
+  <script>
+    const inr = v => '₹ ' + v.toLocaleString('en-IN');
+    const PALETTE = ['#0a6ed1', '#e9730c', '#107e3e', '#7858a8', '#cc7c00'];
+    const zones = ['CENTER', 'EAST', 'WEST', 'NORTH', 'SOUTH'];
+    const gross  = [120000, 85000, 91000, 76000, 67000];
+    const target = [100000, 90000, 92000, 80000, 70000];
+
+    // KPI sparklines
+    const spark = (id, data, color) => new ApexCharts(document.querySelector(id), {
+      chart: { type: 'area', height: 40, sparkline: { enabled: true } },
+      stroke: { width: 2, curve: 'smooth' },
+      fill: { opacity: 0.25 },
+      series: [{ data }], colors: [color], tooltip: { enabled: false }
+    }).render();
+    spark('#spark-gross', [52,58,55,61,63,69], '#0a6ed1');
+    spark('#spark-target',[70,70,71,71,72,72], '#e9730c');
+    spark('#spark-ach',   [88,90,89,92,94,95], '#107e3e');
+    spark('#spark-zones', [4,3,3,2,3,2], '#bb0000');
+
+    // Actual vs Target — combo with achievement-colored bars + drill-down
+    const avt = new ApexCharts(document.querySelector('#chart-avt'), {
+      chart: { type: 'line', height: 340, toolbar: { show: false },
+        events: { dataPointSelection: (e, ctx, cfg) => drillTo(cfg.dataPointIndex) } },
+      stroke: { width: [0, 3], curve: 'smooth' },
+      plotOptions: { bar: { columnWidth: '52%', borderRadius: 4 } },
+      dataLabels: { enabled: true, enabledOnSeries: [0], formatter: v => (v/1000)+'k', style: { fontSize: '11px' } },
+      markers: { size: 5 },
+      series: [
+        { name: 'Gross', type: 'column', data: gross },
+        { name: 'Target', type: 'line', data: target }
+      ],
+      xaxis: { categories: zones },
+      yaxis: { labels: { formatter: v => (v/1000)+'k' }, title: { text: '₹ (thousands)' } },
+      tooltip: { shared: true, intersect: false, y: { formatter: inr } },
+      colors: ['#0a6ed1', '#e9730c'],
+      legend: { position: 'top', horizontalAlign: 'right' }
+    });
+    avt.render();
+
+    function drillTo(i) {
+      const ach = ((gross[i] / target[i]) * 100).toFixed(1);
+      const status = gross[i] >= target[i] ? '<b style="color:#107e3e">On / above target</b>' : '<b style="color:#bb0000">Below target</b>';
+      document.querySelector('#drill').innerHTML =
+        `<b>${zones[i]}</b> — Gross ${inr(gross[i])}, Target ${inr(target[i])}<br>Achievement <b>${ach}%</b> · ${status}`;
+      gauge.updateSeries([parseFloat(ach)]);
+    }
+
+    // Achievement gauge
+    const gauge = new ApexCharts(document.querySelector('#chart-gauge'), {
+      chart: { type: 'radialBar', height: 230 },
+      series: [95.5],
+      plotOptions: { radialBar: {
+        hollow: { size: '58%' },
+        dataLabels: { name: { offsetY: -6, fontSize: '13px', color: '#5b6b7b' },
+          value: { fontSize: '24px', fontWeight: 700, formatter: v => v + '%' } }
+      }},
+      labels: ['Achievement'],
+      fill: { colors: ['#0a6ed1'] }
+    });
+    gauge.render();
+
+    // Office ranking — horizontal, distributed colors + labels
+    new ApexCharts(document.querySelector('#chart-rank'), {
+      chart: { type: 'bar', height: 300, toolbar: { show: false } },
+      plotOptions: { bar: { horizontal: true, distributed: true, barHeight: '60%', borderRadius: 4 } },
+      dataLabels: { enabled: true, formatter: v => (v/1000)+'k', style: { colors: ['#fff'], fontSize: '11px' } },
+      series: [{ name: 'Gross', data: [250000, 180000, 145000, 98000, 78000] }],
+      xaxis: { categories: ['HQ', 'AAPC JBL', 'CHENNAI', 'DELHI', 'KOLKATA'] },
+      tooltip: { y: { formatter: inr } },
+      legend: { show: false }, colors: PALETTE
+    }).render();
+
+    // Scheme mix — stacked
+    new ApexCharts(document.querySelector('#chart-scheme'), {
+      chart: { type: 'bar', height: 300, stacked: true, stackType: 'normal', toolbar: { show: false } },
+      plotOptions: { bar: { columnWidth: '55%', borderRadius: 3 } },
+      dataLabels: { enabled: false },
+      series: [
+        { name: 'Scheme A', data: [35000, 28000, 24000, 18000, 15000] },
+        { name: 'Scheme B', data: [42000, 32000, 30000, 22000, 21000] },
+        { name: 'Scheme C', data: [28000, 21000, 18000, 13000, 12000] }
+      ],
+      xaxis: { categories: zones },
+      yaxis: { labels: { formatter: v => (v/1000)+'k' } },
+      tooltip: { y: { formatter: inr } },
+      colors: ['#0a6ed1', '#5ca4e0', '#aacdf0'],
+      legend: { position: 'top' }
+    }).render();
+
+    // Monthly trend — multi-line
+    new ApexCharts(document.querySelector('#chart-trend'), {
+      chart: { type: 'line', height: 300, toolbar: { show: false }, zoom: { enabled: false } },
+      stroke: { curve: 'smooth', width: 3 },
+      markers: { size: 0, hover: { size: 5 } },
+      series: [
+        { name: 'CENTER', data: [12000,13000,11500,14000,13500,15000] },
+        { name: 'EAST',   data: [9000,9200,8800,9400,9100,9800] },
+        { name: 'WEST',   data: [11000,10800,11200,11800,11600,12100] },
+        { name: 'NORTH',  data: [8000,8200,7900,8600,8400,8800] },
+        { name: 'SOUTH',  data: [7000,7200,7300,7600,7500,7800] }
+      ],
+      xaxis: { categories: ['Jan','Feb','Mar','Apr','May','Jun'] },
+      yaxis: { labels: { formatter: v => (v/1000)+'k' } },
+      tooltip: { y: { formatter: inr } },
+      colors: PALETTE, legend: { position: 'top', horizontalAlign: 'right' }
+    }).render();
+
+    // Filter UX hint (mock — real app would re-fetch OData)
+    document.querySelectorAll('.filters select').forEach(s =>
+      s.addEventListener('change', () => {
+        document.querySelector('#drill').innerHTML =
+          'Filters changed — in the UI5 app this re-runs the OData <b>$apply</b> query and re-renders.';
+      }));
+  </script>
+</body>
+</html>

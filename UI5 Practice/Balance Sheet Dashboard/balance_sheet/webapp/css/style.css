@@ -1,0 +1,265 @@
+/* ===== Dashboard layout ===== */
+.dashboardRoot {
+    padding: 1rem;
+    background-color: #ffffff;
+    min-height: 100%;
+}
+
+/* ===== Force a light look regardless of the UI5 theme (light or dark) ===== */
+.dashboardRoot .sapMPanel,
+.dashboardRoot .sapMPanelBG,
+.dashboardRoot .sapMPanelHdr,
+.dashboardRoot .sapMPanelHeaderTB,
+.dashboardRoot .sapMPanelWrappingDiv,
+.dashboardRoot .sapMPanelWrappingDivTb,
+.dashboardRoot .sapMList,
+.dashboardRoot .sapMListBGSolid,
+.dashboardRoot .sapMListTbl,
+.dashboardRoot .sapMListUl,
+.dashboardRoot .sapMListTblHeader,
+.dashboardRoot .sapMListTblHeaderCell,
+.dashboardRoot .sapMListTblRow,
+.dashboardRoot .sapMListTblCell,
+.dashboardRoot .sapMLIB,
+.dashboardRoot .sapMSlt,
+.dashboardRoot .sapMSltInner,
+.dashboardRoot .sapMBtn,
+.dashboardRoot .sapMBtnInner {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMBtnInner:hover {
+    background-color: #f0f0f0 !important;
+}
+.dashboardRoot,
+.dashboardRoot .sapMLabel,
+.dashboardRoot .sapMText,
+.dashboardRoot .sapMTitle,
+.dashboardRoot .sapMPanelHdr,
+.dashboardRoot .sapMSltLabel,
+.dashboardRoot .sapMColumnHeader,
+.dashboardRoot .sapMColumnHeader .sapMLabel,
+.dashboardRoot .sapMColumnHeader .sapMText,
+.dashboardRoot .sapMListTblHeaderCell,
+.dashboardRoot .sapMListTblHeaderCell .sapMText,
+.dashboardRoot .sapMLIB .sapMText,
+.dashboardRoot .sapMSltArrow,
+.dashboardRoot .sapMBtnContent,
+.dashboardRoot .sapMBtn .sapUiIcon,
+.dashboardRoot .filterLabel {
+    color: #32363a !important;
+}
+/* the Select dropdown list renders in a popover outside .dashboardRoot */
+.sapMSelectList,
+.sapMSelectListItemBase {
+    background-color: #ffffff !important;
+    color: #32363a !important;
+}
+.sapMSelectListItemBaseSelected,
+.sapMSelectListItemBase:hover {
+    background-color: #ebf5fe !important;
+}
+/* Fiscal Year / Month Select dropdown popover + its scrollbar (dark themes tint them) */
+.sapMSltPicker,
+.sapMSltPicker .sapMPopoverCont,
+.sapMSltPicker .sapMPopoverScroll,
+.sapMSltPicker .sapMSelectList {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMSltPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMSltPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== Profit Center MultiComboBox: force light regardless of theme ===== */
+/* input field (inside .dashboardRoot) */
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseContentWrapper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner,
+.dashboardRoot .sapMMultiComboBox .sapMMultiComboBoxArrow,
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseIconContainer .sapUiIcon {
+    color: #32363a !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner::placeholder {
+    color: #6a6d70 !important;
+}
+/* selected-value tokens */
+.dashboardRoot .sapMToken {
+    background-color: #ebf5fe !important;
+    border-color: #d3e8fb !important;
+}
+.dashboardRoot .sapMTokenText,
+.dashboardRoot .sapMToken .sapUiIcon {
+    color: #32363a !important;
+}
+
+/* dropdown popover (renders outside .dashboardRoot) */
+.sapMMultiComboBoxPicker,
+.sapMMultiComboBoxPicker .sapMPopoverCont,
+.sapMMultiComboBoxPicker .sapMPopoverScroll,
+.sapMMultiComboBoxPicker .sapMList,
+.sapMMultiComboBoxPicker .sapMListUl,
+.sapMMultiComboBoxPicker .sapMLIB {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIB .sapMText,
+.sapMMultiComboBoxPicker .sapMLIB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMLIB .sapMSLITitleOnly {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIBHoverable:hover,
+.sapMMultiComboBoxPicker .sapMLIBSelected {
+    background-color: #ebf5fe !important;
+}
+.sapMMultiComboBoxPicker .sapMCbBg {
+    background-color: #ffffff !important;
+    border-color: #89919a !important;
+}
+/* "Select All" header toolbar at the top of the picker */
+.sapMMultiComboBoxPicker .sapMTB,
+.sapMMultiComboBoxPicker .sapMTBStandard,
+.sapMMultiComboBoxPicker .sapMListHdr,
+.sapMMultiComboBoxPicker .sapMListInfoTBar,
+.sapMMultiComboBoxPicker .sapMListHdrTBar,
+.sapMMultiComboBoxPicker .sapMPopoverSubHeader,
+.sapMMultiComboBoxPicker .sapMPopoverHeader {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.sapMMultiComboBoxPicker .sapMTB .sapMText,
+.sapMMultiComboBoxPicker .sapMTB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMTB .sapMTitle,
+.sapMMultiComboBoxPicker .sapMCbLabel {
+    color: #32363a !important;
+}
+/* scrollbar inside the picker (dark themes tint it) */
+.sapMMultiComboBoxPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== Header bar ===== */
+.dashHeader {
+    background-color: #354a5f;
+    padding: 0;
+    margin: 0;
+    border-radius: 4px 4px 0 0;
+}
+.dashHeader .dashHeaderTitle {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* ===== Filter bar ===== */
+.filterBar {
+    background-color: #ffffff;
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+}
+.filterField {
+    margin-right: 1rem;
+}
+.filterLabel {
+    font-size: 0.75rem;
+    color: #6a6d70;
+    margin-bottom: 0.15rem;
+}
+.filterReset {
+    margin-bottom: 0.1rem;
+}
+
+/* ===== KPI cards ===== */
+.kpiRow {
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.kpiCard {
+    background-color: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    flex: 1 1 0;
+    min-width: 14rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.kpiTitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #32363a;
+    margin-bottom: 0.5rem;
+}
+.kpiValue {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+.dashboardRoot .kpiValue.kpiAsset     { color: #107e3e !important; }   /* green  */
+.dashboardRoot .kpiValue.kpiLiability { color: #e9730c !important; }   /* orange */
+.dashboardRoot .kpiValue.kpiNetWorth  { color: #0a6ed1 !important; }   /* blue   */
+
+/* ===== Chart cards ===== */
+.chartRow {
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.chartCard {
+    background-color: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    flex: 1 1 0;
+    min-width: 26rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.chartTitle {
+    margin-bottom: 0.5rem;
+}
+.chartCanvasWrap {
+    position: relative;
+    height: 380px;
+    width: 100%;
+}
+
+/* ===== Drill-down report ===== */
+.reportPanel {
+    margin-top: 1rem;
+}
+.reportHint {
+    display: block;
+    padding: 0.75rem 0.25rem;
+    color: #6a6d70;
+    font-style: italic;
+}
+.reportAmount {
+    font-weight: 600;
+}

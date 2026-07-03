@@ -1,0 +1,96 @@
+<mvc:View controllerName="com.sap.zsdzonedash.controller.zsd_zone_dash"
+    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:grid="sap.ui.layout.cssgrid">
+    <Page id="page" class="dashPage" showHeader="false">
+        <content>
+            <ScrollContainer height="100%" width="100%" vertical="true" class="dashScroll">
+                <VBox class="dashWrap">
+
+                    <!-- FILTER BAR -->
+                    <OverflowToolbar class="filterBar">
+                        <Label text="{i18n>filterYear}" class="filterLabel"/>
+                        <Select id="fyFilter" selectedKey="{ui>/filters/year}" change=".onFilterChange"
+                            items="{ui>/years}">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </Select>
+                        <ToolbarSpacer/>
+                        <Label text="{i18n>filterZone}" class="filterLabel"/>
+                        <Select id="zoneFilter" selectedKey="{ui>/filters/zone}" change=".onFilterChange"
+                            items="{ui>/zones}">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </Select>
+                        <Label text="{i18n>filterScheme}" class="filterLabel"/>
+                        <Select id="schemeFilter" selectedKey="{ui>/filters/scheme}" change=".onFilterChange"
+                            items="{ui>/schemes}">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </Select>
+                        <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </OverflowToolbar>
+
+                    <!-- KPI ROW -->
+                    <grid:CSSGrid class="kpiGrid">
+                        <VBox class="kpiCard kpiCard--brand">
+                            <Text text="{i18n>kpiTarget}" class="kpiLabel"/>
+                            <Text text="{ui>/kpi/targetText}" class="kpiValue kpiValue--primary"/>
+                            <Text text="{ui>/kpi/gapText}" class="kpiDelta kpiDelta--danger"/>
+                        </VBox>
+                        <VBox class="kpiCard kpiCard--good">
+                            <Text text="{i18n>kpiGross}" class="kpiLabel"/>
+                            <Text text="{ui>/kpi/grossText}" class="kpiValue kpiValue--success"/>
+                            <Text text="{ui>/kpi/grossDelta}" class="kpiDelta"/>
+                        </VBox>
+                        <VBox class="kpiCard kpiCard--warn">
+                            <Text text="{i18n>kpiAchievement}" class="kpiLabel"/>
+                            <Text text="{ui>/kpi/achText}" class="kpiValue"/>
+                            <ProgressIndicator class="achBar" percentValue="{ui>/kpi/achPct}"
+                                showValue="false" height="8px"/>
+                        </VBox>
+                    </grid:CSSGrid>
+
+                    <!-- CHART GRID -->
+                    <grid:CSSGrid class="chartsGrid">
+
+                        <Panel headerText="{i18n>chartAvt}" class="chartCard">
+                            <core:HTML content="&lt;div id=&quot;chart-avt&quot; class=&quot;chartBox&quot;&gt;&lt;/div&gt;"/>
+                        </Panel>
+
+                        <Panel headerText="{i18n>chartScheme}" class="chartCard">
+                            <core:HTML content="&lt;div id=&quot;chart-scheme&quot; class=&quot;chartBox&quot;&gt;&lt;/div&gt;"/>
+                        </Panel>
+
+                        <Panel headerText="{i18n>chartRank}" class="chartCard">
+                            <core:HTML content="&lt;div id=&quot;chart-rank&quot; class=&quot;chartBox&quot;&gt;&lt;/div&gt;"/>
+                        </Panel>
+
+                        <Panel headerText="{ui>/daily/title}" class="chartCard">
+                            <HBox class="dailyBar" width="100%" justifyContent="SpaceBetween" alignItems="Start" wrap="Wrap">
+                                <HBox class="monthPick" alignItems="Center">
+                                    <Label text="{i18n>filterMonth}" class="filterLabel"/>
+                                    <Select selectedKey="{ui>/dailyMonth}" change=".onDailyMonthChange"
+                                        items="{ui>/months}">
+                                        <core:Item key="{ui>key}" text="{ui>text}"/>
+                                    </Select>
+                                </HBox>
+                                <HBox class="miniKpis" justifyContent="End" wrap="Wrap">
+                                    <VBox class="miniKpiBox" alignItems="End">
+                                        <Text text="{ui>/daily/yLabel}" class="miniKpiLabel"/>
+                                        <Text text="{ui>/daily/yText}" class="miniKpiVal miniKpiVal--y"/>
+                                    </VBox>
+                                    <VBox class="miniKpiBox" alignItems="End">
+                                        <Text text="{ui>/daily/mtdLabel}" class="miniKpiLabel"/>
+                                        <Text text="{ui>/daily/mtdText}" class="miniKpiVal miniKpiVal--mtd"/>
+                                    </VBox>
+                                </HBox>
+                            </HBox>
+                            <core:HTML id="dailyHtml" afterRendering=".onDailyHtmlRendered"
+                                content="&lt;div id=&quot;chart-trend&quot; class=&quot;chartBox&quot;&gt;&lt;/div&gt;"/>
+                        </Panel>
+
+                    </grid:CSSGrid>
+                </VBox>
+            </ScrollContainer>
+        </content>
+    </Page>
+</mvc:View>

@@ -1,0 +1,105 @@
+<mvc:View controllerName="com.sap.balancesheet.controller.zfi_bs"
+    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m">
+    <Page id="dashboardPage" showHeader="false" class="dashboardPage">
+        <content>
+            <VBox class="dashboardRoot">
+
+                <!-- ===== Filter bar ===== -->
+                <HBox class="filterBar" alignItems="End" wrap="Wrap">
+                    <VBox class="filterField">
+                        <Label text="{i18n>filterFiscalYear}" class="filterLabel"/>
+                        <Select id="selFiscalYearFilter"
+                            selectedKey="{ui>/selectedFY}"
+                            items="{ui>/fyList}"
+                            change="onFilterChange"
+                            forceSelection="true"
+                            width="11rem">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </Select>
+                    </VBox>
+                    <VBox class="filterField">
+                        <Label text="{i18n>filterProfitCenter}" class="filterLabel"/>
+                        <MultiComboBox id="mcbProfitCenterFilter"
+                            selectedKeys="{ui>/selectedPCs}"
+                            items="{ui>/pcList}"
+                            selectionFinish="onPCSelectionFinish"
+                            selectionChange="onPCSelectionChange"
+                            showSelectAll="true"
+                            placeholder="{i18n>filterAll}"
+                            width="18rem">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </MultiComboBox>
+                    </VBox>
+                    <VBox class="filterField">
+                        <Label text="{i18n>filterMonth}" class="filterLabel"/>
+                        <MultiComboBox id="mcbMonthFilter"
+                            selectedKeys="{ui>/selectedMonths}"
+                            items="{ui>/monthList}"
+                            selectionFinish="onMonthSelectionFinish"
+                            selectionChange="onMonthSelectionChange"
+                            showSelectAll="true"
+                            placeholder="{i18n>filterAll}"
+                            width="14rem">
+                            <core:Item key="{ui>key}" text="{ui>text}"/>
+                        </MultiComboBox>
+                    </VBox>
+                    <Button text="{i18n>btnReset}" icon="sap-icon://clear-filter" press="onResetFilters" class="filterReset"/>
+                </HBox>
+
+                <!-- ===== KPI cards ===== -->
+                <HBox class="kpiRow" wrap="Wrap" justifyContent="SpaceBetween">
+                    <VBox class="kpiCard">
+                        <Text text="{i18n>kpiAssetTitle}" class="kpiTitle"/>
+                        <Text text="{ui>/kpi/asset}" class="kpiValue kpiAsset"/>
+                    </VBox>
+                    <VBox class="kpiCard">
+                        <Text text="{i18n>kpiLiabilityTitle}" class="kpiTitle"/>
+                        <Text text="{ui>/kpi/liability}" class="kpiValue kpiLiability"/>
+                    </VBox>
+                    <VBox class="kpiCard">
+                        <Text text="{i18n>kpiNetWorthTitle}" class="kpiTitle"/>
+                        <Text text="{ui>/kpi/networth}" class="kpiValue kpiNetWorth"/>
+                    </VBox>
+                </HBox>
+
+                <!-- ===== Charts ===== -->
+                <HBox class="chartRow" wrap="Wrap">
+                    <VBox class="chartCard">
+                        <Title text="{i18n>chartAssetTitle}" level="H3" class="chartTitle"/>
+                        <core:HTML content='&lt;div class="chartCanvasWrap"&gt;&lt;canvas id="assetPie"&gt;&lt;/canvas&gt;&lt;/div&gt;'/>
+                    </VBox>
+                    <VBox class="chartCard">
+                        <Title text="{i18n>chartLiabilityTitle}" level="H3" class="chartTitle"/>
+                        <core:HTML content='&lt;div class="chartCanvasWrap"&gt;&lt;canvas id="liabilityPie"&gt;&lt;/canvas&gt;&lt;/div&gt;'/>
+                    </VBox>
+                </HBox>
+
+                <!-- ===== Drill-down report (click a pie slice) ===== -->
+                <Panel class="reportPanel" headerText="{= ${ui>/report/title} ? ${ui>/report/title} : ${i18n>reportHeader} }">
+                    <Text class="reportHint" text="{i18n>reportHint}" visible="{= ${ui>/report/rows}.length === 0 }"/>
+                    <Table items="{ui>/report/rows}" visible="{= ${ui>/report/rows}.length > 0 }" growing="true" growingThreshold="20">
+                        <columns>
+                            <Column>
+                                <Text text="{i18n>reportColAccount}"/>
+                            </Column>
+                            <Column hAlign="End" width="14rem">
+                                <Text text="{i18n>reportColAmount}"/>
+                            </Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem>
+                                <cells>
+                                    <Text text="{ui>account}"/>
+                                    <Text text="{ui>amount}" class="reportAmount"/>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </Panel>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

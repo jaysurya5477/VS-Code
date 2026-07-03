@@ -48,28 +48,45 @@
 }
 
 /* Fix for flexbox alignment */
-.sapMFlexBox {
+/* .sapMFlexBox {
     overflow: hidden;
-}
+} */
 
-#_IDGenFlexbox {
+/* #_IDGenFlexbox {
     overflow: auto;
-}
+} */
 
 /* Full page container */
 .loginPage {
     height: 100%;
-    width: 100%;
+    /* width: 100%; */
     background: #f5f6f7; /* light SAP-like background */
 }
 
 /* Center box */
 .loginBox {
-    width: 350px;
+    width: 100%;
+    height: auto;
     padding: 2rem;
     background: white;
+    border: 1px solid #000000;
     border-radius: 12px;
-
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
     /* subtle shadow */
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); */
 }
+
+/* Prevent MessageStrip from exceeding form width */
+/* #messageStrip {
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+#messageStrip .sapMMsgStripMessage {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+} */

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -ks --max-time 15 'https://vhafbmedap01.hec.erp.alimco.in:443/sap/opu/odata4/sap/zsd_dash_targ_srv/srvd_a2x/sap/zsd_dash_targ_srv/0001/$metadata')",
+      "Bash(curl -ks --max-time 15 -o /dev/null -w 'HTTP %{http_code}\\\\n' 'https://vhafbmedap01.hec.erp.alimco.in/sap/opu/odata4/sap/zsd_dash_targ_srv/srvd_a2x/sap/zsd_dash_targ_srv/0001/$metadata')",
+      "Bash(node --check webapp/controller/zsd_zone_dash.controller.js)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('webapp/manifest.json','utf8'\\)\\);console.log\\('manifest OK'\\)\")"
+    ]
+  }
+}

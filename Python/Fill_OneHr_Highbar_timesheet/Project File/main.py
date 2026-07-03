@@ -92,12 +92,12 @@ with sync_playwright() as p:
         page.get_by_role("textbox", name="Password").fill(config["password"])
         
         #  Abort all image/media/font requests to make page loads faster globally
-        page.route(
-            "**/*", #Path
-            lambda route: route.abort()
-            if route.request.resource_type in ["image", "media", "font"] #["image", "media", "font", "stylesheet"] 
-            else route.continue_()
-        )
+        # page.route(
+        #     "**/*", #Path
+        #     lambda route: route.abort()
+        #     if route.request.resource_type in ["image", "media", "font"] #["image", "media", "font", "stylesheet"] 
+        #     else route.continue_()
+        # )
 
         page.get_by_role("button", name="Submit").click()
         print(" Login successful")

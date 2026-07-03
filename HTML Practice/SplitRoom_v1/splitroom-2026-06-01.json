@@ -1,0 +1,208 @@
+{
+  "members": [
+    {
+      "id": "m1",
+      "name": "Jayasurya Lakkoju",
+      "active": true,
+      "color": "#ffb347"
+    },
+    {
+      "id": "m2",
+      "name": "Anurag Singh",
+      "active": true,
+      "color": "#5fd3bc"
+    },
+    {
+      "id": "m3",
+      "name": "Ketan Deshpande",
+      "active": true,
+      "color": "#7aa2ff"
+    },
+    {
+      "id": "m4",
+      "name": "Virendra Rathore",
+      "active": true,
+      "color": "#ff9b85"
+    },
+    {
+      "id": "m5",
+      "name": "Vinit Makwana",
+      "active": true,
+      "color": "#c39bff"
+    },
+    {
+      "id": "m6",
+      "name": "Suraj Singh Karki",
+      "active": true,
+      "color": "#7ee787"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "e12",
+      "title": "May Total Room Expense",
+      "amount": 1330,
+      "date": "2026-05-31",
+      "payer": "m4",
+      "type": "room",
+      "split": "equal",
+      "parts": [
+        {
+          "m": "m1",
+          "amt": 221.67
+        },
+        {
+          "m": "m2",
+          "amt": 221.67
+        },
+        {
+          "m": "m3",
+          "amt": 221.67
+        },
+        {
+          "m": "m4",
+          "amt": 221.67
+        },
+        {
+          "m": "m5",
+          "amt": 221.67
+        },
+        {
+          "m": "m6",
+          "amt": 221.65
+        }
+      ],
+      "remarks": ""
+    },
+    {
+      "id": "e14",
+      "title": "Maid Salary",
+      "amount": 14000,
+      "date": "2026-05-31",
+      "payer": "m2",
+      "type": "room",
+      "split": "equal",
+      "parts": [
+        {
+          "m": "m1",
+          "amt": 2333.33
+        },
+        {
+          "m": "m2",
+          "amt": 2333.33
+        },
+        {
+          "m": "m3",
+          "amt": 2333.33
+        },
+        {
+          "m": "m4",
+          "amt": 2333.33
+        },
+        {
+          "m": "m5",
+          "amt": 2333.33
+        },
+        {
+          "m": "m6",
+          "amt": 2333.35
+        }
+      ],
+      "remarks": ""
+    },
+    {
+      "id": "e16",
+      "title": "Dosa Refund",
+      "amount": 79,
+      "date": "2026-05-31",
+      "payer": "m3",
+      "type": "personal",
+      "split": "equal",
+      "parts": [
+        {
+          "m": "m1",
+          "amt": 79
+        }
+      ],
+      "remarks": "Mysore Cafe Zomato Refund"
+    },
+    {
+      "id": "e18",
+      "title": "May Total Room Expense",
+      "amount": 5469,
+      "date": "2026-05-31",
+      "payer": "m3",
+      "type": "room",
+      "split": "equal",
+      "parts": [
+        {
+          "m": "m1",
+          "amt": 911.5
+        },
+        {
+          "m": "m2",
+          "amt": 911.5
+        },
+        {
+          "m": "m3",
+          "amt": 911.5
+        },
+        {
+          "m": "m4",
+          "amt": 911.5
+        },
+        {
+          "m": "m5",
+          "amt": 911.5
+        },
+        {
+          "m": "m6",
+          "amt": 911.5
+        }
+      ],
+      "remarks": "includes groceries, blinkit,etc..,"
+    }
+  ],
+  "log": [
+    {
+      "id": "e20",
+      "action": "modify",
+      "what": "Edited expense \"May Total Room Expense\" (₹1,330.00)",
+      "ts": 1780298343805
+    },
+    {
+      "id": "e19",
+      "action": "insert",
+      "what": "Added room expense \"May Total Room Expense\" (₹5,469.00)",
+      "ts": 1780298334513
+    },
+    {
+      "id": "e17",
+      "action": "insert",
+      "what": "Added personal expense \"Dosa Refund\" (₹79.00)",
+      "ts": 1780298271053
+    },
+    {
+      "id": "e15",
+      "action": "insert",
+      "what": "Added room expense \"Maid Salary\" (₹14,000.00)",
+      "ts": 1780298158575
+    },
+    {
+      "id": "e13",
+      "action": "insert",
+      "what": "Added room expense \"Total Room Expense\" (₹1,330.00)",
+      "ts": 1780298085264
+    },
+    {
+      "id": "e11",
+      "action": "delete",
+      "what": "Deleted expense \"Zomato\" (₹8,330.00)",
+      "ts": 1780298011960
+    }
+  ],
+  "seq": {
+    "m": 6,
+    "e": 20
+  }
+}

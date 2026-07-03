@@ -1,0 +1,29 @@
+{
+  "global": {
+    "files": [
+      "/**/*.abap",
+      "/**/*.asddls",
+      "/**/*.ddls",
+      "/**/*.dcls",
+      "/**/*.bdef",
+      "/**/*.ddlx"
+    ],
+    "exclude": [
+      "node_modules/",
+      "/webapp/",
+      "/dist/",
+      "/libs/"
+    ]
+  },
+  "dependencies": [],
+  "syntax": {
+    "version": "v755",
+    "errorNamespace": "^(Z|Y)",
+    "globalConstants": [],
+    "globalMacros": []
+  },
+  "rules": {
+    "check_syntax": true,
+    "check_ddic": true
+  }
+}

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Template 1: Executive Overview (ECharts) - Daily/Month View</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; margin: 0; padding: 20px; color: #333; }
+        .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+        .kpi-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .kpi-label { font-size: 14px; color: #666; margin-bottom: 5px; }
+        .kpi-value { font-size: 32px; font-weight: 700; }
+        .kpi-sub { font-size: 12px; margin-top: 5px; font-weight: 600; }
+        .text-danger { color: #d9534f; }
+        .text-success { color: #5cb85c; }
+        .text-primary { color: #0277bd; }
+        .col-span-2 { grid-column: span 2; }
+        .chart { height: 320px; width: 100%; }
+        
+        /* Styles for the new tile header */
+        .tile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .tile-header h3 { margin: 0; font-size: 16px; }
+        .mini-kpis { text-align: right; font-size: 12px; color: #666; }
+        .mini-kpis strong { font-size: 16px; display: block; line-height: 1.2; }
+        .mini-yesterday { color: #ee6666; }
+        .mini-mtd { color: #5470c6; }
+    </style>
+</head>
+<body>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <span class="kpi-label">Total Target (FY)</span>
+            <span class="kpi-value text-primary">₹871.0 <span style="font-size:16px; color:#999;">Cr</span></span>
+            <span class="kpi-sub text-danger">Gap: ₹780.77 Cr</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Total Gross (Achieved)</span>
+            <span class="kpi-value text-success">₹90.23 <span style="font-size:16px; color:#999;">Cr</span></span>
+            <span class="kpi-sub text-muted">From 5 Zones</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Achievement %</span>
+            <span class="kpi-value">10.4%</span>
+            <div style="width: 100%; background: #eee; height: 8px; border-radius: 4px; margin-top: 10px;">
+                <div style="width: 10.4%; background: #f0ad4e; height: 100%; border-radius: 4px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card col-span-2">
+            <h3 style="margin-top:0;">Actual vs Target by Zone</h3>
+            <div id="chart-zone" class="chart"></div>
+        </div>
+        <div class="card col-span-2">
+            <h3 style="margin-top:0;">Scheme Mix Distribution</h3>
+            <div id="chart-scheme" class="chart"></div>
+        </div>
+        <div class="card col-span-2">
+            <h3 style="margin-top:0;">Unit-wise Gross Ranking (Top 5 Highlighted)</h3>
+            <div id="chart-unit" class="chart"></div>
+        </div>
+        
+        <!-- Current Month Daily Trend with Yesterday Highlighted -->
+        <div class="card col-span-2">
+            <div class="tile-header">
+                <h3>Current Month Daily Gross</h3>
+                <div class="mini-kpis">
+                    <span>Yesterday (Day 30)</span>
+                    <strong class="mini-yesterday">₹4.20 Cr</strong>
+                    <span style="margin-top:5px; display:block;">MTD Gross (Day 1-30)</span>
+                    <strong class="mini-mtd">₹45.50 Cr</strong>
+                </div>
+            </div>
+            <div id="chart-monthly" class="chart"></div>
+        </div>
+    </div>
+
+    <script>
+        // Chart 1: Zone Actual vs Target
+        const zoneChart = echarts.init(document.getElementById('chart-zone'));
+        zoneChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['Target', 'Achieved', 'Achievement %'], top: 0 },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: ['East', 'West', 'North', 'South', 'Center'] },
+            yAxis: [
+                { type: 'value', name: 'Cr', axisLabel: { formatter: '{value}' } },
+                { type: 'value', name: '%', max: 100, axisLabel: { formatter: '{value}%' } }
+            ],
+            series: [
+                { name: 'Target', type: 'bar', barWidth: 20, data: [200, 180, 150, 170, 171], itemStyle: { color: '#e0e0e0', borderRadius: [4, 4, 0, 0] } },
+                { name: 'Achieved', type: 'bar', barWidth: 20, data: [25, 18, 15, 17, 15.23], itemStyle: { color: '#5470c6', borderRadius: [4, 4, 0, 0] } },
+                { name: 'Achievement %', type: 'line', yAxisIndex: 1, data: [12.5, 10.0, 10.0, 10.0, 8.9], lineStyle: { type: 'dashed', color: '#ee6666' }, itemStyle: { color: '#ee6666' } }
+            ]
+        });
+
+        // Chart 2: Scheme Mix (Nightingale Rose)
+        const schemeChart = echarts.init(document.getElementById('chart-scheme'));
+        schemeChart.setOption({
+            tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} Cr ({d}%)' },
+            legend: { orient: 'vertical', left: 'left', top: 'middle' },
+            series: [{
+                name: 'Scheme Mix', type: 'pie', radius: ['20%', '75%'], center: ['60%', '50%'],
+                roseType: 'area',
+                itemStyle: { borderRadius: 5 },
+                data: [
+                    { value: 25, name: 'ADIP', itemStyle: { color: '#5470c6' } },
+                    { value: 20, name: 'ADIP SSA', itemStyle: { color: '#91cc75' } },
+                    { value: 15, name: 'NFS', itemStyle: { color: '#fac858' } },
+                    { value: 12, name: 'RVY', itemStyle: { color: '#ee6666' } },
+                    { value: 10, name: 'AT-Mart', itemStyle: { color: '#73c0de' } },
+                    { value: 8.23, name: 'Dealers & Govt', itemStyle: { color: '#3ba272' } }
+                ]
+            }]
+        });
+
+        // Chart 3: Unit Ranking
+        const unitChart = echarts.init(document.getElementById('chart-unit'));
+        unitChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', name: 'Cr' },
+            yAxis: { type: 'category', data: ['Unit 10', 'Unit 9', 'Unit 8', 'Unit 7', 'Unit 6', 'Unit 5', 'Unit 4', 'Unit 3', 'Unit 2', 'Unit 1'].reverse() },
+            series: [{
+                name: 'Gross', type: 'bar', data: [
+                    { value: 5, itemStyle: { color: '#ccc' } }, { value: 6, itemStyle: { color: '#ccc' } },
+                    { value: 7, itemStyle: { color: '#ccc' } }, { value: 8, itemStyle: { color: '#ccc' } },
+                    { value: 9, itemStyle: { color: '#ccc' } }, // Top 5 starts here
+                    { value: 12, itemStyle: { color: '#5470c6' } }, { value: 14, itemStyle: { color: '#5470c6' } },
+                    { value: 16, itemStyle: { color: '#5470c6' } }, { value: 18, itemStyle: { color: '#5470c6' } },
+                    { value: 20, itemStyle: { color: '#5470c6' } }
+                ].reverse(),
+                itemStyle: { borderRadius: [0, 4, 4, 0] }
+            }]
+        });
+
+        // Chart 4: Current Month Daily Gross (Yesterday Highlighted)
+        const monthlyChart = echarts.init(document.getElementById('chart-monthly'));
+        const days = Array.from({length: 31}, (_, i) => i + 1);
+        
+        // Mock data for 31 days. Day 30 is "Yesterday"
+        const dailyData = [1.5, 2.1, 1.8, 1.2, 0.5, 0.0, 2.5, 2.8, 3.1, 2.5, 1.9, 0.8, 0.0, 3.2, 2.9, 2.4, 1.8, 1.1, 0.2, 0.0, 3.5, 3.1, 2.8, 2.2, 1.5, 0.9, 0.0, 3.8, 3.2, 4.2, 0.0];
+        
+        // Style the data: Soft blue for normal days, Orange/Red for Yesterday (Day 30), Transparent for future days (Day 31+)
+        const styledDailyData = dailyData.map((val, index) => {
+            const day = index + 1;
+            if (day === 30) {
+                return { value: val, itemStyle: { color: '#ee6666', borderRadius: [4, 4, 0, 0] } }; // Yesterday
+            } else if (day < 30) {
+                return { value: val, itemStyle: { color: '#9ecae1', borderRadius: [4, 4, 0, 0] } }; // Past days
+            } else {
+                return { value: val, itemStyle: { color: '#f0f0f0', borderRadius: [4, 4, 0, 0] } }; // Future/Empty
+            }
+        });
+
+        monthlyChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    const data = params[0].data;
+                    const val = data.value !== undefined ? data.value : data;
+                    const day = params[0].axisValue;
+                    let label = (day == 30) ? `<b>Yesterday (Day ${day})</b>` : `Day ${day}`;
+                    return label + '<br/>Gross: <b>₹' + val + ' Cr</b>';
+                }
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: days, name: 'Day' },
+            yAxis: { type: 'value', name: 'Cr' },
+            // Markline has been removed as requested
+            series: [{
+                name: 'Daily Gross', type: 'bar', data: styledDailyData, barWidth: '60%'
+            }]
+        });
+
+        window.addEventListener('resize', () => {
+            zoneChart.resize(); schemeChart.resize(); unitChart.resize(); monthlyChart.resize();
+        });
+    </script>
+</body>
+</html>

@@ -8,26 +8,37 @@
             <!-- Left Form Box - will center when right box is hidden -->
             <VBox id="FormBox" width="50%" class="formBoxResponsive" justifyContent="Center" alignItems="Center">
 
-                <f:SimpleForm id="_IDGenSimpleForm" editable="true" layout="ResponsiveGridLayout" labelSpanL="2" labelSpanM="2" columnsL="1" columnsM="1" emptySpanL="0" emptySpanM="0" class="loginBox">
-
+                <FlexBox id="_IDGenSimpleForm" class="loginBox" width="400px" height="auto" direction="Column" alignItems="Stretch" justifyContent="Start">
+                   
                     <Label id="_IDGenLabel" text="{i18n>username}" />
-                    <Input id="_IDGenInput" value="{/username}" />
+                    <Input id="usernameInput" value="{/username}" change="onUsernameChange"/>
 
                     <Label id="_IDGenLabel1" text="{i18n>password}" />
-                    <Input id="_IDGenInput1" type="Password" value="{/password}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword"/>
+                    <Input id="passwordInput" type="Password" value="{/password}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword" change="onPasswordChange"/>
 
                     <Label id="_IDGenLabel2" text="{i18n>repeatpassword}" />
-                    <Input id="_IDGenInput2" type="Password" value="{/repeatpassword}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword"/>
+                    <Input id="repeatPasswordInput" type="Password" value="{/repeatpassword}" valueHelpIconSrc="sap-icon://show" showValueHelp="true" valueHelpRequest="onTogglePassword" change="onRepeatPasswordChange"/>
 
                     <Label id="_IDGenLabel3" text="{i18n>email}" />
-                    <Input id="_IDGenInput3" type="Email" value="{/email}" />
+                    <Input id="emailInput" type="Email" value="{/email}" change="onEmailChange"/>
 
                     <Label id="_IDGenLabel4" text="{i18n>phone}" />
-                    <Input id="_IDGenInput4" type="Tel" value="{/phone}" />
+                    <FlexBox id="_IDGenHBox1" alignItems="Center" width="100%" justifyContent="SpaceBetween">
+                        <items>
+                            <Input id="phoneInput" type="Tel" value="{/phone}" liveChange="onPhoneLiveChange" change="onPhoneChange" width="100%">
+                                <layoutData>
+                                    <FlexItemData id="_IDGenFlexItemData" growFactor="1" />
+                                </layoutData>
+                            </Input>
+                            <Button id="sendOtpButton" text="Send OTP" visible="false" press="onSendOtp" class="sapUiTinyMarginBegin"/>
+                        </items>
+                    </FlexBox>
 
-                    <Button id="registerButton" text="Register" type="Emphasized" class="sapUiSmallMarginTop" width="100%"/>
-
-                </f:SimpleForm>
+                    <Button id="registerButton" text="Register" type="Emphasized" class="sapUiSmallMarginTop" width="100%" press="onRegister"/>
+                    <VBox id="messageVBox" width="100%">
+                        <MessageStrip id="messageStrip" visible="false" showIcon="true" showCloseButton="true" class="sapUiNoMargin"/>
+                    </VBox>
+                </FlexBox>
             </VBox>
 
             <!-- Right Logo Box - will hide on smaller screens -->
