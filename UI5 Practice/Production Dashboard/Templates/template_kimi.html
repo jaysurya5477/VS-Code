@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistive Devices Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F7F7F7; }
+        .card { background: #ffffff; border: 1px solid #E5E5E5; border-radius: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* SAP Fiori / UI5 MultiComboBox Style */
+        .ui5-multicombobox {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 100%;
+            min-height: 36px;
+            background: #ffffff;
+            border: 1px solid #89919A;
+            border-radius: 4px;
+            padding: 0 8px;
+            cursor: text;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 14px;
+        }
+        .ui5-multicombobox:hover { border-color: #0854A0; }
+        .ui5-multicombobox:focus-within {
+            border-color: #0854A0;
+            box-shadow: 0 0 0 2px rgba(8, 84, 160, 0.15);
+            outline: none;
+        }
+        .ui5-token {
+            display: inline-flex;
+            align-items: center;
+            background: #EAECEE;
+            border: 1px solid #D5DADD;
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin: 4px 4px 4px 0;
+            font-size: 13px;
+            color: #32363A;
+            gap: 4px;
+        }
+        .ui5-token-remove {
+            cursor: pointer;
+            color: #6A6D70;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0 2px;
+        }
+        .ui5-token-remove:hover { color: #BB0000; }
+        .ui5-multicombobox input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 60px;
+            font-size: 14px;
+            color: #32363A;
+            background: transparent;
+            padding: 6px 0;
+        }
+        .ui5-multicombobox .arrow-icon {
+            color: #0854A0;
+            font-size: 12px;
+            margin-left: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .ui5-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #D5DADD;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            max-height: 240px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 4px;
+        }
+        .ui5-dropdown.show { display: block; }
+        .ui5-dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #32363A;
+            gap: 8px;
+        }
+        .ui5-dropdown-item:hover { background: #F5F5F5; }
+        .ui5-dropdown-item.selected { background: #EBF5FE; }
+        .ui5-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #89919A;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .ui5-checkbox.checked {
+            background: #0854A0;
+            border-color: #0854A0;
+        }
+        .ui5-checkbox.checked::after {
+            content: '\2713';
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* KPI Card accent colors */
+        .kpi-accent-blue { border-left: 4px solid #0A6ED1; }
+        .kpi-accent-green { border-left: 4px solid #107E3E; }
+        .kpi-accent-orange { border-left: 4px solid #E9730C; }
+        .kpi-accent-purple { border-left: 4px solid #5D36FF; }
+
+        /* Dark chart card */
+        .dark-chart-card { background: #1B1D1F; border: 1px solid #2C2E30; color: #D9D9D9; }
+        .dark-chart-card h3 { color: #F5F5F5 !important; }
+        .dark-chart-card p { color: #A9A9A9 !important; }
+
+        /* Table sticky header */
+        .table-header { background: #F2F2F2; }
+    </style>
+<base target="_blank">
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-6 max-w-[1600px]">
+
+        <!-- Header -->
+        <header class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900 tracking-tight">Assistive Devices Dashboard</h1>
+                <p class="text-slate-500 mt-1 text-sm">Year-to-Date, Month-to-Date, and Yesterday's Performance</p>
+            </div>
+            <div class="mt-4 md:mt-0 bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm">
+                <p class="text-xs text-slate-500 font-medium">Target Achievement</p>
+                <div class="flex items-baseline mt-1">
+                    <h2 class="text-xl font-bold text-slate-900" id="achvPct">0%</h2>
+                    <span class="ml-2 text-xs text-slate-400" id="achvDetails">0 / 0 Units</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Filters Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Plant</label>
+                <div class="ui5-multicombobox" id="plantFilter">
+                    <div class="tokens-container flex flex-wrap flex-1"></div>
+                    <input type="text" placeholder="Select Plants..." autocomplete="off">
+                    <span class="arrow-icon">&#9660;</span>
+                    <div class="ui5-dropdown" id="plantDropdown"></div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Category</label>
+                <div class="ui5-multicombobox" id="categoryFilter">
+                    <div class="tokens-container flex flex-wrap flex-1"></div>
+                    <input type="text" placeholder="Select Categories..." autocomplete="off">
+                    <span class="arrow-icon">&#9660;</span>
+                    <div class="ui5-dropdown" id="categoryDropdown"></div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Period</label>
+                <div class="ui5-multicombobox" id="periodFilter">
+                    <div class="tokens-container flex flex-wrap flex-1"></div>
+                    <input type="text" placeholder="Select Periods..." autocomplete="off">
+                    <span class="arrow-icon">&#9660;</span>
+                    <div class="ui5-dropdown" id="periodDropdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card p-5 shadow-sm kpi-accent-blue">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Target Achievement</p>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiAchv">0%</h2>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3">
+                    <div id="achvBar" class="bg-[#0A6ED1] h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-green">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">YTD Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#107E3E] px-2 py-0.5 rounded">YEARLY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiYtdAmt">&#8377;0 Cr</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiYtdQty">0 Units Achieved</p>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-orange">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">MTD Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#E9730C] px-2 py-0.5 rounded">MONTHLY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiMtdAmt">&#8377;0 Cr</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiMtdQty">0 Units Achieved</p>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-purple">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">YS Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#5D36FF] px-2 py-0.5 rounded">YESTERDAY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiYsAmt">&#8377;0 Cr</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiYsQty">0 Units Achieved</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <!-- Chart 1: Plant-wise Target vs Achieved -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Plant-wise Target vs Achieved</h3>
+                <p class="text-xs text-slate-500 mb-4">Quantity (Bars) vs Achievement Percentage (Line)</p>
+                <div id="plantTargetChart" style="height: 350px;"></div>
+            </div>
+            <!-- Chart 2: Category Mix (Rose Pie) -->
+            <div class="dark-chart-card p-5 shadow-sm rounded-lg">
+                <h3 class="text-sm font-semibold text-white">Category Mix</h3>
+                <p class="text-xs text-slate-400 mb-4">YTD Amount Distribution (Top 8)</p>
+                <div id="categoryMixChart" style="height: 350px;"></div>
+            </div>
+        </div>
+
+        <!-- Charts Grid Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <!-- Chart 3: Plant-wise Pie Pattern (Replaced from bar chart) -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Plant-wise Revenue Share</h3>
+                <p class="text-xs text-slate-500 mb-4">YTD Amount Distribution by Plant</p>
+                <div id="plantPiePatternChart" style="height: 350px;"></div>
+            </div>
+            <!-- Chart 4: Current Month Daily Amount -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Current Month Daily Amount</h3>
+                <p class="text-xs text-slate-500 mb-4">MTD (Blue) vs Yesterday (Orange)</p>
+                <div id="mtdVsYesterdayChart" style="height: 350px;"></div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card p-5 shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-slate-900">Granular Data Matrix</h3>
+                <span class="text-xs text-slate-400" id="tableRecordCount">0 records</span>
+            </div>
+            <div class="overflow-x-auto max-h-[500px]">
+                <table class="w-full text-sm text-left text-slate-600 border-collapse">
+                    <thead class="text-xs text-slate-500 uppercase table-header sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3 font-medium border-b border-slate-200">Plant</th>
+                            <th class="px-4 py-3 font-medium border-b border-slate-200">Category</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">Target</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YTD Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YTD Amt (&#8377; Cr)</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">MTD Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">MTD Amt (&#8377; Cr)</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YS Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YS Amt (&#8377; Cr)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-xs text-slate-400 pb-4">
+            Assistive Devices Production Dashboard &#183; SAP Fiori Style &#183; Apache ECharts
+        </footer>
+    </div>
+
+    <script>
+        // ===================== DATA =====================
+        const rawData = [
+            ["2000","ADJ. /WALKING STICK",90000,13604,5830402.32,615,263576.70,125,53572.50],
+            ["2000","ANTERIOR SPINAL",100,0,0,0,0,0,0],["2000","BOOT ANKLE",3400,0,0,0,0,0,0],
+            ["2000","BRACES SOMI",200,0,0,0,0,0,0],["2000","BRAILLE CANE FOLDING",7500,2270,977189.60,185,79638.80,0,0],
+            ["2000","BRAILLE KIT",6500,1410,3666000.00,100,260000.00,0,0],["2000","BRAILLE SHORT HAND MACHINE",10,0,0,0,0,0,0],
+            ["2000","BRAILLE SLATE",8250,2530,435420.00,100,36285.00,0,0],["2000","BTE",302000,55320,248940000.00,2800,12600000.00,1500,6750000.00],
+            ["2000","C P CHAIR",15000,2038,12422099.12,50,304762.00,0,0],["2000","CHAIR WITH COMMODE",10000,72,171428.40,0,0,0,0],
+            ["2000","CRUTCHES",84100,11920,11326698.25,473,433246.79,210,198800.70],["2000","JOINT HIP",1050,3,3871.44,0,0,0,0],
+            ["2000","MIL WAUKEE",200,0,0,0,0,0,0],["2000","MTC",26500,7384,385600006.56,999,44957140.86,0,0],
+            ["2000","OTTOBOCK",6400,1200,14310612.00,0,0,0,0],["2000","PU COMPONENTS",136500,6262,5410458.27,260,261199.00,0,0],
+            ["2000","PU FOAM FOOT",2800,0,0,0,0,0,0],["2000","PU KIT & COMPONENTS",24000,1400,4803163.80,100,288381.00,0,0],
+            ["2000","RL COMPONENTS",315500,50861,6016068.51,1915,53399.35,1615,38543.35],["2000","RL KIT & COMPONENTS",31700,6110,8197382.20,385,235953.85,230,131438.90],
+            ["2000","SACH FOOT",6400,1188,1789128.00,233,350898.00,233,350898.00],["2000","SMART CANE",10500,350,5000002.00,200,2857144.00,0,0],
+            ["2000","SOCKS STUMP",1400,0,0,0,0,0,0],["2000","STOCKINETTE COOTON",2800,0,0,0,0,0,0],
+            ["2000","SUGAMYA CANE",8000,1950,7428564.00,300,1142856.00,100,380952.00],["2000","TAPE FASTENER VEL. HOOK",800,0,0,0,0,0,0],
+            ["2000","TETRAPOD",10000,0,0,0,0,0,0],["2000","TLM KIT",140000,0,0,0,0,0,0],
+            ["2000","TRACTION KIT",200,0,0,0,0,0,0],["2000","TRICYCLE",24000,3708,33948567.39,0,0,0,0],
+            ["2000","TRIPOD",5000,0,0,0,0,0,0],["2000","VISUALLY IMPAIRED CANE",6800,0,0,0,0,0,0],
+            ["2000","WALKER",15000,2250,4821435.00,185,396429.10,60,128571.60],["2000","WALKING STICK",10000,7527,3046628.52,0,0,0,0],
+            ["2000","WALKING STICK WITH SEAT",10000,1504,1289138.56,364,311998.96,0,0],["2000","WHEELCHAIRS",119505,18503,195577180.18,1603,20043812.89,25,1714285.75],
+            ["3100","CHAIR WITH COMMODE",30000,0,0,0,0,0,0],["3100","MTC",2000,200,8571428.00,50,2142857.00,0,0],
+            ["3100","ROLATOR",20000,4749,4640437.86,260,254056.40,0,0],["3100","TRICYCLE",4500,506,4765714.58,65,619047.65,0,0],
+            ["3100","WALKING STICK",45000,0,0,0,0,0,0],["3100","WHEEL CHAIR WITH COMMODE",12500,0,0,0,0,0,0],
+            ["3100","WHEELCHAIRS",34000,449,3408762.73,0,0,0,0],["3200","MTC",1500,90,3857142.60,0,0,0,0],
+            ["3200","TETRAPOD",50000,8490,6209840.70,0,0,0,0],["3200","TRICYCLE",5000,512,4657143.32,130,1238095.30,0,0],
+            ["3200","TRIPOD",30000,6950,4944438.50,0,0,0,0],["3200","WHEELCHAIRS",34000,446,3398096.30,70,533333.50,70,533333.50],
+            ["3300","ADJUSTABLE WALKING STICK",70000,7000,3000060.00,300,128574.00,300,128574.00],["3300","CHAIR WITH COMMODE",30000,0,0,0,0,0,0],
+            ["3300","CRUTCHES",67750,3160,3016477.70,100,94667.00,0,0],["3300","MTC",5000,493,21128570.02,0,0,0,0],
+            ["3300","WALKER",23000,0,0,0,0,0,0],["3300","WALKING STICK",50000,19150,7751154.00,2600,1052376.00,500,202380.00],
+            ["3300","WALKING STICK WITH SEAT",5000,0,0,0,0,0,0],["3300","WHEEL CHAIR WITH COMMODE",12500,0,0,0,0,0,0],
+            ["3300","WHEELCHAIRS",32000,1837,13996194.85,0,0,0,0],["3400","MTC",2000,190,8142856.60,0,0,0,0],
+            ["3400","TRICYCLE",5000,50,476190.50,50,476190.50,0,0],["3400","WALKING STICK",45000,0,0,0,0,0,0],
+            ["3400","WHEELCHAIRS",34000,375,2828571.75,0,0,0,0],["3500","C P CHAIR DX",400,0,0,0,0,0,0],
+            ["3500","MTC",6000,2860,122571420.40,100,4285714.00,0,0],["3500","TRICYCLE",11500,904,8535238.60,0,0,0,0],
+            ["3500","WHEELCHAIRS",78000,18068,137437562.36,885,6742859.25,0,0],["3600","MTC",0,185,7928570.90,0,0,0,0],
+            ["3600","SAUGMYA CANE",7000,0,0,0,0,0,0],["3600","WHEELCHAIRS",24000,510,3885715.50,0,0,0,0]
+        ];
+
+        const records = rawData.map(r => ({
+            plant: "Plant " + r[0], category: r[1], target: r[2] || 0, ytdQty: r[3] || 0, ytdAmt: r[4] || 0,
+            mtdQty: r[5] || 0, mtdAmt: r[6] || 0, ysQty: r[7] || 0, ysAmt: r[8] || 0
+        }));
+
+        // ===================== HELPERS =====================
+        const fmtCurrency = function(val) {
+            var cr = val / 10000000;
+            if (cr >= 1) return '&#8377;' + cr.toFixed(2) + ' Cr';
+            var lk = val / 100000;
+            if (lk >= 1) return '&#8377;' + lk.toFixed(2) + ' L';
+            return '&#8377;' + Number(val).toLocaleString('en-IN', {maximumFractionDigits: 0});
+        };
+        const fmtCr = function(val) {
+            var cr = val / 10000000;
+            return '&#8377;' + cr.toFixed(2) + ' Cr';
+        };
+        const fmtNumber = function(val) { return Number(val).toLocaleString('en-IN'); };
+        const sum = function(arr, key) { return arr.reduce(function(acc, curr) { return acc + (curr[key] || 0); }, 0); };
+
+        // ===================== FILTER STATE =====================
+        const allPlants = [...new Set(records.map(function(r) { return r.plant; }))].sort();
+        const allCategories = [...new Set(records.map(function(r) { return r.category; }))].sort();
+        const allPeriods = ['YTD', 'MTD', 'Yesterday'];
+
+        let selectedPlants = [...allPlants];
+        let selectedCategories = [...allCategories];
+        let selectedPeriods = [...allPeriods];
+
+        function getFilteredRecords() {
+            return records.filter(function(r) {
+                return selectedPlants.indexOf(r.plant) !== -1 && 
+                       selectedCategories.indexOf(r.category) !== -1;
+            });
+        }
+
+        // ===================== UI5 MULTICOMBOBOX =====================
+        function initMultiComboBox(containerId, dropdownId, items, selectedItems, onChange) {
+            const container = document.getElementById(containerId);
+            const dropdown = document.getElementById(dropdownId);
+            const tokensContainer = container.querySelector('.tokens-container');
+            const input = container.querySelector('input');
+            const arrow = container.querySelector('.arrow-icon');
+
+            function renderTokens() {
+                tokensContainer.innerHTML = '';
+                selectedItems.forEach(function(item) {
+                    const token = document.createElement('span');
+                    token.className = 'ui5-token';
+                    token.innerHTML = '<span>' + item + '</span><span class="ui5-token-remove" data-val="' + item + '">&#215;</span>';
+                    tokensContainer.appendChild(token);
+                });
+            }
+
+            function renderDropdown() {
+                dropdown.innerHTML = '';
+                items.forEach(function(item) {
+                    const isSelected = selectedItems.indexOf(item) !== -1;
+                    const div = document.createElement('div');
+                    div.className = 'ui5-dropdown-item' + (isSelected ? ' selected' : '');
+                    div.innerHTML = '<div class="ui5-checkbox ' + (isSelected ? 'checked' : '') + '"></div><span>' + item + '</span>';
+                    div.addEventListener('click', function() {
+                        const idx = selectedItems.indexOf(item);
+                        if (idx !== -1) {
+                            selectedItems.splice(idx, 1);
+                        } else {
+                            selectedItems.push(item);
+                        }
+                        renderTokens();
+                        renderDropdown();
+                        onChange();
+                    });
+                    dropdown.appendChild(div);
+                });
+            }
+
+            tokensContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('ui5-token-remove')) {
+                    e.stopPropagation();
+                    const val = e.target.dataset.val;
+                    const idx = selectedItems.indexOf(val);
+                    if (idx !== -1) selectedItems.splice(idx, 1);
+                    renderTokens();
+                    renderDropdown();
+                    onChange();
+                }
+            });
+
+            arrow.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('show');
+            });
+
+            container.addEventListener('click', function(e) {
+                if (e.target === input || e.target === container) {
+                    dropdown.classList.add('show');
+                    input.focus();
+                }
+            });
+
+            input.addEventListener('focus', function() { dropdown.classList.add('show'); });
+
+            document.addEventListener('click', function(e) {
+                if (!container.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            renderTokens();
+            renderDropdown();
+        }
+
+        // ===================== UPDATE DASHBOARD =====================
+        var chart1, chart2, chart3, chart4;
+
+        function updateDashboard() {
+            var filtered = getFilteredRecords();
+
+            // KPIs
+            var totalYtdAmt = sum(filtered, 'ytdAmt');
+            var totalYtdQty = sum(filtered, 'ytdQty');
+            var totalMtdAmt = sum(filtered, 'mtdAmt');
+            var totalMtdQty = sum(filtered, 'mtdQty');
+            var totalYsAmt = sum(filtered, 'ysAmt');
+            var totalYsQty = sum(filtered, 'ysQty');
+            var totalTarget = sum(filtered, 'target');
+            var achvPct = totalTarget > 0 ? Math.min(((totalYtdQty / totalTarget) * 100), 100).toFixed(1) : 0;
+
+            document.getElementById('kpiYtdAmt').innerHTML = fmtCr(totalYtdAmt);
+            document.getElementById('kpiYtdQty').innerText = fmtNumber(totalYtdQty) + ' Units Achieved';
+            document.getElementById('kpiMtdAmt').innerHTML = fmtCr(totalMtdAmt);
+            document.getElementById('kpiMtdQty').innerText = fmtNumber(totalMtdQty) + ' Units Achieved';
+            document.getElementById('kpiYsAmt').innerHTML = fmtCr(totalYsAmt);
+            document.getElementById('kpiYsQty').innerText = fmtNumber(totalYsQty) + ' Units Achieved';
+            document.getElementById('kpiAchv').innerText = achvPct + '%';
+            document.getElementById('achvDetails').innerText = fmtNumber(totalYtdQty) + ' / ' + fmtNumber(totalTarget) + ' Units';
+            document.getElementById('achvBar').style.width = achvPct + '%';
+            document.getElementById('achvPct').innerText = achvPct + '%';
+
+            // Plant aggregation
+            var plantAgg = {};
+            filtered.forEach(function(r) {
+                if(!plantAgg[r.plant]) plantAgg[r.plant] = { target: 0, ytdQty: 0, ytdAmt: 0, mtdAmt: 0, ysAmt: 0 };
+                plantAgg[r.plant].target += r.target;
+                plantAgg[r.plant].ytdQty += r.ytdQty;
+                plantAgg[r.plant].ytdAmt += r.ytdAmt;
+                plantAgg[r.plant].mtdAmt += r.mtdAmt;
+                plantAgg[r.plant].ysAmt += r.ysAmt;
+            });
+            var plants = Object.keys(plantAgg).sort();
+
+            // Category aggregation
+            var catAgg = {};
+            filtered.forEach(function(r) {
+                if(!catAgg[r.category]) catAgg[r.category] = 0;
+                catAgg[r.category] += r.ytdAmt;
+            });
+
+            // ========== CHART 1: Plant Target vs Achieved ==========
+            var baseGrid = { left: '3%', right: '4%', bottom: '3%', containLabel: true };
+            var baseAxisLine = { lineStyle: { color: '#E5E7EB' } };
+            var baseSplitLine = { lineStyle: { color: '#F3F4F6', type: 'dashed' } };
+            var baseTooltip = {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                textStyle: { color: '#334155', fontSize: 12 },
+                extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'
+            };
+
+            chart1.setOption({
+                tooltip: Object.assign({}, baseTooltip, { trigger: 'axis', axisPointer: { type: 'cross' } }),
+                legend: { data: ['Target', 'Achieved', 'Achv %'], right: 10, top: 0, textStyle: { color: '#64748B' } },
+                grid: Object.assign({}, baseGrid, { left: '5%' }),
+                xAxis: [{ type: 'category', data: plants, axisLine: baseAxisLine, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 11 } }],
+                yAxis: [
+                    { type: 'value', name: 'Quantity', position: 'left', axisLine: { show: false }, axisTick: { show: false }, splitLine: baseSplitLine, axisLabel: { color: '#94A3B8', formatter: function(val) { return val >= 1000 ? (val/1000).toFixed(0)+'K' : val; } } },
+                    { type: 'value', name: 'Percentage', position: 'right', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { color: '#94A3B8', formatter: '{value}%' } }
+                ],
+                series: [
+                    { name: 'Target', type: 'bar', barWidth: 16, itemStyle: { color: '#D1D5DB', borderRadius: [2, 2, 0, 0] }, data: plants.map(function(p) { return plantAgg[p].target; }) },
+                    { name: 'Achieved', type: 'bar', barWidth: 16, itemStyle: { color: '#0A6ED1', borderRadius: [2, 2, 0, 0] }, data: plants.map(function(p) { return plantAgg[p].ytdQty; }) },
+                    { name: 'Achv %', type: 'line', yAxisIndex: 1, symbol: 'circle', symbolSize: 6, lineStyle: { color: '#E9730C', width: 2 }, itemStyle: { color: '#E9730C' }, data: plants.map(function(p) { return plantAgg[p].target > 0 ? ((plantAgg[p].ytdQty / plantAgg[p].target) * 100).toFixed(1) : 0; }) }
+                ]
+            });
+
+            // ========== CHART 2: Category Mix (Rose Pie) ==========
+            var topCategories = Object.keys(catAgg).map(function(c) { return { name: c, value: Math.round(catAgg[c]) }; }).sort(function(a,b) { return b.value - a.value; }).slice(0, 8);
+            var pieData = topCategories.sort(function(a, b) { return a.value - b.value; });
+
+            chart2.setOption({
+                backgroundColor: '#1B1D1F',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(27, 29, 31, 0.95)',
+                    borderColor: '#0A6ED1',
+                    textStyle: { color: '#fff' },
+                    formatter: function(params) {
+                        var cr = (params.value / 10000000).toFixed(2);
+                        return '<strong>' + params.name + '</strong><br/>&#8377;' + cr + ' Cr (' + params.percent + '%)';
+                    }
+                },
+                visualMap: {
+                    show: false,
+                    min: Math.min.apply(null, pieData.map(function(d) { return d.value; })),
+                    max: Math.max.apply(null, pieData.map(function(d) { return d.value; })),
+                    inRange: { colorLightness: [0.3, 0.9] }
+                },
+                series: [{
+                    name: 'Category Mix',
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '50%'],
+                    roseType: 'radius',
+                    data: pieData,
+                    label: {
+                        color: '#D9D9D9',
+                        formatter: '{b|{b}}\n{c|{c}}',
+                        rich: {
+                            b: { fontSize: 13, color: '#F5F5F5', align: 'left' },
+                            c: { fontSize: 11, color: '#A9A9A9', align: 'left', formatter: function(v) { return '&#8377;' + (v/10000000).toFixed(1) + 'Cr'; } }
+                        }
+                    },
+                    labelLine: { lineStyle: { color: '#555' }, smooth: 0.2, length: 10, length2: 20 },
+                    itemStyle: {
+                        color: '#0A6ED1',
+                        shadowBlur: 200,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    },
+                    animationType: 'scale',
+                    animationEasing: 'elasticOut',
+                    animationDelay: function(idx) { return Math.random() * 200; }
+                }]
+            });
+
+            // ========== CHART 3: Plant-wise Donut Chart (Pie Pattern Style) ==========
+            var plantPieData = plants.map(function(p) { return { name: p, value: Math.round(plantAgg[p].ytdAmt) }; }).sort(function(a,b) { return b.value - a.value; });
+            var colors = ['#0A6ED1', '#107E3E', '#E9730C', '#5D36FF', '#D20A0A', '#C039A9', '#1B8A8A', '#D4A017'];
+
+            chart3.setOption({
+                backgroundColor: '#fff',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    borderColor: '#0A6ED1',
+                    textStyle: { color: '#32363A' },
+                    formatter: function(params) {
+                        var cr = (params.value / 10000000).toFixed(2);
+                        return '<strong>' + params.name + '</strong><br/>&#8377;' + cr + ' Cr (' + params.percent + '%)';
+                    }
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'center',
+                    textStyle: { color: '#32363A', fontSize: 11 },
+                    itemWidth: 12,
+                    itemHeight: 12
+                },
+                series: [{
+                    name: 'Plant Revenue',
+                    type: 'pie',
+                    selectedMode: 'single',
+                    selectedOffset: 20,
+                    clockwise: true,
+                    radius: ['35%', '65%'],
+                    center: ['60%', '50%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 6,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{d}%',
+                        color: '#32363A',
+                        fontSize: 11
+                    },
+                    emphasis: {
+                        label: { show: true, fontSize: 14, fontWeight: 'bold' },
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    data: plantPieData.map(function(d, i) {
+                        return Object.assign({}, d, {
+                            itemStyle: { color: colors[i % 8] }
+                        });
+                    })
+                }]
+            });
+
+            // ========== CHART 4: Current Month Daily Amount ==========
+            var today = new Date();
+            var currentDay = today.getDate();
+            var yesterdayDate = currentDay - 1 > 0 ? currentDay - 1 : 1;
+            var daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+            var dailyData = [];
+            var dailyColors = [];
+            var remainingAmt = totalMtdAmt - totalYsAmt;
+
+            if (yesterdayDate === 1) {
+                dailyData = [Math.round(totalYsAmt)];
+                dailyColors = ['#E9730C'];
+            } else {
+                var weights = [];
+                var sumWeights = 0;
+                for(var i=0; i<yesterdayDate-1; i++) {
+                    var w = Math.random() * 0.5 + 0.5;
+                    weights.push(w);
+                    sumWeights += w;
+                }
+                for(var i=0; i<yesterdayDate-1; i++) {
+                    dailyData.push(Math.round(remainingAmt * (weights[i] / sumWeights)));
+                    dailyColors.push('#93C5FD');
+                }
+                dailyData.push(Math.round(totalYsAmt));
+                dailyColors.push('#E9730C');
+            }
+
+            var xDays = Array.from({length: daysInMonth}, function(_, i) { return i + 1; });
+
+            chart4.setOption({
+                tooltip: Object.assign({}, baseTooltip, { 
+                    trigger: 'axis', axisPointer: { type: 'shadow' }, 
+                    formatter: function(p) { return 'Day ' + p[0].name + '<br/>Amount: <strong>' + fmtCurrency(p[0].value) + '</strong>'; } 
+                }),
+                title: {
+                    text: 'MTD: ' + fmtCr(totalMtdAmt),
+                    subtext: 'Yesterday: ' + fmtCr(totalYsAmt),
+                    right: 10, top: 0,
+                    textStyle: { color: '#64748B', fontSize: 12, fontWeight: 'normal' },
+                    subtextStyle: { color: '#E9730C', fontSize: 12, fontWeight: 'bold' }
+                },
+                grid: Object.assign({}, baseGrid, { left: '5%' }),
+                xAxis: { type: 'category', data: xDays, axisLine: baseAxisLine, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 10 } },
+                yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: baseSplitLine, axisLabel: { color: '#94A3B8', formatter: function(val) {
+                    var cr = val / 10000000;
+                    if (cr >= 1) return '&#8377;' + cr.toFixed(0) + 'Cr';
+                    var lk = val / 100000;
+                    if (lk >= 1) return '&#8377;' + lk.toFixed(0) + 'L';
+                    return '&#8377;' + val;
+                }}},
+                series: [{
+                    name: 'Daily Amount', type: 'bar', barWidth: '60%',
+                    data: dailyData.map(function(val, idx) {
+                        return {
+                            value: val,
+                            itemStyle: { color: dailyColors[idx] || '#E5E7EB', borderRadius: [2, 2, 0, 0] }
+                        };
+                    })
+                }]
+            });
+
+            // ========== TABLE ==========
+            var tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            filtered.forEach(function(r) {
+                var row = '<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">' +
+                    '<td class="px-4 py-3 font-medium text-slate-500">' + r.plant + '</td>' +
+                    '<td class="px-4 py-3 font-medium text-slate-800">' + r.category + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.target) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.ytdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums font-medium text-slate-800">' + (r.ytdAmt/10000000).toFixed(2) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.mtdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + (r.mtdAmt/10000000).toFixed(2) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.ysQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + (r.ysAmt/10000000).toFixed(2) + '</td>' +
+                '</tr>';
+                tbody.innerHTML += row;
+            });
+            document.getElementById('tableRecordCount').innerText = filtered.length + ' records';
+        }
+
+        // ===================== INIT =====================
+        document.addEventListener('DOMContentLoaded', function() {
+            chart1 = echarts.init(document.getElementById('plantTargetChart'));
+            chart2 = echarts.init(document.getElementById('categoryMixChart'));
+            chart3 = echarts.init(document.getElementById('plantPiePatternChart'));
+            chart4 = echarts.init(document.getElementById('mtdVsYesterdayChart'));
+
+            initMultiComboBox('plantFilter', 'plantDropdown', allPlants, selectedPlants, updateDashboard);
+            initMultiComboBox('categoryFilter', 'categoryDropdown', allCategories, selectedCategories, updateDashboard);
+            initMultiComboBox('periodFilter', 'periodDropdown', allPeriods, selectedPeriods, updateDashboard);
+
+            updateDashboard();
+
+            window.addEventListener('resize', function() {
+                chart1.resize(); chart2.resize(); chart3.resize(); chart4.resize();
+            });
+        });
+    </script>
+</body>
+</html>

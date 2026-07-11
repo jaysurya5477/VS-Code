@@ -1,0 +1,75 @@
+<mvc:View controllerName="com.sap.zppdashboard.controller.zpp_dashboard"
+    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m">
+    <Page id="page" showHeader="false" enableScrolling="true" class="sapUiNoContentPadding">
+        <VBox class="dashboardRoot">
+
+            <!-- ===== Filter bar ===== -->
+            <HBox class="filterBar" alignItems="End" wrap="Wrap">
+                <VBox class="filterField">
+                    <Label text="{i18n>filterFiscalYear}" class="filterLabel"/>
+                    <Select id="selFiscalYearFilter"
+                        selectedKey="{ui>/selectedFY}"
+                        items="{ui>/fyList}"
+                        change="onFilterChange"
+                        forceSelection="true"
+                        width="9rem">
+                        <core:Item key="{ui>key}" text="{ui>text}"/>
+                    </Select>
+                </VBox>
+                <VBox class="filterField">
+                    <Label text="{i18n>filterPlant}" class="filterLabel"/>
+                    <MultiComboBox id="mcbPlantFilter"
+                        selectedKeys="{ui>/selectedPlants}"
+                        items="{ui>/plantList}"
+                        selectionFinish="onFilterChange"
+                        selectionChange="onPlantSelectionChange"
+                        showSelectAll="true"
+                        placeholder="{i18n>filterAll}"
+                        width="16rem">
+                        <core:Item key="{ui>key}" text="{ui>text}"/>
+                    </MultiComboBox>
+                </VBox>
+                <VBox class="filterField">
+                    <Label text="{i18n>filterCategory}" class="filterLabel"/>
+                    <MultiComboBox id="mcbCategoryFilter"
+                        selectedKeys="{ui>/selectedCategories}"
+                        items="{ui>/categoryList}"
+                        selectionFinish="onFilterChange"
+                        selectionChange="onCategorySelectionChange"
+                        showSelectAll="true"
+                        placeholder="{i18n>filterAll}"
+                        width="18rem">
+                        <core:Item key="{ui>key}" text="{ui>text}"/>
+                    </MultiComboBox>
+                </VBox>
+                <VBox class="filterField">
+                    <Label text="{i18n>filterMeasure}" class="filterLabel"/>
+                    <SegmentedButton id="segMeasure"
+                        selectedKey="{ui>/measure}"
+                        selectionChange="onMeasureChange">
+                        <items>
+                            <SegmentedButtonItem key="QTY" text="{i18n>measureQty}"/>
+                            <SegmentedButtonItem key="AMT" text="{i18n>measureAmt}"/>
+                        </items>
+                    </SegmentedButton>
+                </VBox>
+                <VBox class="filterField">
+                    <Label text="{i18n>filterAsOfDate}" class="filterLabel"/>
+                    <DatePicker id="dpAsOfDate"
+                        value="{ui>/asOfDate}"
+                        valueFormat="yyyy-MM-dd"
+                        displayFormat="dd MMM yyyy"
+                        change="onFilterChange"
+                        width="10rem"/>
+                </VBox>
+                <Button text="{i18n>btnReset}" icon="sap-icon://clear-filter" press="onResetFilters" class="filterReset"/>
+            </HBox>
+
+            <!-- ===== Charts / KPIs (rendered by dashboard.html in an iframe) ===== -->
+            <core:HTML id="dashHost" class="dashHost"/>
+
+        </VBox>
+    </Page>
+</mvc:View>

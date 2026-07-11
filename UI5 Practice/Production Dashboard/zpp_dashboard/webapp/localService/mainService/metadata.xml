@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PERSONALDATA',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.PersonalData.v1" Alias="PersonalData"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ANALYTICS',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Analytics.v1" Alias="Analytics"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMON',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="SAP__common"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_MEASURES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Measures.V1" Alias="SAP__measures"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CORE',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Core.V1" Alias="SAP__core"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CAPABILITIES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="SAP__capabilities"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_AGGREGATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Aggregation.V1" Alias="SAP__aggregation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_VALIDATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Validation.V1" Alias="SAP__validation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CODELIST',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.CodeList.v1" Alias="SAP__CodeList"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_UI',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="SAP__UI"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_HTML5',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.HTML5.v1" Alias="SAP__HTML5"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PDF',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.PDF.v1" Alias="SAP__PDF"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_SESSION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Session.v1" Alias="SAP__session"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001" Alias="SAP__self">
+            <Annotation Term="SAP__core.SchemaVersion" String="1.0.0"/>
+            <EntityType Name="DashSummaryType">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                    <PropertyRef Name="Category"/>
+                </Key>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="Category" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="YtdTarg" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="YtdQty" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="YtdAmt" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="MtdQty" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="MtdAmt" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="YsQty" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="YsAmt" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="Meins" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="Waers" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashSummaryParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="DashDetailParameters">
+                <Key>
+                    <PropertyRef Name="P_Gjahr"/>
+                    <PropertyRef Name="P_AsOfDate"/>
+                </Key>
+                <Property Name="P_Gjahr" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="P_AsOfDate" Type="Edm.Date" Nullable="false"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashDetailType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="DashSummaryParameters">
+                <Key>
+                    <PropertyRef Name="P_Gjahr"/>
+                    <PropertyRef Name="P_AsOfDate"/>
+                </Key>
+                <Property Name="P_Gjahr" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="P_AsOfDate" Type="Edm.Date" Nullable="false"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashSummaryType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="DashDetailType">
+                <Key>
+                    <PropertyRef Name="Mblnr"/>
+                    <PropertyRef Name="Mjahr"/>
+                    <PropertyRef Name="Zeile"/>
+                </Key>
+                <Property Name="Mblnr" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="Mjahr" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="Zeile" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="Aufnr" Type="Edm.String" Nullable="false" MaxLength="12"/>
+                <Property Name="Category" Type="Edm.String" Nullable="false" MaxLength="70"/>
+                <Property Name="Matnr" Type="Edm.String" Nullable="false" MaxLength="18"/>
+                <Property Name="Maktx" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="Bwart" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="Budat" Type="Edm.Date"/>
+                <Property Name="MonthNum" Type="Edm.String" Nullable="false" MaxLength="2"/>
+                <Property Name="Zmonth" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="Gjper" Type="Edm.String" Nullable="false" MaxLength="1"/>
+                <Property Name="Erfmg" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3"/>
+                <Property Name="Meins" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="Dmbtr" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="variable"/>
+                <Property Name="Waers" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="BasicPrice" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <Property Name="SalePrice" Type="Edm.Decimal" Nullable="false" Precision="23" Scale="variable"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashDetailParameters" Nullable="false"/>
+            </EntityType>
+            <EntityContainer Name="Container">
+                <EntitySet Name="DashDetail" EntityType="com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashDetailParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="DashDetail"/>
+                </EntitySet>
+                <EntitySet Name="DashSummary" EntityType="com.sap.gateway.srvd_a2x.zpp_dashboard_o4.v0001.DashSummaryParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="DashSummary"/>
+                </EntitySet>
+            </EntityContainer>
+            <Annotations Target="SAP__self.DashSummaryType/Werks">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/YtdTarg">
+                <Annotation Term="SAP__measures.Unit" Path="Meins"/>
+                <Annotation Term="SAP__common.Label" String="YTD Target Qty."/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/YtdQty">
+                <Annotation Term="SAP__measures.Unit" Path="Meins"/>
+                <Annotation Term="SAP__common.Label" String="YTD Quantity"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/YtdAmt">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="YTD Amount"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/MtdQty">
+                <Annotation Term="SAP__measures.Unit" Path="Meins"/>
+                <Annotation Term="SAP__common.Label" String="MTD Quantity"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/MtdAmt">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="MTD Amount"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/YsQty">
+                <Annotation Term="SAP__measures.Unit" Path="Meins"/>
+                <Annotation Term="SAP__common.Label" String="Yesterday Quantity"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/YsAmt">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="Yesterday Amount"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/Meins">
+                <Annotation Term="SAP__common.IsUnit"/>
+                <Annotation Term="SAP__common.Label" String="Base Unit of Measure"/>
+                <Annotation Term="SAP__common.Heading" String="BUn"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/Waers">
+                <Annotation Term="SAP__common.IsCurrency"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType">
+                <Annotation Term="SAP__common.Label" String="PP Dashboard Summary (Custom Entity / OData V4)"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container">
+                <Annotation Term="SAP__CodeList.CurrencyCodes">
+                    <Record>
+                        <PropertyValue Property="Url" String="../../../../default/iwbep/common/0001/$metadata"/>
+                        <PropertyValue Property="CollectionPath" String="Currencies"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__CodeList.UnitsOfMeasure">
+                    <Record>
+                        <PropertyValue Property="Url" String="../../../../default/iwbep/common/0001/$metadata"/>
+                        <PropertyValue Property="CollectionPath" String="UnitsOfMeasure"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__aggregation.ApplySupported">
+                    <Record>
+                        <PropertyValue Property="Transformations">
+                            <Collection>
+                                <String>aggregate</String>
+                                <String>groupby</String>
+                                <String>filter</String>
+                            </Collection>
+                        </PropertyValue>
+                        <PropertyValue Property="Rollup" EnumMember="SAP__aggregation.RollupType/None"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+                <Annotation Term="SAP__capabilities.FilterFunctions">
+                    <Collection>
+                        <String>eq</String>
+                        <String>ne</String>
+                        <String>gt</String>
+                        <String>ge</String>
+                        <String>lt</String>
+                        <String>le</String>
+                        <String>and</String>
+                        <String>or</String>
+                        <String>contains</String>
+                        <String>startswith</String>
+                        <String>endswith</String>
+                        <String>any</String>
+                        <String>all</String>
+                    </Collection>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SupportedFormats">
+                    <Collection>
+                        <String>application/json</String>
+                        <String>application/pdf</String>
+                    </Collection>
+                </Annotation>
+                <Annotation Term="SAP__PDF.Features">
+                    <Record>
+                        <PropertyValue Property="DocumentDescriptionReference" String="../../../../default/iwbep/common/0001/$metadata"/>
+                        <PropertyValue Property="DocumentDescriptionCollection" String="MyDocumentDescriptions"/>
+                        <PropertyValue Property="ArchiveFormat" Bool="true"/>
+                        <PropertyValue Property="Border" Bool="true"/>
+                        <PropertyValue Property="CoverPage" Bool="true"/>
+                        <PropertyValue Property="FitToPage" Bool="true"/>
+                        <PropertyValue Property="FontName" Bool="true"/>
+                        <PropertyValue Property="FontSize" Bool="true"/>
+                        <PropertyValue Property="Margin" Bool="true"/>
+                        <PropertyValue Property="Signature" Bool="true"/>
+                        <PropertyValue Property="ResultSizeDefault" Int="20000"/>
+                        <PropertyValue Property="ResultSizeMaximum" Int="20000"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailParameters/P_Gjahr">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Fiscal Year"/>
+                <Annotation Term="SAP__common.Heading" String="Year"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailParameters/P_AsOfDate">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Posting Date"/>
+                <Annotation Term="SAP__common.Heading" String="Pstng Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Posting Date in the Document"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/DashDetail">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_Gjahr</PropertyPath>
+                                <PropertyPath>P_AsOfDate</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_Gjahr</PropertyPath>
+                                <PropertyPath>P_AsOfDate</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryParameters/P_Gjahr">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Fiscal Year"/>
+                <Annotation Term="SAP__common.Heading" String="Year"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryParameters/P_AsOfDate">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Posting Date"/>
+                <Annotation Term="SAP__common.Heading" String="Pstng Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Posting Date in the Document"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/DashSummary">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_Gjahr</PropertyPath>
+                                <PropertyPath>P_AsOfDate</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_Gjahr</PropertyPath>
+                                <PropertyPath>P_AsOfDate</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Mblnr">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material Document"/>
+                <Annotation Term="SAP__common.Heading" String="Mat. Doc."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Number of Material Document"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Mjahr">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Material Doc. Year"/>
+                <Annotation Term="SAP__common.Heading" String="MatYr"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Document Year"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Zeile">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Material Doc.Item"/>
+                <Annotation Term="SAP__common.Heading" String="Item"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Item in Material Document"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Aufnr">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Order"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Order Number"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Matnr">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Bwart">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Movement Type"/>
+                <Annotation Term="SAP__common.Heading" String="MvT"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Movement Type (Inventory Management)"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Werks">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/MonthNum">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+                <Annotation Term="SAP__common.Label" String="Month"/>
+                <Annotation Term="SAP__common.Heading" String="M"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Gjper">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Fiscal year/period"/>
+                <Annotation Term="SAP__common.Heading" String="Fiscal Year / Period"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Fiscal Year / Period"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Erfmg">
+                <Annotation Term="SAP__measures.Unit" Path="Meins"/>
+                <Annotation Term="SAP__common.Label" String="Qty in unit of entry"/>
+                <Annotation Term="SAP__common.Heading" String="Quantity"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Quantity in unit of entry"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Meins">
+                <Annotation Term="SAP__common.IsUnit"/>
+                <Annotation Term="SAP__common.Label" String="Base Unit of Measure"/>
+                <Annotation Term="SAP__common.Heading" String="BUn"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Dmbtr">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="Amount in Loc. Curr."/>
+                <Annotation Term="SAP__common.Heading" String="Loc. Curr. Amount"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Amount in local currency"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Waers">
+                <Annotation Term="SAP__common.IsCurrency"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Currency"/>
+                <Annotation Term="SAP__common.Heading" String="Crcy"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Currency Key"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/BasicPrice">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="Basic Price"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/SalePrice">
+                <Annotation Term="SAP__measures.ISOCurrency" Path="Waers"/>
+                <Annotation Term="SAP__common.Label" String="Sale Price"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType">
+                <Annotation Term="SAP__common.Label" String="PP Dashboard Detail (Custom Entity / OData V4)"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashSummaryType/Category">
+                <Annotation Term="SAP__common.Label" String="Category"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Category">
+                <Annotation Term="SAP__common.Label" String="Category"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Maktx">
+                <Annotation Term="SAP__common.Label" String="Material Description"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Budat">
+                <Annotation Term="SAP__common.Label" String="Posting Date"/>
+                <Annotation Term="SAP__common.Heading" String="Pstng Date"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Posting Date in the Document"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DashDetailType/Zmonth">
+                <Annotation Term="SAP__common.Label" String="Month"/>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

@@ -84,7 +84,10 @@ with sync_playwright() as p:
         slow_mo       = 300,
     )
     page   = browser.new_page()
-    errors = []
+    errors        = []           # genuine failures (row NOT saved)
+    no_email_rows = []           # saved OK, but portal couldn't send the notification email
+    failed_keys   = set()        # rows to skip so we don't retry a broken row forever
+    page.on("dialog", lambda d: d.accept())
 
     try:
         # ── Login ─────────────────────────────────────────────────────────────
@@ -111,8 +114,22 @@ with sync_playwright() as p:
                 print("All done — no more 'Not Started' rows.")
                 break
 
-            # Always work on the first row (page reloads each iteration)
-            row       = not_started.first.locator("xpath=ancestor::tr[1]")
+            # Pick the first 'Not Started' row we haven't already failed on.
+            # (A row the portal refuses to save stays 'Not Started', so without
+            #  this guard we'd retry the same broken row forever.)
+            row = row_key = None
+            for i in range(count):
+                candidate = not_started.nth(i).locator("xpath=ancestor::tr[1]")
+                key = candidate.inner_text().strip()
+                if key not in failed_keys:
+                    row, row_key = candidate, key
+                    break
+
+            if row is None:
+                print(f"No processable 'Not Started' rows left "
+                      f"({len(failed_keys)} skipped due to portal errors).")
+                break
+
             edit_link = row.locator("[id*='lnkEdit']")
 
             if not edit_link.is_visible():
@@ -161,29 +178,61 @@ with sync_playwright() as p:
                 )
 
                 # Submit
-                page.on("dialog", lambda d: d.accept())
                 page.get_by_role("link", name="Submit").click()
                 page.wait_for_load_state("networkidle", timeout=60_000)
                 page.wait_for_timeout(800)
+
+                # The portal saves the status change BEFORE it sends the
+                # notification email. So if it lands on the "A recipient must be
+                # specified" error, the data is ALREADY saved — only the email
+                # failed. The row has left 'Not Started', so it's really done.
+                body = page.content()
+                if "A recipient must be specified" in body:
+                    no_email_rows.append(row_key.split("\n")[0].strip())
+                    print(f"  ✓ Row {iteration} saved "
+                          f"(⚠ no notification email sent — reported)")
+                    continue
+
+                # Any OTHER server error page: save state is unknown, so skip
+                # this row (don't retry forever) and flag it as a real failure.
+                if "Server Error in '/" in body:
+                    failed_keys.add(row_key)
+                    msg = (f"[{iteration}] Unexpected portal error on save — "
+                           f"skipping row: {row_key[:120]!r}")
+                    errors.append(msg)
+                    print(f"  [SKIP] {msg}")
+                    continue
+
                 print(f"  ✓ Row {iteration} submitted")
 
             except Exception:
+                failed_keys.add(row_key)   # don't retry this row forever
                 msg = f"[{iteration}] {traceback.format_exc()}"
                 errors.append(msg)
                 print(f"  [ERROR]\n{msg}")
-                page.pause()
-                break   # change to `continue` to skip bad rows instead of stopping
+                continue   # skip bad row and keep going
 
     except Exception:
         print(f"\nFATAL:\n{traceback.format_exc()}")
         page.pause()
 
     finally:
+        # Rows that saved fine but whose notification email couldn't be sent.
+        if no_email_rows:
+            out_path = os.path.join(BASE_DIR, "saved_without_email.txt")
+            with open(out_path, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(no_email_rows))
+            print(f"\n{len(no_email_rows)} row(s) saved OK but sent NO "
+                  f"notification email (missing recipient — forward to HRMS):")
+            for r in no_email_rows:
+                print(f"  • {r}")
+            print(f"  → list written to {out_path}")
+
         if errors:
-            print(f"\nCompleted with {len(errors)} error(s):")
+            print(f"\nCompleted with {len(errors)} real error(s):")
             for e in errors:
                 print(f"  • {e}")
-        else:
+        elif not no_email_rows:
             print("\nAll rows processed successfully!")
 
         time.sleep(3)

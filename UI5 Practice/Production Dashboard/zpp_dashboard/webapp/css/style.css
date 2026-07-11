@@ -1,0 +1,322 @@
+/* App shell hosts the filter bar (native UI5 controls) + embedded dashboard iframe */
+html, body { height: 100%; }
+
+/* ===== Dashboard layout =====
+   Height is NOT driven by CSS percentage/flex cascading here: the FLP shell
+   doesn't give the Page a definite height the way a plain index.html does,
+   so height:100% would collapse to content size. Instead the controller
+   measures the viewport at runtime and sets an explicit pixel height on
+   .dashHost - see zpp_dashboard.controller.js. */
+.dashboardRoot {
+    background-color: #ffffff;
+}
+
+/* ===== Force a light look regardless of the UI5 theme (light or dark) ===== */
+.dashboardRoot .sapMSlt,
+.dashboardRoot .sapMSltInner,
+.dashboardRoot .sapMBtn,
+.dashboardRoot .sapMBtnInner,
+.dashboardRoot .sapMInputBaseContentWrapper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMBtnInner:hover {
+    background-color: #f0f0f0 !important;
+}
+.dashboardRoot,
+.dashboardRoot .sapMLabel,
+.dashboardRoot .sapMSltLabel,
+.dashboardRoot .sapMSltArrow,
+.dashboardRoot .sapMBtnContent,
+.dashboardRoot .sapMBtn .sapUiIcon,
+.dashboardRoot .sapMInputBaseInner,
+.dashboardRoot .sapMInputBaseIconContainer .sapUiIcon,
+.dashboardRoot .filterLabel {
+    color: #32363a !important;
+}
+/* DatePicker (and any Input) text was left the theme colour, so in dark mode it
+   was near-white on the forced-white field = invisible. Force the text + the
+   placeholder to the light-theme ink. */
+.dashboardRoot .sapMInputBaseInner::placeholder {
+    color: #6a6d70 !important;
+}
+
+/* ===== Measure toggle (SegmentedButton) =====
+   Pin to a LIGHT look in EVERY theme (incl. Horizon dark) and keep it fixed when
+   the theme is switched. The dark theme paints the unselected segment's dark fill
+   on the element AND on ::before / ::after pseudo-elements, so element-only
+   overrides leak dark. Strategy: (a) override the theme's button CSS variables,
+   (b) force the WHOLE subtree - including pseudo-elements - transparent, then
+   (c) repaint: white group, white unselected segments, blue selected segment.
+   Order matters: the transparent "nuke" must come BEFORE the repaint rules so
+   the equal-specificity repaint wins on source order. */
+.dashboardRoot .sapMSegB {
+    --sapButton_Background: #ffffff;
+    --sapButton_BorderColor: #d9d9d9;
+    --sapButton_TextColor: #32363a;
+    --sapButton_Hover_Background: #f0f0f0;
+    --sapButton_Hover_TextColor: #32363a;
+    --sapButton_Selected_Background: #0A6ED1;
+    --sapButton_Selected_BorderColor: #0A6ED1;
+    --sapButton_Selected_TextColor: #ffffff;
+    --sapButton_Selected_Hover_Background: #085caf;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #d9d9d9 !important;
+    box-shadow: none !important;
+}
+/* (b) neutralise any dark fill the theme paints on inner nodes / pseudo-elements */
+.dashboardRoot .sapMSegB *,
+.dashboardRoot .sapMSegBBtn::before,
+.dashboardRoot .sapMSegBBtn::after {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+/* (c) repaint - unselected segments stay transparent over the white group */
+.dashboardRoot .sapMSegBBtn {
+    color: #32363a !important;
+    width: auto !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMSegBBtn bdi,
+.dashboardRoot .sapMSegBBtnInner,
+.dashboardRoot .sapMSegBBtn .sapUiIcon {
+    color: #32363a !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+.dashboardRoot .sapMSegBBtnSel,
+.dashboardRoot .sapMSegBBtnSel:hover,
+.dashboardRoot .sapMSegBBtnSel:focus {
+    background-color: #0A6ED1 !important;
+    border-color: #0A6ED1 !important;
+}
+.dashboardRoot .sapMSegBBtnSel,
+.dashboardRoot .sapMSegBBtnSel bdi,
+.dashboardRoot .sapMSegBBtnSel .sapMSegBBtnInner,
+.dashboardRoot .sapMSegBBtnSel .sapUiIcon {
+    color: #ffffff !important;
+}
+.dashboardRoot .sapMSegBBtn:not(.sapMSegBBtnSel):hover {
+    background-color: #f0f0f0 !important;
+}
+.dashboardRoot .sapMSegBBtn:focus {
+    outline-color: #0A6ED1 !important;
+}
+/* the Select dropdown list renders in a popover outside .dashboardRoot */
+.sapMSelectList,
+.sapMSelectListItemBase {
+    background-color: #ffffff !important;
+    color: #32363a !important;
+}
+.sapMSelectListItemBaseSelected,
+.sapMSelectListItemBase:hover {
+    background-color: #ebf5fe !important;
+}
+.sapMSltPicker,
+.sapMSltPicker .sapMPopoverCont,
+.sapMSltPicker .sapMPopoverScroll,
+.sapMSltPicker .sapMSelectList {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMSltPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMSltPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== Plant / Category MultiComboBox: force light regardless of theme ===== */
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseContentWrapper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner,
+.dashboardRoot .sapMMultiComboBox .sapMMultiComboBoxArrow,
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseIconContainer .sapUiIcon {
+    color: #32363a !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner::placeholder {
+    color: #6a6d70 !important;
+}
+.dashboardRoot .sapMToken {
+    background-color: #ebf5fe !important;
+    border-color: #d3e8fb !important;
+}
+.dashboardRoot .sapMTokenText,
+.dashboardRoot .sapMToken .sapUiIcon {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker,
+.sapMMultiComboBoxPicker .sapMPopoverCont,
+.sapMMultiComboBoxPicker .sapMPopoverScroll,
+.sapMMultiComboBoxPicker .sapMList,
+.sapMMultiComboBoxPicker .sapMListUl,
+.sapMMultiComboBoxPicker .sapMLIB {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIB .sapMText,
+.sapMMultiComboBoxPicker .sapMLIB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMLIB .sapMSLITitleOnly {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIBHoverable:hover,
+.sapMMultiComboBoxPicker .sapMLIBSelected {
+    background-color: #ebf5fe !important;
+}
+.sapMMultiComboBoxPicker .sapMCbBg {
+    background-color: #ffffff !important;
+    border-color: #89919a !important;
+}
+.sapMMultiComboBoxPicker .sapMTB,
+.sapMMultiComboBoxPicker .sapMTBStandard,
+.sapMMultiComboBoxPicker .sapMListHdr,
+.sapMMultiComboBoxPicker .sapMListInfoTBar,
+.sapMMultiComboBoxPicker .sapMListHdrTBar,
+.sapMMultiComboBoxPicker .sapMPopoverSubHeader,
+.sapMMultiComboBoxPicker .sapMPopoverHeader {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.sapMMultiComboBoxPicker .sapMTB .sapMText,
+.sapMMultiComboBoxPicker .sapMTB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMTB .sapMTitle,
+.sapMMultiComboBoxPicker .sapMCbLabel {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== DatePicker calendar popover: force LIGHT regardless of theme =====
+   The "As of Date" calendar opens in a popover rendered OUTSIDE .dashboardRoot
+   (like the Select list), so these rules are global but scoped to the calendar
+   classes. :has() whitens the enclosing popover chrome; the .sapUiCal* rules
+   whiten the interior (header, weekday row, day / month / year cells). */
+.sapMPopover:has(.sapUiCalendar),
+.sapMPopover:has(.sapUiCal) {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.sapUiCal,
+.sapUiCalHead,
+.sapUiCalContent,
+.sapUiCalMonthView,
+.sapUiCalMonthPicker,
+.sapUiCalYearPicker {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapUiCalHead button,
+.sapUiCalHead .sapUiCalHeadB,
+.sapUiCalWH,
+.sapUiCalDayName,
+.sapUiCalItem,
+.sapUiCalItemText {
+    color: #32363a !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+.sapUiCalHeadB:hover,
+.sapUiCalItem:hover,
+.sapUiCalItem:hover .sapUiCalItemText {
+    background-color: #ebf5fe !important;
+}
+.sapUiCalItemSel,
+.sapUiCalItemSel .sapUiCalItemText,
+.sapUiCalItemSelStart .sapUiCalItemText,
+.sapUiCalItemSelEnd .sapUiCalItemText {
+    background-color: #0A6ED1 !important;
+    color: #ffffff !important;
+}
+.sapUiCalItemNow .sapUiCalItemText {
+    border: 1px solid #0A6ED1 !important;
+}
+.sapUiCalItemOtherMonth .sapUiCalItemText,
+.sapUiCalItemDsbl .sapUiCalItemText {
+    color: #a9b4be !important;
+}
+
+/* ===== Filter bar ===== */
+.filterBar {
+    flex: none;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+}
+.filterField {
+    margin-right: 1rem;
+}
+.filterLabel {
+    font-size: 0.75rem;
+    color: #6a6d70;
+    margin-bottom: 0.15rem;
+}
+.filterReset {
+    margin-bottom: 0.1rem;
+}
+
+/* ===== Dashboard iframe fills the remaining height =====
+   .dashHost gets an explicit pixel height set by the controller at runtime
+   (= the dashboard's full content height), so the outer Page owns the scroll
+   and the filter bar scrolls away with the content. */
+.dashHost iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* ===== Print: expand the scroll containers so the ENTIRE page prints, not
+   just the on-screen viewport. The iframe keeps its explicit pixel height
+   (already its full content height) - only its ancestors need unclipping. */
+@media print {
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .sapMPage,
+    .sapMPageEnableScrolling,
+    .sapMPageScroll,
+    .sapUiScrollDelegate,
+    .dashboardRoot,
+    .dashHost {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+    }
+}

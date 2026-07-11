@@ -1,0 +1,239 @@
+/* App shell hosts the filter bar (native UI5 controls) + embedded dashboard iframe */
+html, body { height: 100%; }
+
+/* ===== Dashboard layout =====
+   Height is NOT driven by CSS percentage/flex cascading here: the FLP shell
+   doesn't give the Page a definite height the way a plain index.html does,
+   so height:100% would collapse to content size. Instead the controller
+   measures the viewport at runtime and sets an explicit pixel height on
+   .dashHost - see zpp_dashboard.controller.js. */
+.dashboardRoot {
+    background-color: #ffffff;
+}
+
+/* ===== Force a light look regardless of the UI5 theme (light or dark) ===== */
+.dashboardRoot .sapMSlt,
+.dashboardRoot .sapMSltInner,
+.dashboardRoot .sapMBtn,
+.dashboardRoot .sapMBtnInner,
+.dashboardRoot .sapMInputBaseContentWrapper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMBtnInner:hover {
+    background-color: #f0f0f0 !important;
+}
+.dashboardRoot,
+.dashboardRoot .sapMLabel,
+.dashboardRoot .sapMSltLabel,
+.dashboardRoot .sapMSltArrow,
+.dashboardRoot .sapMBtnContent,
+.dashboardRoot .sapMBtn .sapUiIcon,
+.dashboardRoot .sapMInputBaseInner,
+.dashboardRoot .sapMInputBaseIconContainer .sapUiIcon,
+.dashboardRoot .filterLabel {
+    color: #32363a !important;
+}
+/* DatePicker (and any Input) text was left the theme colour, so in dark mode it
+   was near-white on the forced-white field = invisible. Force the text + the
+   placeholder to the light-theme ink. */
+.dashboardRoot .sapMInputBaseInner::placeholder {
+    color: #6a6d70 !important;
+}
+
+/* ===== Measure toggle (SegmentedButton) =====
+   Not covered by the .sapMBtn rules above (it uses .sapMSegB* classes), so in
+   dark mode it kept the dark theme look. Force light, give the selected segment
+   a clear blue, and stop the label ("Quantity") being truncated to an ellipsis. */
+.dashboardRoot .sapMSegB,
+.dashboardRoot .sapMSegBBtn {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMSegBBtn {
+    color: #32363a !important;
+    width: auto !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+}
+.dashboardRoot .sapMSegBBtn bdi,
+.dashboardRoot .sapMSegBBtnInner {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+.dashboardRoot .sapMSegBBtnSel,
+.dashboardRoot .sapMSegBBtnSel:hover {
+    background-color: #0A6ED1 !important;
+    border-color: #0A6ED1 !important;
+}
+.dashboardRoot .sapMSegBBtnSel,
+.dashboardRoot .sapMSegBBtnSel bdi {
+    color: #ffffff !important;
+}
+.dashboardRoot .sapMSegBBtn:not(.sapMSegBBtnSel):hover {
+    background-color: #f0f0f0 !important;
+}
+/* the Select dropdown list renders in a popover outside .dashboardRoot */
+.sapMSelectList,
+.sapMSelectListItemBase {
+    background-color: #ffffff !important;
+    color: #32363a !important;
+}
+.sapMSelectListItemBaseSelected,
+.sapMSelectListItemBase:hover {
+    background-color: #ebf5fe !important;
+}
+.sapMSltPicker,
+.sapMSltPicker .sapMPopoverCont,
+.sapMSltPicker .sapMPopoverScroll,
+.sapMSltPicker .sapMSelectList {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMSltPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMSltPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMSltPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== Plant / Category MultiComboBox: force light regardless of theme ===== */
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseContentWrapper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner,
+.dashboardRoot .sapMMultiComboBox .sapMMultiComboBoxArrow,
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseIconContainer .sapUiIcon {
+    color: #32363a !important;
+}
+.dashboardRoot .sapMMultiComboBox .sapMInputBaseInner::placeholder {
+    color: #6a6d70 !important;
+}
+.dashboardRoot .sapMToken {
+    background-color: #ebf5fe !important;
+    border-color: #d3e8fb !important;
+}
+.dashboardRoot .sapMTokenText,
+.dashboardRoot .sapMToken .sapUiIcon {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker,
+.sapMMultiComboBoxPicker .sapMPopoverCont,
+.sapMMultiComboBoxPicker .sapMPopoverScroll,
+.sapMMultiComboBoxPicker .sapMList,
+.sapMMultiComboBoxPicker .sapMListUl,
+.sapMMultiComboBoxPicker .sapMLIB {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIB .sapMText,
+.sapMMultiComboBoxPicker .sapMLIB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMLIB .sapMSLITitleOnly {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker .sapMLIBHoverable:hover,
+.sapMMultiComboBoxPicker .sapMLIBSelected {
+    background-color: #ebf5fe !important;
+}
+.sapMMultiComboBoxPicker .sapMCbBg {
+    background-color: #ffffff !important;
+    border-color: #89919a !important;
+}
+.sapMMultiComboBoxPicker .sapMTB,
+.sapMMultiComboBoxPicker .sapMTBStandard,
+.sapMMultiComboBoxPicker .sapMListHdr,
+.sapMMultiComboBoxPicker .sapMListInfoTBar,
+.sapMMultiComboBoxPicker .sapMListHdrTBar,
+.sapMMultiComboBoxPicker .sapMPopoverSubHeader,
+.sapMMultiComboBoxPicker .sapMPopoverHeader {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-color: #d9d9d9 !important;
+}
+.sapMMultiComboBoxPicker .sapMTB .sapMText,
+.sapMMultiComboBoxPicker .sapMTB .sapMLabel,
+.sapMMultiComboBoxPicker .sapMTB .sapMTitle,
+.sapMMultiComboBoxPicker .sapMCbLabel {
+    color: #32363a !important;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+.sapMMultiComboBoxPicker ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== Filter bar ===== */
+.filterBar {
+    flex: none;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+}
+.filterField {
+    margin-right: 1rem;
+}
+.filterLabel {
+    font-size: 0.75rem;
+    color: #6a6d70;
+    margin-bottom: 0.15rem;
+}
+.filterReset {
+    margin-bottom: 0.1rem;
+}
+
+/* ===== Dashboard iframe fills the remaining height =====
+   .dashHost gets an explicit pixel height set by the controller at runtime
+   (= the dashboard's full content height), so the outer Page owns the scroll
+   and the filter bar scrolls away with the content. */
+.dashHost iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* ===== Print: expand the scroll containers so the ENTIRE page prints, not
+   just the on-screen viewport. The iframe keeps its explicit pixel height
+   (already its full content height) - only its ancestors need unclipping. */
+@media print {
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .sapMPage,
+    .sapMPageEnableScrolling,
+    .sapMPageScroll,
+    .sapUiScrollDelegate,
+    .dashboardRoot,
+    .dashHost {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+    }
+}

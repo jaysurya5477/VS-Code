@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Dashboard</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            width: 100%;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7F7F7;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #E5E5E5;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* KPI Card accent colors */
+        .kpi-accent-blue {
+            border-left: 4px solid #0A6ED1;
+        }
+        .kpi-accent-green {
+            border-left: 4px solid #107E3E;
+        }
+        .kpi-accent-orange {
+            border-left: 4px solid #E9730C;
+        }
+        .kpi-accent-purple {
+            border-left: 4px solid #5D36FF;
+        }
+
+        /* Table sticky header */
+        .table-header {
+            background: #F2F2F2;
+        }
+
+        /* Chart containers need an explicit size for ECharts to lay out. The charts
+           render with the SVG renderer (see getChart) so their text stays sharp at
+           any browser zoom; watchZoom just resizes them to refit on reflow. */
+        .chart-box {
+            height: 420px;
+            width: 100%;
+        }
+
+        #statusBar {
+            font-size: 12.5px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        #statusBar.busy { display: block; background: #EBF5FE; color: #0A6ED1; }
+        #statusBar.err  { display: block; background: #FBE6E6; color: #BB0000; }
+    </style>
+    <base target="_blank">
+</head>
+<body class="text-slate-800">
+
+    <div class="w-full px-4 py-4 md:px-6 md:py-6">
+
+        <!-- Header -->
+        <header class="mb-6 border-b border-slate-200 pb-4">
+            <h1 class="text-2xl font-semibold text-slate-900 tracking-tight">Production Dashboard</h1>
+            <p class="text-slate-500 mt-1 text-sm">Year-to-Date, Month-to-Date, and Yesterday's Performance</p>
+        </header>
+
+        <div id="statusBar"></div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card p-5 shadow-sm kpi-accent-blue">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Target Achievement</p>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiAchv">0%</h2>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3">
+                    <div id="achvBar" class="bg-[#0A6ED1] h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2" id="kpiTargetQty">Target: 0 Units</p>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-green">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">YTD Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#107E3E] px-2 py-0.5 rounded">YEARLY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiYtdAmt">₹0</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiYtdQty">0 Units Achieved</p>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-orange">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">MTD Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#E9730C] px-2 py-0.5 rounded">MONTHLY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiMtdAmt">₹0</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiMtdQty">0 Units Achieved</p>
+            </div>
+            <div class="card p-5 shadow-sm kpi-accent-purple">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">YS Amount</p>
+                    <span class="text-[10px] font-medium text-white bg-[#5D36FF] px-2 py-0.5 rounded">YESTERDAY</span>
+                </div>
+                <h2 class="text-2xl font-semibold text-slate-900 mt-2" id="kpiYsAmt">₹0</h2>
+                <p class="text-xs text-slate-400 mt-2" id="kpiYsQty">0 Units Achieved</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <!-- Chart 1: Plant-wise Target vs Achieved -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Plant-wise Target vs Achieved</h3>
+                <p class="text-xs text-slate-500 mb-4">Quantity (Bars) vs Achievement Percentage (Line)</p>
+                <div id="plantTargetChart" class="chart-box"></div>
+            </div>
+            <!-- Chart 2: Category -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Category</h3>
+                <p class="text-xs text-slate-500 mb-4" id="categoryMixSubtitle">YTD Quantity Distribution (Top 10)</p>
+                <div id="categoryMixChart" class="chart-box"></div>
+            </div>
+        </div>
+
+        <!-- Charts Grid Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <!-- Chart 3: Plant-wise Donut Chart -->
+            <div class="card p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900" id="plantShareTitle">Plant-wise Share</h3>
+                <p class="text-xs text-slate-500 mb-4" id="plantShareSubtitle">YTD Quantity Distribution by Plant</p>
+                <div id="plantShareChart" class="chart-box"></div>
+            </div>
+            <!-- Chart 4: Daily, with its own Month picker -->
+            <div class="card p-5 shadow-sm">
+                <div class="flex flex-col md:flex-row md:flex-wrap justify-between items-start md:items-end gap-x-3 gap-y-2 mb-2">
+                    <div class="min-w-0 pr-2">
+                        <h3 class="text-sm font-semibold text-slate-900" id="dailyTitle">Current Month Daily Quantity</h3>
+                        <p class="text-xs text-slate-500">Actual daily postings &#183; grey = no posting yet</p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-nowrap flex-shrink-0">
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Month</label>
+                            <select id="dailyMonthSelect" class="text-sm border border-slate-300 rounded px-2 py-1 bg-white text-slate-700"></select>
+                        </div>
+                        <div class="text-right flex-shrink-0 whitespace-nowrap">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider" id="dailyRefLabel">Yesterday</p>
+                            <p class="text-sm font-semibold text-[#E9730C]" id="dailyRefValue">₹0</p>
+                        </div>
+                        <div class="text-right flex-shrink-0 whitespace-nowrap">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider" id="dailyTotalLabel">MTD Total</p>
+                            <p class="text-sm font-semibold text-slate-800" id="dailyTotalValue">₹0</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="dailyAmountChart" class="chart-box"></div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card p-5 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-slate-900">Granular Data Matrix</h3>
+                <span class="text-xs text-slate-400" id="tableRecordCount">0 records</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600 border-collapse">
+                    <thead class="text-xs text-slate-500 uppercase table-header sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3 font-medium border-b border-slate-200">Plant</th>
+                            <th class="px-4 py-3 font-medium border-b border-slate-200">Category</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">Target</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YTD Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YTD Amt (₹)</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">MTD Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">MTD Amt (₹)</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YS Qty</th>
+                            <th class="px-4 py-3 font-medium text-right border-b border-slate-200">YS Amt (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        //  Live data from the RAP OData V4 service (relative -> proxied)
+        //
+        //  Filters live in the parent UI5 view (native Select/MultiComboBox
+        //  controls) and are bridged in over window.postMessage - this
+        //  document owns the fetched data and reports its available filter
+        //  options (Plant, Category) back to the parent.
+        // ============================================================
+        const SVC = "/sap/opu/odata4/sap/zpp_dashboard_o4/srvd_a2x/sap/zpp_dashboard_o4/0001";
+        const RUPEE = "₹";
+        const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"];
+
+        const $ = id => document.getElementById(id);
+        const fmtCurrency = function (val) {
+            var cr = val / 10000000;
+            if (Math.abs(cr) >= 1) return RUPEE + cr.toFixed(2) + ' Cr';
+            var lk = val / 100000;
+            if (Math.abs(lk) >= 1) return RUPEE + lk.toFixed(2) + ' L';
+            return RUPEE + Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        };
+        const fmtCr = function (val) {
+            var cr = val / 10000000;
+            return RUPEE + cr.toFixed(2) + ' Cr';
+        };
+        const fmtNumber = function (val) {
+            return Number(val).toLocaleString('en-IN');
+        };
+        const fmtExact = function (val) {
+            return RUPEE + Math.round(val || 0).toLocaleString('en-IN');
+        };
+        const sum = function (arr, key) {
+            return arr.reduce(function (acc, curr) { return acc + (curr[key] || 0); }, 0);
+        };
+        function pad2(n) { return String(n).padStart(2, '0'); }
+        function toIso(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+        function todayISO() { return toIso(new Date()); }
+        function currentFiscalYear() {
+            var d = new Date();
+            var y = (d.getMonth() + 1) >= 4 ? d.getFullYear() : d.getFullYear() - 1;
+            return String(y);
+        }
+        // Apr-Mar fiscal year: Jan/Feb/Mar of month belong to the CALENDAR year
+        // after the fiscal year's number (FY2026 = Apr 2026 .. Mar 2027).
+        function monthToCalendarYear(sFY, iMonthNum) {
+            var fy = parseInt(sFY, 10) || new Date().getFullYear();
+            return iMonthNum <= 3 ? fy + 1 : fy;
+        }
+        function esc(v) { return String(v).replace(/'/g, "''"); }
+
+        // ---- Filter state (mirrors the parent view's UI5 model) ----
+        let currentFY = currentFiscalYear();
+        let selectedPlants = [];       // empty = all
+        let selectedCategories = [];   // empty = all
+        let dailyMonth = new Date().getMonth() + 1;   // 1-12, the daily chart's own picker
+        let measure = 'QTY';           // 'QTY' (default) | 'AMT' - drives charts 2/3/4
+        let asOfDate = todayISO();     // debug "as of" date -> P_AsOfDate + the daily chart's "now"
+
+        // The reference "now" for YTD/MTD/yesterday + the daily chart is the
+        // as-of date (so debugging a past date is coherent), NOT the wall clock.
+        function refNow() {
+            var p = String(asOfDate).slice(0, 10).split('-');
+            var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+            return isNaN(d.getTime()) ? new Date() : d;
+        }
+        function isAmt() { return measure === 'AMT'; }
+        // Value formatter for the current measure (charts + labels)
+        function fmtMeasure(v) { return isAmt() ? fmtCr(v) : fmtNumber(v) + ' Nos'; }
+
+        let summaryRows = [];   // full, unfiltered DashSummary rows for currentFY
+        let dailyRows = [];     // DashDaily rows (pre-summed per day/plant/category) for the selected month
+
+        function setBusy(on) {
+            var b = $('statusBar');
+            if (on) { b.className = 'busy'; b.textContent = 'Loading data…'; }
+            else if (b.className === 'busy') { b.className = ''; b.style.display = 'none'; }
+        }
+        function showError(msg) {
+            var b = $('statusBar'); b.className = 'err'; b.textContent = 'Could not load data: ' + msg;
+        }
+
+        function buildOrFilter(field, values) {
+            if (!values.length) return '';
+            var parts = values.map(function (v) { return field + " eq '" + esc(v) + "'"; });
+            return values.length > 1 ? '(' + parts.join(' or ') + ')' : parts[0];
+        }
+
+        async function fetchJson(url) {
+            const res = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!res.ok) { throw new Error('HTTP ' + res.status); }
+            const j = await res.json();
+            return j.value || [];
+        }
+
+        // Follows @odata.nextLink so we get EVERY row, not just the first server
+        // page. Critical for the detail query: if the backend's $filter falls back
+        // to "no restriction" (the ge/le date pair can come back as two OR'd ranges
+        // = the whole fiscal year), a single capped page would silently truncate
+        // the tail - which is exactly the late-month days we need. Paginating +
+        // filtering client-side makes the chart correct regardless.
+        async function fetchAllJson(url) {
+            var all = [];
+            var next = url;
+            while (next) {
+                const res = await fetch(next, { headers: { Accept: 'application/json' } });
+                if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                const j = await res.json();
+                (j.value || []).forEach(function (r) { all.push(r); });
+                var link = j['@odata.nextLink'];
+                if (!link) { break; }
+                // nextLink may be absolute, server-relative (/sap/...), or service-relative
+                next = /^https?:\/\//i.test(link) ? link
+                    : (link.charAt(0) === '/' ? link : SVC + '/' + link);
+            }
+            return all;
+        }
+
+        async function loadSummary() {
+            const url = `${SVC}/DashSummary(P_Gjahr='${esc(currentFY)}',P_AsOfDate=${esc(asOfDate)})/Set?$top=5000`;
+            summaryRows = await fetchJson(url);
+        }
+
+        // Guards against out-of-order responses: if the user switches the month
+        // picker quickly, an earlier request that resolves LATER than a newer one
+        // must not clobber it. Only the response matching the latest-issued
+        // request is allowed to update dailyRows.
+        let dailyRequestSeq = 0;
+
+        async function loadDaily() {
+            var seq = ++dailyRequestSeq;
+            var month = dailyMonth;
+            var year = monthToCalendarYear(currentFY, month);
+            var monthStart = new Date(year, month - 1, 1);
+            var monthEnd = new Date(year, month, 0);   // last calendar day of the month
+            // Compare as "YYYY-MM-DD" strings everywhere below, never as Date-object
+            // instants: new Date("2026-05-31") parses as UTC midnight while
+            // new Date(y,m,d) is LOCAL midnight - in a UTC+ timezone that mismatch
+            // pushes the last day of the month just past the monthEnd instant and
+            // silently drops it. ISO date strings sort correctly with plain <=/>=.
+            var sMonthStart = toIso(monthStart);
+            var sMonthEnd = toIso(monthEnd);
+            // The month window travels as ENTITY PARAMETERS (P_FromDate/P_ToDate),
+            // NOT a $filter range - so the backend can't drop it and fall back to
+            // scanning the whole fiscal year. DashDaily returns one pre-summed row
+            // per day/plant/category (a few hundred rows), so this is a single small
+            // request instead of thousands of line items across ~180 pages.
+            // The engine's own iv_asof_date cutoff still excludes today/future
+            // postings, so a partly-future current month is safe (empty tail days).
+            var conds = [];
+            var plantCond = buildOrFilter('Werks', selectedPlants);
+            var catCond = buildOrFilter('Category', selectedCategories);
+            if (plantCond) conds.push(plantCond);
+            if (catCond) conds.push(catCond);
+            var filterPart = conds.length ? '&$filter=' + encodeURIComponent(conds.join(' and ')) : '';
+            // $top=5000 is safe here: the aggregated result is well under that, so it
+            // never truncates, and fetchAllJson still follows @odata.nextLink if a
+            // month ever exceeded one page.
+            const url = `${SVC}/DashDaily(P_Gjahr='${esc(currentFY)}',P_AsOfDate=${esc(asOfDate)},P_FromDate=${esc(sMonthStart)},P_ToDate=${esc(sMonthEnd)})/Set?$top=5000${filterPart}`;
+            var rows = await fetchAllJson(url);
+
+            // Defensive re-filter: don't trust the server's $filter alone. If the
+            // backend's OData filter parsing ever falls back to "no restriction"
+            // (e.g. a combined Budat-range + OR-grouped Werks/Category filter that
+            // it can't decompose), this still guarantees only rows that genuinely
+            // belong to the requested month/plant/category are plotted.
+            rows = rows.filter(function (r) {
+                if (!r.Budat) return false;
+                var sBudat = String(r.Budat).slice(0, 10);   // "YYYY-MM-DD", regardless of any time/zone suffix
+                if (sBudat < sMonthStart || sBudat > sMonthEnd) return false;
+                if (selectedPlants.length && selectedPlants.indexOf(r.Werks) === -1) return false;
+                if (selectedCategories.length && selectedCategories.indexOf(r.Category) === -1) return false;
+                return true;
+            });
+
+            if (seq !== dailyRequestSeq) { return null; }   // superseded by a newer request
+            dailyRows = rows;
+            return { month: month, year: year };
+        }
+
+        function getFilteredRows() {
+            return summaryRows.filter(function (r) {
+                return (!selectedPlants.length || selectedPlants.indexOf(r.Werks) !== -1) &&
+                    (!selectedCategories.length || selectedCategories.indexOf(r.Category) !== -1);
+            });
+        }
+
+        async function refreshSummary() {
+            setBusy(true);
+            try {
+                await loadSummary();
+                buildPlantCategoryOptions();
+                render();
+                postStateToParent();
+            } catch (e) {
+                showError(e.message || e);
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        async function refreshDaily() {
+            try {
+                var result = await loadDaily();
+                if (result) { renderDailyChart(result.month, result.year); }
+            } catch (e) {
+                // daily chart is secondary, so a failure here shouldn't blank out
+                // the rest of the dashboard - but it must be visible, not silent.
+                console.error('Daily chart load failed:', e);
+                disposeChart('dailyAmountChart');
+                var el = $('dailyAmountChart');
+                if (el) {
+                    el.innerHTML = '<div class="flex items-center justify-center h-full text-sm text-[#BB0000]">' +
+                        'Could not load daily data: ' + (e && e.message ? e.message : e) + '</div>';
+                }
+            }
+        }
+
+        let plantOptions = [], categoryOptions = [];
+        // Werks code -> plant name (T001W-NAME1, delivered on every DashSummary row).
+        // plantLabel() renders "code — name" for the filter dropdown, the data table,
+        // and the plant-share donut LEGEND + tooltip (the bar chart axis and the
+        // donut ring/centre stay bare codes to avoid clutter). Degrades to the bare
+        // code if the backend hasn't supplied a name yet (WerksName not activated).
+        var plantNames = {};
+        function plantLabel(code) {
+            var nm = plantNames[code];
+            return nm ? (code + ' — ' + nm) : String(code);
+        }
+        function buildPlantCategoryOptions() {
+            var plants = {}, cats = {};
+            summaryRows.forEach(function (r) {
+                if (r.Werks) {
+                    plants[r.Werks] = true;
+                    if (r.WerksName) { plantNames[r.Werks] = r.WerksName; }
+                }
+                if (r.Category) cats[r.Category] = true;
+            });
+            plantOptions = Object.keys(plants).sort().map(function (p) { return { key: p, text: plantLabel(p) }; });
+            categoryOptions = Object.keys(cats).sort().map(function (c) { return { key: c, text: c }; });
+            selectedPlants = selectedPlants.filter(function (p) { return p in plants; });
+            selectedCategories = selectedCategories.filter(function (c) { return c in cats; });
+        }
+
+        // ===================== CHARTS =====================
+        // A registry (not separate globals) so charts can be uniformly disposed
+        // and recreated when the browser zoom level changes - see watchZoom()
+        // below for why that's necessary and .resize() alone isn't enough.
+        var charts = {};
+
+        // Plant-donut centre label. The donut is drawn at (CX, CY) of the canvas;
+        // the label is placed in PIXELS there and anchored dead-centre
+        // (textAlign centre + textVerticalAlign middle). Percentage-anchored titles
+        // and graphics anchor by their top-left corner, which is what made the old
+        // title drift off-centre - pixel + centre anchoring lands it exactly.
+        // Donut centre coordinates (fractions of chart width/height).
+        // Use true centre for the padAngle style so the graphic sits naturally.
+        var PLANT_DONUT_CX = 0.50, PLANT_DONUT_CY = 0.50;
+        var plantCenterState = null;   // { name, val, color }; null = nothing to draw
+
+        function getChart(sId) {
+            if (charts[sId]) { return charts[sId]; }
+            var el = $(sId);
+            el.innerHTML = '';
+            // SVG renderer (not canvas): chart text + lines are drawn as vectors, so
+            // the browser re-rasterises them natively at every zoom / devicePixelRatio
+            // and they stay razor-sharp - a canvas backing store, by contrast, is
+            // sampled once at init() DPR and gets stretched (blurry) on zoom.
+            charts[sId] = window.echarts.init(el, null, { renderer: 'svg' });
+            return charts[sId];
+        }
+
+        function disposeChart(sId) {
+            if (charts[sId]) { charts[sId].dispose(); delete charts[sId]; }
+        }
+
+        function disposeAllCharts() {
+            Object.keys(charts).forEach(disposeChart);
+        }
+
+        // (Re)draw the donut centre label at the current pixel centre. Called after
+        // the donut is (re)rendered, on hover, and after any resize (the graphic is
+        // pixel-placed, so a plain .resize() would leave it stranded).
+        function applyPlantCenter() {
+            var c = charts['plantShareChart'];
+            if (!c || !plantCenterState) { return; }
+            var cx = c.getWidth() * PLANT_DONUT_CX;
+            var cy = c.getHeight() * PLANT_DONUT_CY;
+            c.setOption({
+                graphic: {
+                    elements: [
+                        { type: 'text', silent: true, z: 100, x: cx, y: cy - 11,
+                            style: { text: plantCenterState.name, textAlign: 'center', textVerticalAlign: 'middle',
+                                fill: plantCenterState.color, fontSize: 13, fontWeight: 'bold' } },
+                        { type: 'text', silent: true, z: 100, x: cx, y: cy + 12,
+                            style: { text: plantCenterState.val, textAlign: 'center', textVerticalAlign: 'middle',
+                                fill: '#334155', fontSize: 17, fontWeight: 'bold' } }
+                    ]
+                }
+            });
+        }
+
+        // Re-render every chart from the already-fetched data (no re-fetch).
+        function rerenderAllCharts() {
+            disposeAllCharts();
+            if (summaryRows.length) { render(); }
+            renderDailyChart(dailyMonth, monthToCalendarYear(currentFY, dailyMonth));
+        }
+
+        // Resize every chart to fit its (possibly reflowed) container.
+        function resizeAllCharts() {
+            Object.keys(charts).forEach(function (id) { charts[id].resize(); });
+            applyPlantCenter();   // graphic is pixel-placed → re-centre after resize
+        }
+
+        // Because the charts use the SVG renderer (see getChart), their text stays
+        // vector-crisp at every browser zoom / devicePixelRatio - there is no canvas
+        // backing store to go blurry, so a zoom no longer needs a dispose+rebuild.
+        // A plain .resize() to refit the new layout box is all that's required.
+        // Watched two ways for reliability: the window 'resize' event (fires on zoom
+        // in Chrome/Edge) AND a matchMedia resolution watch (fires on DPR changes
+        // that don't emit a resize event).
+        function onViewportChange() {
+            resizeAllCharts();
+        }
+        function watchZoom() {
+            window.addEventListener('resize', onViewportChange);
+            if (window.matchMedia) {
+                (function arm() {
+                    var mql = window.matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)');
+                    mql.addEventListener('change', function onChange() {
+                        mql.removeEventListener('change', onChange);
+                        onViewportChange();
+                        arm();   // re-arm for the NEXT DPR change
+                    }, { once: true });
+                })();
+            }
+        }
+
+        function render() {
+            var filtered = getFilteredRows().map(function (r) {
+                return {
+                    plant: r.Werks,
+                    category: r.Category,
+                    target: parseFloat(r.YtdTarg) || 0,
+                    ytdQty: parseFloat(r.YtdQty) || 0,
+                    ytdAmt: parseFloat(r.YtdAmt) || 0,
+                    mtdQty: parseFloat(r.MtdQty) || 0,
+                    mtdAmt: parseFloat(r.MtdAmt) || 0,
+                    ysQty: parseFloat(r.YsQty) || 0,
+                    ysAmt: parseFloat(r.YsAmt) || 0
+                };
+            });
+
+            // KPIs
+            var totalYtdAmt = sum(filtered, 'ytdAmt');
+            var totalYtdQty = sum(filtered, 'ytdQty');
+            var totalMtdAmt = sum(filtered, 'mtdAmt');
+            var totalMtdQty = sum(filtered, 'mtdQty');
+            var totalYsAmt = sum(filtered, 'ysAmt');
+            var totalYsQty = sum(filtered, 'ysQty');
+            var totalTarget = sum(filtered, 'target');
+            var achvPct = totalTarget > 0 ? Math.min(((totalYtdQty / totalTarget) * 100), 100).toFixed(1) : 0;
+
+            $('kpiYtdAmt').innerText = fmtCr(totalYtdAmt);
+            $('kpiYtdQty').innerText = fmtNumber(totalYtdQty) + ' Units Achieved';
+            $('kpiMtdAmt').innerText = fmtCr(totalMtdAmt);
+            $('kpiMtdQty').innerText = fmtNumber(totalMtdQty) + ' Units Achieved';
+            $('kpiYsAmt').innerText = fmtCr(totalYsAmt);
+            $('kpiYsQty').innerText = fmtNumber(totalYsQty) + ' Units Achieved';
+            $('kpiAchv').innerText = achvPct + '%';
+            $('achvBar').style.width = achvPct + '%';
+            $('kpiTargetQty').innerText = 'Target: ' + fmtNumber(totalTarget) + ' Units';
+
+            // Plant aggregation
+            var plantAgg = {};
+            filtered.forEach(function (r) {
+                if (!plantAgg[r.plant]) plantAgg[r.plant] = { target: 0, ytdQty: 0, ytdAmt: 0, mtdAmt: 0, ysAmt: 0 };
+                plantAgg[r.plant].target += r.target;
+                plantAgg[r.plant].ytdQty += r.ytdQty;
+                plantAgg[r.plant].ytdAmt += r.ytdAmt;
+                plantAgg[r.plant].mtdAmt += r.mtdAmt;
+                plantAgg[r.plant].ysAmt += r.ysAmt;
+            });
+            var plants = Object.keys(plantAgg).sort();
+
+            // Category aggregation (both measures; the toggle picks which to plot)
+            var catAgg = {};
+            filtered.forEach(function (r) {
+                if (!catAgg[r.category]) catAgg[r.category] = { qty: 0, amt: 0 };
+                catAgg[r.category].qty += r.ytdQty;
+                catAgg[r.category].amt += r.ytdAmt;
+            });
+
+            // Measure-aware label helpers for the pies (charts 2 & 3)
+            var sMeasureWord = isAmt() ? 'Amount' : 'Quantity';
+            var pieFull = isAmt()
+                ? function (v) { return RUPEE + (v / 10000000).toFixed(2) + ' Cr'; }
+                : function (v) { return fmtNumber(v) + ' Nos'; };
+            var pieShort = isAmt()
+                ? function (v) { return RUPEE + (v / 10000000).toFixed(1) + 'Cr'; }
+                : function (v) { return fmtNumber(v); };
+
+            $('categoryMixSubtitle').innerText = 'YTD ' + sMeasureWord + ' Distribution (Top 10)';
+            $('plantShareTitle').innerText = 'Plant-wise Share';
+            $('plantShareSubtitle').innerText = 'YTD ' + sMeasureWord + ' Distribution by Plant';
+
+            var baseGrid = { left: '3%', right: '4%', bottom: '3%', containLabel: true };
+            var baseAxisLine = { lineStyle: { color: '#E5E7EB' } };
+            var baseSplitLine = { lineStyle: { color: '#F3F4F6', type: 'dashed' } };
+            var baseTooltip = {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                textStyle: { color: '#334155', fontSize: 12 },
+                extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'
+            };
+
+            // ========== CHART 1: Plant Target vs Achieved ==========
+            getChart('plantTargetChart').setOption({
+                tooltip: Object.assign({}, baseTooltip, { trigger: 'axis', axisPointer: { type: 'cross' } }),
+                legend: { data: ['Target', 'Achieved', 'Achv %'], right: 10, top: 0, textStyle: { color: '#64748B' } },
+                grid: Object.assign({}, baseGrid, { left: '5%' }),
+                xAxis: [{ type: 'category', data: plants, axisLine: baseAxisLine, axisTick: { show: false },
+                    axisLabel: { color: '#64748B', fontSize: 11 } }],
+                yAxis: [{
+                    type: 'value', name: 'Quantity', position: 'left',
+                    axisLine: { show: false }, axisTick: { show: false }, splitLine: baseSplitLine,
+                    axisLabel: { color: '#94A3B8', formatter: function (val) { return val >= 1000 ? (val / 1000).toFixed(0) + 'K' : val; } }
+                }, {
+                    type: 'value', name: 'Percentage', position: 'right',
+                    axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false },
+                    axisLabel: { color: '#94A3B8', formatter: '{value}%' }
+                }],
+                series: [
+                    { name: 'Target', type: 'bar', barWidth: 16, itemStyle: { color: '#D1D5DB', borderRadius: [2, 2, 0, 0] },
+                        data: plants.map(function (p) { return plantAgg[p].target; }) },
+                    { name: 'Achieved', type: 'bar', barWidth: 16, itemStyle: { color: '#0A6ED1', borderRadius: [2, 2, 0, 0] },
+                        data: plants.map(function (p) { return plantAgg[p].ytdQty; }) },
+                    { name: 'Achv %', type: 'line', yAxisIndex: 1, symbol: 'circle', symbolSize: 6,
+                        lineStyle: { color: '#E9730C', width: 2 }, itemStyle: { color: '#E9730C' },
+                        data: plants.map(function (p) { return plantAgg[p].target > 0 ? ((plantAgg[p].ytdQty / plantAgg[p].target) * 100).toFixed(1) : 0; }) }
+                ]
+            }, true);
+
+            // ========== CHART 2: Category Mix ==========
+            var topCategories = Object.keys(catAgg).map(function (c) {
+                return { name: c, value: Math.round(isAmt() ? catAgg[c].amt : catAgg[c].qty) };
+            }).sort(function (a, b) { return b.value - a.value; }).slice(0, 10);
+            var pieData = topCategories.sort(function (a, b) { return a.value - b.value; });
+            var lightColors = ['#D4A017', '#1B8A8A', '#C039A9', '#D20A0A', '#5D36FF', '#E9730C', '#107E3E', '#0A6ED1', '#EC4899', '#64748B'];
+
+            getChart('categoryMixChart').setOption({
+                backgroundColor: '#ffffff',
+                tooltip: {
+                    trigger: 'item', backgroundColor: 'rgba(255, 255, 255, 0.95)', borderColor: '#0A6ED1', borderWidth: 1,
+                    textStyle: { color: '#32363A' }, extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);',
+                    formatter: function (params) {
+                        return '<strong>' + params.name + '</strong><br/>' + pieFull(params.value) + ' (' + params.percent + '%)';
+                    }
+                },
+                legend: { orient: 'horizontal', bottom: 0, left: 'center', itemGap: 12, textStyle: { color: '#32363A', fontSize: 11 },
+                    itemWidth: 12, itemHeight: 12, data: pieData.map(function (d) { return d.name; }) },
+                series: [{
+                    name: 'Category Mix', type: 'pie', radius: '50%', center: ['40%', '50%'],
+                    data: pieData.map(function (d, i) {
+                        return { name: d.name, value: d.value, itemStyle: { color: lightColors[i % lightColors.length], borderRadius: 6, borderColor: '#fff', borderWidth: 2 } };
+                    }),
+                    roseType: 'radius',
+                    avoidLabelOverlap: true,
+                    label: { 
+                        show: true, color: '#334155', fontSize: 10,
+                        formatter: function (p) { return p.name + '\n' + p.percent + '%'; }
+                    },
+                    labelLine: { show: true, length: 8, length2: 12, smooth: true },
+                    emphasis: {
+                        label: {
+                            show: true, color: '#32363A', fontSize: 12, fontWeight: 'bold', lineHeight: 15,
+                            formatter: function (p) { return p.name + '\n' + pieShort(p.value) + ' (' + p.percent + '%)'; }
+                        },
+                        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.2)' }
+                    },
+                    animationType: 'scale', animationEasing: 'elasticOut',
+                    animationDelay: function (idx) { return Math.random() * 200; }
+                }]
+            }, true);
+
+            // ========== CHART 3: Plant-wise Donut Chart ==========
+            var plantPieData = plants.map(function (p) {
+                return { name: p, value: Math.round(isAmt() ? plantAgg[p].ytdAmt : plantAgg[p].ytdQty) };
+            }).sort(function (a, b) { return b.value - a.value; });
+            var colors = ['#0A6ED1', '#107E3E', '#E9730C', '#5D36FF', '#D20A0A', '#C039A9', '#1B8A8A', '#D4A017'];
+            var plantGrandTotal = plantPieData.reduce(function (a, d) { return a + d.value; }, 0);
+
+            var plantShareChart = getChart('plantShareChart');
+
+            // Build a quick lookup of percentage strings for legend formatting
+            var plantPerc = {};
+            plantPieData.forEach(function (d) {
+                plantPerc[d.name] = plantGrandTotal ? ((d.value / plantGrandTotal) * 100).toFixed(1) + '%' : '';
+            });
+
+            // Prepare formatted values for legend: short value + percent
+            var plantFormatted = {};
+            plantPieData.forEach(function (d) {
+                plantFormatted[d.name] = pieShort(d.value) + ' (' + (plantPerc[d.name] || '') + ')';
+            });
+
+            plantShareChart.setOption({
+                backgroundColor: '#fff',
+                tooltip: {
+                    trigger: 'item', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#0A6ED1', textStyle: { color: '#32363A' },
+                    formatter: function (params) {
+                        return '<strong>' + plantLabel(params.name) + '</strong><br/>' + pieFull(params.value) + ' (' + params.percent + '%)';
+                    }
+                },
+                // Bottom legend doubles as the plant filter, so it carries the full
+                // "code — name" (keys stay the plant code, formatter only changes the
+                // shown text). The ring slice labels stay bare codes to avoid clutter.
+                legend: { orient: 'horizontal', bottom: 0, left: 'center', textStyle: { color: '#32363A', fontSize: 11 },
+                    itemWidth: 12, itemHeight: 12, data: plantPieData.map(function (d) { return d.name; }),
+                    formatter: function (name) { return plantLabel(name); } },
+                series: [{
+                    name: 'Plant Share', type: 'pie', selectedMode: 'single', selectedOffset: 8, clockwise: true,
+                    // padAngle puts a small gap between slices (example style)
+                    padAngle: 4,
+                    // larger donut radii and centred
+                    radius: ['40%', '72%'], center: ['50%', '50%'], avoidLabelOverlap: true,
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    // outside labels with short formatting
+                    label: { show: true, position: 'outside', color: '#32363A', fontSize: 11,
+                        formatter: function (p) { return p.name + '\n' + p.percent.toFixed(1) + '%'; } },
+                    labelLine: { show: true, length: 22, length2: 12, smooth: true, lineStyle: { width: 1 } },
+                    emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' },
+                        itemStyle: { shadowBlur: 12, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.3)' } },
+                    data: plantPieData.map(function (d, i) { return Object.assign({}, d, { itemStyle: { color: colors[i % 8] } }); })
+                }]
+            }, true);
+
+            // Centre-of-donut label: grand total by default, hovered slice on hover
+            // (mirrors the ApexCharts donut centre label from the CV Ageing dashboard).
+            // Placed as a pixel-anchored graphic via applyPlantCenter() so it lands
+            // exactly on the hole. Handlers are re-bound each render (off first) so
+            // they never stack and always close over the current measure's pieFull.
+            plantCenterState = { name: 'Total', val: pieFull(plantGrandTotal), color: '#334155' };
+            applyPlantCenter();
+            plantShareChart.off('mouseover').off('mouseout');
+            plantShareChart.on('mouseover', function (p) {
+                if (p.componentType !== 'series') { return; }
+                plantCenterState = { name: p.name, val: pieFull(p.value), color: p.color };
+                applyPlantCenter();
+            });
+            plantShareChart.on('mouseout', function (p) {
+                if (p.componentType !== 'series') { return; }
+                plantCenterState = { name: 'Total', val: pieFull(plantGrandTotal), color: '#334155' };
+                applyPlantCenter();
+            });
+
+            // ========== TABLE (exact rupee values, not crore-converted) ==========
+            var tbody = $('dataTableBody');
+            tbody.innerHTML = '';
+            filtered.forEach(function (r) {
+                var row = '<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">' +
+                    '<td class="px-4 py-3 font-medium text-slate-500">' + plantLabel(r.plant) + '</td>' +
+                    '<td class="px-4 py-3 font-medium text-slate-800">' + r.category + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.target) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.ytdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums font-medium text-slate-800">' + fmtExact(r.ytdAmt) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.mtdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtExact(r.mtdAmt) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtNumber(r.ysQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums text-slate-500">' + fmtExact(r.ysAmt) + '</td>' +
+                    '</tr>';
+                tbody.innerHTML += row;
+            });
+            // Totals row: reuse the KPI aggregates already summed above (qty/target as
+            // plain numbers, amounts as exact rupees - matching the per-row formatting).
+            if (filtered.length) {
+                tbody.innerHTML += '<tr class="border-t-2 border-slate-300 bg-slate-50 font-semibold text-slate-800">' +
+                    '<td class="px-4 py-3" colspan="2">Total</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtNumber(totalTarget) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtNumber(totalYtdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtExact(totalYtdAmt) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtNumber(totalMtdQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtExact(totalMtdAmt) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtNumber(totalYsQty) + '</td>' +
+                    '<td class="px-4 py-3 text-right tabular-nums">' + fmtExact(totalYsAmt) + '</td>' +
+                    '</tr>';
+            }
+            $('tableRecordCount').innerText = filtered.length + ' records';
+        }
+
+        // ========== CHART 4: Daily quantity/amount for the picked month ==========
+        // Renders the FULL month (day 1..last): past days blue, the reference day
+        // (yesterday for the current month, else the last day with data) orange,
+        // and - for the current month only - today onward greyed as "not posted yet".
+        function renderDailyChart(month, year) {
+            var valField = isAmt() ? 'Amount' : 'Qty';   // DashDaily pre-summed fields (amount vs quantity)
+            var byDay = {};
+            dailyRows.forEach(function (r) {
+                if (!r.Budat) return;
+                // String-slice, not Date-parse: avoids the same UTC/local
+                // midnight mismatch that dropped the last day of the month above.
+                var day = parseInt(String(r.Budat).slice(8, 10), 10);
+                if (!day) return;
+                byDay[day] = (byDay[day] || 0) + (parseFloat(r[valField]) || 0);
+            });
+
+            var now = refNow();   // "now" = the as-of date, so debugging a past date stays coherent
+            var monthIdx = month - 1;
+            var daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+            var isCurrentMonth = (monthIdx === now.getMonth() && year === now.getFullYear());
+            var bAllZero = Object.keys(byDay).length === 0;
+
+            var refDay = null;
+            if (!bAllZero) {
+                if (isCurrentMonth) {
+                    if (now.getDate() > 1) { refDay = now.getDate() - 1; }
+                } else {
+                    var maxDay = 0;
+                    Object.keys(byDay).forEach(function (k) { maxDay = Math.max(maxDay, parseInt(k, 10)); });
+                    refDay = maxDay || null;
+                }
+            }
+
+            var cats = [], data = [], total = 0, refVal = 0;
+            for (var dd = 1; dd <= daysInMonth; dd++) {
+                cats.push(String(dd));
+                var raw = byDay[dd] || 0;
+                var color = '#93C5FD';                                             // past (blue)
+                if (dd === refDay) { color = '#E9730C'; refVal = raw; }            // reference day
+                else if (isCurrentMonth && dd >= now.getDate()) { color = '#E5E7EB'; }  // today onward: not posted yet
+                if (isCurrentMonth ? (dd < now.getDate()) : (refDay && dd <= refDay)) { total += raw; }
+                data.push({ value: raw, itemStyle: { color: color, borderRadius: [2, 2, 0, 0] } });
+            }
+
+            var refWord = isCurrentMonth ? 'Yesterday' : 'Last Day';
+            var totalWord = isCurrentMonth ? 'MTD Total' : 'Total';
+            var completed = isCurrentMonth ? (now.getDate() - 1) : (refDay || 0);
+
+            var sDailyWord = isAmt() ? 'Amount' : 'Quantity';
+            $('dailyTitle').innerText = (isCurrentMonth ? 'Current Month Daily '
+                : MONTH_NAMES[monthIdx] + ' ' + year + ' Daily ') + sDailyWord;
+            $('dailyRefLabel').innerText = refDay ? (refWord + ' (Day ' + refDay + ')') : refWord;
+            $('dailyRefValue').innerText = fmtMeasure(refVal);
+            $('dailyTotalLabel').innerText = totalWord + (completed >= 1 ? ' (Day 1-' + completed + ')' : '');
+            $('dailyTotalValue').innerText = fmtMeasure(total);
+
+            if (bAllZero) {
+                disposeChart('dailyAmountChart');
+                $('dailyAmountChart').innerHTML = '<div class="flex items-center justify-center h-full text-sm text-slate-400">' +
+                    'No data for ' + MONTH_NAMES[monthIdx] + ' ' + year + '</div>';
+                return;
+            }
+
+            var baseGrid = { left: '5%', right: '4%', bottom: '3%', containLabel: true };
+            var baseAxisLine = { lineStyle: { color: '#E5E7EB' } };
+            var baseSplitLine = { lineStyle: { color: '#F3F4F6', type: 'dashed' } };
+            var baseTooltip = {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)', borderColor: '#E5E7EB', borderWidth: 1,
+                textStyle: { color: '#334155', fontSize: 12 }, extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'
+            };
+
+            getChart('dailyAmountChart').setOption({
+                tooltip: Object.assign({}, baseTooltip, {
+                    trigger: 'axis', axisPointer: { type: 'shadow' },
+                    formatter: function (p) {
+                        var isRef = String(p[0].axisValue) === String(refDay);
+                        var label = isRef ? '<b>' + refWord + ' (Day ' + p[0].axisValue + ')</b>' : 'Day ' + p[0].axisValue;
+                        var valText = isAmt() ? fmtCurrency(p[0].value) : fmtNumber(p[0].value) + ' Nos';
+                        return label + '<br/>' + sDailyWord + ': <strong>' + valText + '</strong>';
+                    }
+                }),
+                grid: baseGrid,
+                xAxis: { type: 'category', data: cats, name: 'Day', axisLine: baseAxisLine, axisTick: { show: false },
+                    axisLabel: { color: '#64748B', fontSize: 10 } },
+                yAxis: {
+                    type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: baseSplitLine,
+                    axisLabel: {
+                        color: '#94A3B8',
+                        formatter: function (val) {
+                            if (isAmt()) {
+                                var cr = val / 10000000;
+                                if (cr >= 1) return RUPEE + cr.toFixed(0) + 'Cr';
+                                var lk = val / 100000;
+                                if (lk >= 1) return RUPEE + lk.toFixed(0) + 'L';
+                                return RUPEE + val;
+                            }
+                            return val >= 1000 ? (val / 1000).toFixed(0) + 'K' : val;
+                        }
+                    }
+                },
+                series: [{ name: 'Daily ' + sDailyWord, type: 'bar', barWidth: '60%', data: data }]
+            }, true);
+        }
+
+        function initDailyMonthPicker() {
+            var sel = $('dailyMonthSelect');
+            sel.innerHTML = MONTH_NAMES.map(function (name, i) {
+                return '<option value="' + (i + 1) + '">' + name + '</option>';
+            }).join('');
+            sel.value = String(dailyMonth);
+            sel.addEventListener('change', function () {
+                dailyMonth = parseInt(sel.value, 10);
+                refreshDaily();
+            });
+        }
+
+        /* ============================================================
+           Parent (UI5 filter bar) <-> this document bridge
+        ============================================================ */
+        function postStateToParent() {
+            if (window.parent === window) { return; }
+            window.parent.postMessage({
+                source: 'zpp-dashboard',
+                type: 'zpp-state',
+                payload: {
+                    plantList: plantOptions,
+                    categoryList: categoryOptions,
+                    selectedPlants: selectedPlants.slice(),
+                    selectedCategories: selectedCategories.slice()
+                }
+            }, '*');
+        }
+
+        function sameSet(a, b) {
+            a = a || []; b = b || [];
+            return a.length === b.length && a.slice().sort().join('|') === b.slice().sort().join('|');
+        }
+
+        function applyFiltersFromParent(payload) {
+            if (!payload) return;
+            var newAsOf = payload.asOfDate ? String(payload.asOfDate).slice(0, 10) : asOfDate;
+            var newMeasure = payload.measure || measure;
+            var newFY = payload.fiscalYear || currentFY;
+            var newPlants = Array.isArray(payload.selectedPlants) ? payload.selectedPlants.slice() : [];
+            var newCats = Array.isArray(payload.selectedCategories) ? payload.selectedCategories.slice() : [];
+
+            // Fiscal year / as-of date change the SERVER result (P_Gjahr / P_AsOfDate);
+            // plant/category change which detail rows the daily query returns. All of
+            // those need a fetch. Measure alone is a pure re-render over cached rows.
+            var summaryRefetch = (newFY !== currentFY) || (newAsOf !== asOfDate);
+            var dailyRefetch = summaryRefetch ||
+                !sameSet(newPlants, selectedPlants) || !sameSet(newCats, selectedCategories);
+
+            currentFY = newFY; asOfDate = newAsOf; measure = newMeasure;
+            selectedPlants = newPlants; selectedCategories = newCats;
+
+            if (summaryRefetch) {
+                refreshSummary();               // re-fetch + render() inside
+            } else {
+                render();                       // re-render charts from cached summary
+                postStateToParent();
+            }
+
+            if (dailyRefetch) {
+                refreshDaily();                 // re-fetch the daily rows
+            } else {
+                renderDailyChart(dailyMonth, monthToCalendarYear(currentFY, dailyMonth)); // measure-only
+            }
+        }
+
+        window.addEventListener('message', function (e) {
+            var d = e.data;
+            if (!d || d.source !== 'zpp-dashboard-host' || d.type !== 'zpp-filters') return;
+            applyFiltersFromParent(d.payload);
+        });
+
+        // Report our full content height so the parent can grow the iframe to fit.
+        function reportHeight() {
+            if (window.parent === window) { return; }
+            window.parent.postMessage({
+                source: 'zpp-dashboard',
+                type: 'zpp-height',
+                height: Math.ceil(document.body.scrollHeight)
+            }, '*');
+        }
+        window.addEventListener('load', reportHeight);
+        window.addEventListener('resize', reportHeight);
+        if (window.ResizeObserver) { new ResizeObserver(reportHeight).observe(document.body); }
+
+        async function init() {
+            // All 4 charts are created lazily by getChart() the first time each is
+            // rendered (chart4/daily may render an empty-state message instead of
+            // a chart on first load, so it has no chart instance at all yet).
+            initDailyMonthPicker();
+            watchZoom();
+            if (window.ResizeObserver) {
+                new ResizeObserver(resizeAllCharts).observe(document.body);
+            }
+
+            await refreshSummary();
+            await refreshDaily();
+        }
+        init();
+    </script>
+</body>
+</html>
