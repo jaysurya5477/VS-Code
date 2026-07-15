@@ -99,16 +99,18 @@
     ; Module → Email mapping
     ; -----------------------------
     ModuleEmails := Map(
+        "FI", "anurag.singh@alimco.in",
         "PP", "hemendra.patidar@alimco.in",
         "QM", "hemendra.patidar@alimco.in",
         "MM", "anurag.singh@alimco.in",
         "SD", "suraj.karki@highbartech.com;vishal.singh@highbartech.com",
         "HCM", "satypal.singh@highbartech.com",
         "HR", "satypal.singh@highbartech.com",
-        "PM", "virendra.rathore@highbartech.com"
+        "PM", "hemendra.patidar@alimco.in",
+        "BASIS", "prakhar.chaurasiya@highbartech.com"
     )
 
-    DefaultCC := "ketan.deshpande@highbartech.com"
+    ; DefaultCC := "anurag.singh@alimco.in"
 
     filePath := A_ScriptDir "\TRs.txt"
 
@@ -156,7 +158,7 @@
     ; -----------------------------
     ; Build CC list
     ; -----------------------------
-    CCList := DefaultCC
+    ; CCList := DefaultCC
 
     for email in CCSet
         CCList .= ";" email
@@ -191,10 +193,8 @@
     (
             "<span style='font-family:Trebuchet MS; font-size:11pt;'>"
             . "<p>Dear Prakhar,</p>"
-            . "<p>Please import the below transport request(s) to both quality & production systems, "
-            . "subject to Ketan's approval.</p>"
+            . "<p>Please import the below transport request(s) to both quality & production systems.</p>"
             . TRHtml
-            . "<p>Kindly proceed once approved.</p>"
             . "</span>"
             . mail.HTMLBody
         )

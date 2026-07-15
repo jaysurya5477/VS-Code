@@ -28,7 +28,7 @@ CoordMode("Pixel", "Window")
     SendText("HBTABAP")
     Sleep(500)
     Send("{Tab}")
-    SendText("HgAlimco#$%67890")
+    SendText("pRD@LM995511^*#$%JS")
     Sleep(500)
     Send("{Enter}")
 }
@@ -50,7 +50,14 @@ CoordMode("Pixel", "Window")
     SendText("HBTADMIN")
     Send("{Tab}")
     Sleep(500)
-    SendText("Abap@Hbt!@#$%987654")
+    SendText("pRD@LM995511^*#$%JS")
+    Sleep(500)
+    Send("{Enter}")
+}
+
+#F5:: {
+    Sleep(500)
+    SendText("HgAlimco#$%67890")
     Sleep(500)
     Send("{Enter}")
 }
