@@ -11,12 +11,14 @@
 *&---------------------------------------------------------------------*
 REPORT zmm_grn_dash_test.
 
+TABLES: ekko, matdoc.
+
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
-  SELECT-OPTIONS: s_lifnr FOR mkpf-usnam MODIF ID grn,   " placeholder type, see note below
-                  s_matnr FOR mkpf-usnam MODIF ID grn,
-                  s_werks FOR mkpf-usnam MODIF ID grn,
-                  s_bsart FOR mkpf-usnam MODIF ID grn.
-  PARAMETERS: p_dfrom TYPE dats DEFAULT sy-datum,
+SELECT-OPTIONS: s_lifnr FOR matdoc-lifnr MODIF ID grn,   " placeholder type, see note below
+                  s_matnr FOR matdoc-matnr MODIF ID grn,
+                  s_werks FOR matdoc-werks MODIF ID grn,
+                  s_bsart FOR ekko-bsart MODIF ID grn.
+PARAMETERS: p_dfrom TYPE dats DEFAULT sy-datum,
               p_dto   TYPE dats DEFAULT sy-datum.
 SELECTION-SCREEN END OF BLOCK b1.
 
@@ -65,30 +67,46 @@ START-OF-SELECTION.
 
 
 FORM show_kpis.
+  " label is TYPE string (dynamic length) - WRITE ... string(30) throws
+  " CX_SY_RANGE_OUT_OF_BOUNDS whenever the content is shorter than 30, so
+  " convert to a fixed-length CHAR local first (safe at any length).
+  DATA lv_kpi_label TYPE char30.
+
   WRITE: / 'KPIs'.
   ULINE.
   LOOP AT ls_dash-kpis ASSIGNING FIELD-SYMBOL(<ls_kpi>).
-    WRITE: / <ls_kpi>-label(30), <ls_kpi>-curr_value, <ls_kpi>-prior_value, <ls_kpi>-delta_pct, '%'.
+    lv_kpi_label = <ls_kpi>-label.
+    WRITE: / lv_kpi_label, <ls_kpi>-curr_value, <ls_kpi>-prior_value, <ls_kpi>-delta_pct, '%'.
   ENDLOOP.
   SKIP.
 ENDFORM.
 
 
 FORM show_quality.
+  " bucket is TYPE string - see show_kpis comment above for why this is
+  " converted to a fixed-length CHAR local before WRITE.
+  DATA lv_bucket TYPE char20.
+
   WRITE: / 'Quality buckets'.
   ULINE.
   LOOP AT ls_dash-quality ASSIGNING FIELD-SYMBOL(<ls_q>).
-    WRITE: / <ls_q>-bucket(20), <ls_q>-qty, <ls_q>-share_pct, '%'.
+    lv_bucket = <ls_q>-bucket.
+    WRITE: / lv_bucket, <ls_q>-qty, <ls_q>-share_pct, '%'.
   ENDLOOP.
   SKIP.
 ENDFORM.
 
 
 FORM show_ratios.
+  " label is TYPE string - see show_kpis comment above for why this is
+  " converted to a fixed-length CHAR local before WRITE.
+  DATA lv_ratio_label TYPE char30.
+
   WRITE: / 'Ratios'.
   ULINE.
   LOOP AT ls_dash-ratios ASSIGNING FIELD-SYMBOL(<ls_r>).
-    WRITE: / <ls_r>-label(30), <ls_r>-value.
+    lv_ratio_label = <ls_r>-label.
+    WRITE: / lv_ratio_label, <ls_r>-value.
   ENDLOOP.
   SKIP.
 ENDFORM.
@@ -98,7 +116,7 @@ FORM show_trend.
   WRITE: / 'Receipt flow over time (period = YYYYMM)'.
   ULINE.
   LOOP AT ls_dash-trend ASSIGNING FIELD-SYMBOL(<ls_t>).
-    WRITE: / <ls_t>-period, <ls_t>-qty101, <ls_t>-qty102, <ls_t>-qtyz22, <ls_t>-qtyz23, <ls_t>-net_qty.
+    WRITE: / <ls_t>-period, <ls_t>-qty101, <ls_t>-qty102, <ls_t>-qtyz22, <ls_t>-net_qty.
   ENDLOOP.
   SKIP.
 ENDFORM.
@@ -138,7 +156,7 @@ FORM show_doctype_ranked.
   WRITE: / 'GRN value by PO document type (ranked)'.
   ULINE.
   LOOP AT ls_dash-doctype_ranked ASSIGNING FIELD-SYMBOL(<ls_d>).
-    WRITE: / <ls_d>-bsart, <ls_d>-batxt(25), <ls_d>-value.
+    WRITE: / <ls_d>-bsart, <ls_d>-batxt(20), <ls_d>-value.
   ENDLOOP.
   SKIP.
 ENDFORM.

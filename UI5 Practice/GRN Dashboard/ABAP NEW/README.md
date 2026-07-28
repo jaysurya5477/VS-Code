@@ -16,40 +16,44 @@ OData/RAP service, no UI5 app, no iframe wiring yet**. That is Phase 2.
 | File | What it is |
 |---|---|
 | `ZMMD_GRN_DASH_CDS.ddls.asddls` | Core 101-GRN-line fact view. Lean rebuild of `ZMMD_PO_CDS` (see file header for exactly which joins were kept/dropped and why). |
-| `ZMMD_GRN_MVT_CDS.ddls.asddls` | Generic correction-movement view covering 102, Z22 and Z23 together (`BWART` discriminates), standalone from the core view — see "Why two separate CDS views" below. |
+| `ZMMD_GRN_MVT_CDS.ddls.asddls` | Generic correction-movement view covering 102 and Z22 together (`BWART` discriminates), standalone from the core view — see "Why two separate CDS views" below. |
 | `ZCL_GRN_DASH_QUERY.clas.abap` | The query class. Public API: `default_filters( )` and `get_dashboard_data( is_filters )`. All KPI/ratio/quality-bucket/chart logic lives here. |
 | `ZMM_GRN_DASH_TEST.prog.abap` | Throwaway executable report to call the class and dump results as a classic list, so the class can be sanity-checked the moment the CDS views are activated. Not the dashboard — a validation tool only. |
 
 ## Why two separate CDS views, not one
 
-`ZMMD_GRN_DASH_CDS` is a flat 101-GRN-line view. 102/Z22/Z23 are each a **1:N relationship** to a
+`ZMMD_GRN_DASH_CDS` is a flat 101-GRN-line view. 102/Z22 are each a **1:N relationship** to a
 101 line (one GRN could have multiple rework cycles). Joining any of them into the flat view
 would fan out and double-count the base GRN qty/value on aggregation. So corrections are queried
 independently in `ZCL_GRN_DASH_QUERY`, each row carrying its own vendor/material/plant/doc-type
 dimensions and its own posting date, and combined only in ABAP after each has already been
 aggregated. This is explained in more detail in each view's header comment and in FS section 6.2.
 
-### Why 102, Z22 and Z23 all live in *one* view (`ZMMD_GRN_MVT_CDS`)
+### Why 102 and Z22 both live in *one* view (`ZMMD_GRN_MVT_CDS`)
 
 Originally this was two views — one for 102 (self-joined back to its specific original 101 via
-`MATDOC-LFBNR`), one for Z22/Z23 (traced through the custom table `ZMM_GR_REWORK`). Neither trace
+`MATDOC-LFBNR`), one for Z22 (traced through the custom table `ZMM_GR_REWORK`). Neither trace
 turned out to be necessary: the dashboard only ever aggregates these movements by
 vendor/material/plant/doc-type/date, never by "which specific 101 does this correction belong
 to" (that granularity only matters for a line-item report like `ZMM_PO_HISTORY_VER2`, not for a
-dashboard that just sums things). And since it's confirmed that Z22/Z23 rework movements post
+dashboard that just sums things). And since it's confirmed that Z22 rework movements post
 against the *same* PO/PO-item as the original procurement (not a separate rework/subcontract PO),
-all three movement types resolve their vendor/material/plant identically: join `MATDOC` straight
-to `EKPO`/`EKKO` on the movement's own `EBELN`/`EBELP`. That makes 102, Z22 and Z23 structurally
+both movement types resolve their vendor/material/plant identically: join `MATDOC` straight
+to `EKPO`/`EKKO` on the movement's own `EBELN`/`EBELP`. That makes 102 and Z22 structurally
 identical, so they're now one view with `BWART` exposed, and `ZCL_GRN_DASH_QUERY` just filters by
-movement type per call site (`get_reversals` → `bwart = '102'`, `get_rework` → `bwart IN ('Z22',
-'Z23')`). This also eliminates the custom Z-table dependency entirely.
+movement type per call site (`get_reversals` → `bwart = '102'`, `get_rework` → `bwart = 'Z22'`).
+This also eliminates the custom Z-table dependency entirely.
 
-The view is built as a `UNION ALL` of two branches: 102+Z22 need no further validation, but Z23
-rows are additionally required to trace back to a genuine Z22 via the confirmed, standard SAP
-storno linkage — `Z23.SMBLN/SJAHR/SMBLP = Z22.MBLNR/MJAHR/ZEILE` — so a Z23 only counts if it
-demonstrably cancels a real Z22, not merely because it carries that movement type code. This
-supersedes the earlier draft's guess at a `ZMM_GR_REWORK`-based Z22/Z23 link, which is no longer
-part of the design at all.
+**Requirement change: rework has no cancellation.** An earlier draft of this view also modelled a
+Z23 "rework cancel" movement type, built as a `UNION ALL` branch validated via MATDOC's standard
+SAP storno linkage (`Z23.SMBLN/SJAHR/SMBLP = Z22.MBLNR/MJAHR/ZEILE`). The business owner has since
+confirmed **rework is never reversed** — there is no Z23 in this business process — so that
+branch, and every Z23 reference in the class/FS/test report, has been removed. The view is now a
+single `SELECT` (no `UNION ALL`).
+
+`ZMMD_GRN_MVT_CDS` also applies an `LBBSA_SID` filter per movement type (102 keeps `'01'/'02'/' '`,
+matching `ZMMD_GRN_DASH_CDS`'s 101 dedup rule; Z22 keeps `'07'`) to avoid double-counting MATDOC's
+per-valuation-area/stock-split rows on aggregation.
 
 ## Key design decisions already made (don't re-litigate without reason)
 
@@ -66,8 +70,13 @@ part of the design at all.
 - **Vendor Quality Score weights are final, not illustrative**: `100 - (Rejection Rate x 9) -
   (Rework Rate x 1.6)`, clamped [0,100]. Confirmed with the business owner, same values the HTML
   prototype (`../GRN Dashboard v2.dc.html`) already uses.
-- Both of the above were open items in an earlier FS draft; they are now resolved in the FS and
-  should not be re-asked.
+- **Rework has no cancellation.** Confirmed with the business owner: a Z22 rework issue is never
+  reversed, so there is no Z23 movement type anywhere in this design. `ZMMD_GRN_MVT_CDS` is a
+  single `SELECT` (102 + Z22 only, no `UNION ALL`), and rework quantity/value always *adds* — no
+  netting logic in `period_totals`/`get_trend`/`get_vendor_agg`. This superseded an earlier draft
+  that modelled Z23 via a validated storno-linkage `UNION ALL` branch.
+- All of the above were open items in an earlier FS draft or requirement; they are now resolved
+  in the FS and should not be re-asked.
 
 ## Open items / assumptions still needing verification
 

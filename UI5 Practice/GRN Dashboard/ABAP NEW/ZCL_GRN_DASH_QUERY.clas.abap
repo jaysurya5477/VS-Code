@@ -1,7 +1,7 @@
 *&---------------------------------------------------------------------*
 *& Class ZCL_GRN_DASH_QUERY
 *&---------------------------------------------------------------------*
-*& GRN Dashboard - Phase 1 backend query class (see GRN Dashboard FS.md).
+*& GRN Dashboard - backend query class (see GRN Dashboard FS.md).
 *&
 *& Read-only. No authorization-object checks (access is controlled via
 *& Fiori Launchpad role assignment - see FS section 8). No OData/RAP
@@ -9,17 +9,19 @@
 *& testable now via ZMM_GRN_DASH_TEST.prog.abap.
 *&
 *& Design: one filtered extraction per source view (base 101 fact from
-*& ZMMD_GRN_DASH_CDS, correction movements 102/Z22/Z23 from the generic
+*& ZMMD_GRN_DASH_CDS, correction movements 102/Z22 from the generic
 *& ZMMD_GRN_MVT_CDS), each independently filtered/dated, then ALL
 *& aggregation (KPIs, ratios, quality buckets, every chart) is done in
 *& ABAP over those in-memory tables - mirroring how ZMM_PO_HISTORY_VER2
 *& itself works (one bulk extraction, then enrichment and computation in
-*& ABAP, not per-row DB access). 102/Z22/Z23 are deliberately queried
+*& ABAP, not per-row DB access). 102/Z22 are deliberately queried
 *& independently of the 101 fact (not joined into one flat view) - see
 *& ZMMD_GRN_MVT_CDS's header comment: none of them need document-level
 *& linkage back to a specific 101 line, only aggregate scoping by
 *& vendor/material/plant/doc-type/date, which their own PO reference
-*& already gives them directly.
+*& already gives them directly. Rework (Z22) has no cancellation
+*& counterpart - confirmed with the business owner - so there is no Z23
+*& movement type anywhere in this class.
 *&
 *& NOTE: data-element types below (menge_d, dmbtr, lifnr, etc.) were chosen
 *& to match the source tables as closely as could be determined from the
@@ -49,73 +51,73 @@ CLASS zcl_grn_dash_query DEFINITION
       ty_range_bsart TYPE RANGE OF esart,
 
       BEGIN OF ty_filters,
-        vendor TYPE ty_range_lifnr,
-        material TYPE ty_range_matnr,
-        plant TYPE ty_range_werks,
+        vendor    TYPE ty_range_lifnr,
+        material  TYPE ty_range_matnr,
+        plant     TYPE ty_range_werks,
         " caller's positive selection; STO exclusion is ALWAYS applied on top
-        doc_type TYPE ty_range_bsart,
+        doc_type  TYPE ty_range_bsart,
         date_from TYPE dats,
-        date_to TYPE dats,
+        date_to   TYPE dats,
       END OF ty_filters,
 
       BEGIN OF ty_kpi,
-        id TYPE string,
-        label TYPE string,
-        curr_value TYPE p LENGTH 15 DECIMALS 2,
+        id          TYPE string,
+        label       TYPE string,
+        curr_value  TYPE p LENGTH 15 DECIMALS 2,
         prior_value TYPE p LENGTH 15 DECIMALS 2,
-        delta_pct TYPE p LENGTH 8 DECIMALS 2,
+        delta_pct   TYPE p LENGTH 8 DECIMALS 2,
       END OF ty_kpi,
       ty_kpi_tab TYPE STANDARD TABLE OF ty_kpi WITH EMPTY KEY,
 
       BEGIN OF ty_quality,
-        bucket TYPE string,
-        qty TYPE p LENGTH 15 DECIMALS 3,
+        bucket    TYPE string,
+        qty       TYPE p LENGTH 15 DECIMALS 3,
         share_pct TYPE p LENGTH 8 DECIMALS 2,
       END OF ty_quality,
       ty_quality_tab TYPE STANDARD TABLE OF ty_quality WITH EMPTY KEY,
 
       BEGIN OF ty_ratio,
-        id TYPE string,
+        id    TYPE string,
         label TYPE string,
         value TYPE p LENGTH 8 DECIMALS 2,
       END OF ty_ratio,
       ty_ratio_tab TYPE STANDARD TABLE OF ty_ratio WITH EMPTY KEY,
 
       " period is YYYYMM
+      " Z22 (rework) has no cancellation counterpart - confirmed, rework
+      " is never reversed - so there is no qtyz23/valz23 here.
       BEGIN OF ty_trend,
-        period TYPE numc6,
-        qty101 TYPE p LENGTH 15 DECIMALS 3,
-        qty102 TYPE p LENGTH 15 DECIMALS 3,
-        qtyz22 TYPE p LENGTH 15 DECIMALS 3,
-        qtyz23 TYPE p LENGTH 15 DECIMALS 3,
-        val101 TYPE p LENGTH 15 DECIMALS 2,
-        val102 TYPE p LENGTH 15 DECIMALS 2,
-        valz22 TYPE p LENGTH 15 DECIMALS 2,
-        valz23 TYPE p LENGTH 15 DECIMALS 2,
+        period  TYPE num6,
+        qty101  TYPE p LENGTH 15 DECIMALS 3,
+        qty102  TYPE p LENGTH 15 DECIMALS 3,
+        qtyz22  TYPE p LENGTH 15 DECIMALS 3,
+        val101  TYPE p LENGTH 15 DECIMALS 2,
+        val102  TYPE p LENGTH 15 DECIMALS 2,
+        valz22  TYPE p LENGTH 15 DECIMALS 2,
         net_qty TYPE p LENGTH 15 DECIMALS 3,
         net_val TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_trend,
       ty_trend_tab TYPE STANDARD TABLE OF ty_trend WITH EMPTY KEY,
 
       BEGIN OF ty_vendor_row,
-        lifnr TYPE lifnr,
-        name1 TYPE name1_gp,
-        qty TYPE p LENGTH 15 DECIMALS 3,
-        net_qty TYPE p LENGTH 15 DECIMALS 3,
-        value TYPE p LENGTH 15 DECIMALS 2,
-        rej_pct TYPE p LENGTH 8 DECIMALS 2,
+        lifnr      TYPE lifnr,
+        name1      TYPE name1_gp,
+        qty        TYPE p LENGTH 15 DECIMALS 3,
+        net_qty    TYPE p LENGTH 15 DECIMALS 3,
+        value      TYPE p LENGTH 15 DECIMALS 2,
+        rej_pct    TYPE p LENGTH 8 DECIMALS 2,
         rework_pct TYPE p LENGTH 8 DECIMALS 2,
-        score TYPE p LENGTH 8 DECIMALS 0,
+        score      TYPE p LENGTH 8 DECIMALS 0,
       END OF ty_vendor_row,
       ty_vendor_row_tab TYPE STANDARD TABLE OF ty_vendor_row WITH EMPTY KEY,
 
       BEGIN OF ty_plant_row,
-        werks TYPE werks_d,
-        total_qty TYPE p LENGTH 15 DECIMALS 3,
+        werks        TYPE werks_d,
+        total_qty    TYPE p LENGTH 15 DECIMALS 3,
         accepted_pct TYPE p LENGTH 8 DECIMALS 2,
         rejected_pct TYPE p LENGTH 8 DECIMALS 2,
-        sample_pct TYPE p LENGTH 8 DECIMALS 2,
-        inspect_pct TYPE p LENGTH 8 DECIMALS 2,
+        sample_pct   TYPE p LENGTH 8 DECIMALS 2,
+        inspect_pct  TYPE p LENGTH 8 DECIMALS 2,
       END OF ty_plant_row,
       ty_plant_row_tab TYPE STANDARD TABLE OF ty_plant_row WITH EMPTY KEY,
 
@@ -134,24 +136,24 @@ CLASS zcl_grn_dash_query DEFINITION
       ty_doctype_row_tab TYPE STANDARD TABLE OF ty_doctype_row WITH EMPTY KEY,
 
       BEGIN OF ty_material_rej_row,
-        matnr TYPE matnr,
-        txz01 TYPE txz01,
+        matnr   TYPE matnr,
+        txz01   TYPE txz01,
         rej_qty TYPE p LENGTH 15 DECIMALS 3,
         rej_pct TYPE p LENGTH 8 DECIMALS 2,
       END OF ty_material_rej_row,
       ty_material_rej_row_tab TYPE STANDARD TABLE OF ty_material_rej_row WITH EMPTY KEY,
 
       BEGIN OF ty_dashboard,
-        kpis TYPE ty_kpi_tab,
-        quality TYPE ty_quality_tab,
-        ratios TYPE ty_ratio_tab,
-        trend TYPE ty_trend_tab,
-        vendor_top10 TYPE ty_vendor_row_tab,
-        plant_top10 TYPE ty_plant_row_tab,
-        material_top20 TYPE ty_material_row_tab,
-        doctype_ranked TYPE ty_doctype_row_tab,
+        kpis                 TYPE ty_kpi_tab,
+        quality              TYPE ty_quality_tab,
+        ratios               TYPE ty_ratio_tab,
+        trend                TYPE ty_trend_tab,
+        vendor_top10         TYPE ty_vendor_row_tab,
+        plant_top10          TYPE ty_plant_row_tab,
+        material_top20       TYPE ty_material_row_tab,
+        doctype_ranked       TYPE ty_doctype_row_tab,
         material_rej_worst10 TYPE ty_material_rej_row_tab,
-        vendor_scorecard TYPE ty_vendor_row_tab,
+        vendor_scorecard     TYPE ty_vendor_row_tab,
       END OF ty_dashboard.
 
     CLASS-METHODS:
@@ -172,43 +174,43 @@ CLASS zcl_grn_dash_query DEFINITION
 
     TYPES:
       BEGIN OF ty_base_row,
-        ebeln TYPE ebeln,
-        ebelp TYPE ebelp,
+        ebeln    TYPE ebeln,
+        ebelp    TYPE ebelp,
         mblnr101 TYPE mblnr,
         mjahr101 TYPE mjahr,
-        zeile101 TYPE mblpos,
-        matnr TYPE matnr,
-        txz01 TYPE txz01,
-        werks TYPE werks_d,
-        lifnr TYPE lifnr,
-        bsart TYPE esart,
-        batxt TYPE batxt,
-        menge2 TYPE menge_d,
-        dmbtr TYPE dmbtr,
+        zeile101 TYPE mblpo,
+        matnr    TYPE matnr,
+        txz01    TYPE txz01,
+        werks    TYPE werks_d,
+        lifnr    TYPE lifnr,
+        bsart    TYPE esart,
+        batxt    TYPE batxt,
+        menge2   TYPE menge_d,
+        dmbtr    TYPE dmbtr,
         budat101 TYPE dats,
-        kostl TYPE kostl,
-        name1 TYPE name1_gp,
+        kostl    TYPE kostl,
+        name1    TYPE name1_gp,
         kurztext TYPE string,
         losmenge TYPE menge_d,
         lmenge01 TYPE menge_d,
         lmenge03 TYPE menge_d,
         lmenge04 TYPE menge_d,
         " derived, filled by apply_quality_fallback:
-        acc_qty TYPE menge_d,
-        rej_qty TYPE menge_d,
-        smp_qty TYPE menge_d,
+        acc_qty  TYPE menge_d,
+        rej_qty  TYPE menge_d,
+        smp_qty  TYPE menge_d,
         insp_qty TYPE menge_d,
       END OF ty_base_row,
       ty_base_row_tab TYPE STANDARD TABLE OF ty_base_row WITH EMPTY KEY,
 
-      " One row = one correction movement (102, Z22 or Z23), sourced from
+      " One row = one correction movement (102 or Z22), sourced from
       " ZMMD_GRN_MVT_CDS. BWART tells the caller which one it is - used
-      " for both the 102 reversals (get_reversals) and the Z22/Z23 rework
-      " (get_rework) call sites, since both now share the exact same shape.
+      " for both the 102 reversals (get_reversals) and the Z22 rework
+      " (get_rework) call sites, since both share the exact same shape.
       BEGIN OF ty_mvt_row,
         mblnr TYPE mblnr,
         mjahr TYPE mjahr,
-        zeile TYPE mblpos,
+        zeile TYPE mblpo,
         bwart TYPE bwart,
         ebeln TYPE ebeln,
         ebelp TYPE ebelp,
@@ -223,13 +225,13 @@ CLASS zcl_grn_dash_query DEFINITION
       ty_mvt_row_tab TYPE STANDARD TABLE OF ty_mvt_row WITH EMPTY KEY,
 
       BEGIN OF ty_period_totals,
-        grn_qty TYPE p LENGTH 15 DECIMALS 3,
-        grn_value TYPE p LENGTH 15 DECIMALS 2,
-        acc_qty TYPE p LENGTH 15 DECIMALS 3,
-        rej_qty TYPE p LENGTH 15 DECIMALS 3,
-        smp_qty TYPE p LENGTH 15 DECIMALS 3,
-        insp_qty TYPE p LENGTH 15 DECIMALS 3,
-        rework_qty TYPE p LENGTH 15 DECIMALS 3,
+        grn_qty      TYPE p LENGTH 15 DECIMALS 3,
+        grn_value    TYPE p LENGTH 15 DECIMALS 2,
+        acc_qty      TYPE p LENGTH 15 DECIMALS 3,
+        rej_qty      TYPE p LENGTH 15 DECIMALS 3,
+        smp_qty      TYPE p LENGTH 15 DECIMALS 3,
+        insp_qty     TYPE p LENGTH 15 DECIMALS 3,
+        rework_qty   TYPE p LENGTH 15 DECIMALS 3,
         rework_value TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_period_totals,
 
@@ -237,33 +239,33 @@ CLASS zcl_grn_dash_query DEFINITION
       " get_plant_agg / get_material_rejection_worst10
       BEGIN OF ty_vendor_qual_acc,
         lifnr TYPE lifnr,
-        acc TYPE p LENGTH 15 DECIMALS 3,
-        rej TYPE p LENGTH 15 DECIMALS 3,
-        smp TYPE p LENGTH 15 DECIMALS 3,
+        acc   TYPE p LENGTH 15 DECIMALS 3,
+        rej   TYPE p LENGTH 15 DECIMALS 3,
+        smp   TYPE p LENGTH 15 DECIMALS 3,
       END OF ty_vendor_qual_acc,
       ty_vendor_qual_acc_tab TYPE STANDARD TABLE OF ty_vendor_qual_acc WITH EMPTY KEY,
 
       BEGIN OF ty_vendor_rwk_acc,
         lifnr TYPE lifnr,
-        rwk TYPE p LENGTH 15 DECIMALS 3,
+        rwk   TYPE p LENGTH 15 DECIMALS 3,
       END OF ty_vendor_rwk_acc,
       ty_vendor_rwk_acc_tab TYPE STANDARD TABLE OF ty_vendor_rwk_acc WITH EMPTY KEY,
 
       BEGIN OF ty_plant_acc,
         werks TYPE werks_d,
-        acc TYPE p LENGTH 15 DECIMALS 3,
-        rej TYPE p LENGTH 15 DECIMALS 3,
-        smp TYPE p LENGTH 15 DECIMALS 3,
-        insp TYPE p LENGTH 15 DECIMALS 3,
+        acc   TYPE p LENGTH 15 DECIMALS 3,
+        rej   TYPE p LENGTH 15 DECIMALS 3,
+        smp   TYPE p LENGTH 15 DECIMALS 3,
+        insp  TYPE p LENGTH 15 DECIMALS 3,
       END OF ty_plant_acc,
       ty_plant_acc_tab TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY,
 
       BEGIN OF ty_material_rej_acc,
         matnr TYPE matnr,
         txz01 TYPE txz01,
-        acc TYPE p LENGTH 15 DECIMALS 3,
-        rej TYPE p LENGTH 15 DECIMALS 3,
-        smp TYPE p LENGTH 15 DECIMALS 3,
+        acc   TYPE p LENGTH 15 DECIMALS 3,
+        rej   TYPE p LENGTH 15 DECIMALS 3,
+        smp   TYPE p LENGTH 15 DECIMALS 3,
       END OF ty_material_rej_acc,
       ty_material_rej_acc_tab TYPE STANDARD TABLE OF ty_material_rej_acc WITH EMPTY KEY.
 
@@ -299,7 +301,7 @@ CLASS zcl_grn_dash_query DEFINITION
       pct
         IMPORTING iv_part       TYPE p
                   iv_whole      TYPE p
-        RETURNING VALUE(rv_pct) TYPE p LENGTH 8 DECIMALS 2,
+        RETURNING VALUE(rv_pct) TYPE dec8_2,
 
       get_trend
         IMPORTING it_base         TYPE ty_base_row_tab
@@ -401,11 +403,12 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     apply_sto_exclusion( CHANGING ct_doc_type = lt_doc_type ).
 
     " Each row is independently scoped by its own posting date (Z22 issue
-    " date or Z23 cancellation date) - see FS section 6.2 and
-    " ZMMD_GRN_MVT_CDS's header comment.
+    " date) - see FS section 6.2 and ZMMD_GRN_MVT_CDS's header comment.
+    " Rework has no cancellation counterpart (confirmed: never reversed),
+    " so BWART is always Z22 here - no Z23 to filter for.
     SELECT mblnr, mjahr, zeile, bwart, ebeln, ebelp, matnr, werks, lifnr, bsart, budat, menge, dmbtr
       FROM zmmd_grn_mvt_cds
-      WHERE bwart  IN ( 'Z22', 'Z23' )
+      WHERE bwart  = 'Z22'
         AND lifnr  IN @is_filters-vendor
         AND matnr  IN @is_filters-material
         AND werks  IN @is_filters-plant
@@ -443,18 +446,22 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
 
 
   METHOD shift_year.
+    DATA lv_year_i TYPE i.
+
     DATA(lv_year)     = iv_date(4).
     DATA(lv_month)    = iv_date+4(2).
     DATA(lv_day)      = iv_date+6(2).
-    DATA(lv_new_year) = lv_year - 1.
+    DATA(lv_new_year) = CONV num4( lv_year - 1 ).
     rv_date = |{ lv_new_year }{ lv_month }{ lv_day }|.
     " Feb 29 in a year where year-1 is not a leap year: fall back to Feb 28.
+    " Checked directly via the standard leap-year rule (div. by 4, and not
+    " by 100 unless also by 400) rather than a date-validation class/FM,
+    " since availability of those varies by system.
     IF lv_month = '02' AND lv_day = '29'.
-      TRY.
-          cl_abap_datfm=>check_date( date = rv_date ).
-        CATCH cx_root.
-          rv_date = |{ lv_new_year }0228|.
-      ENDTRY.
+      lv_year_i = CONV i( lv_new_year ).
+      IF NOT ( lv_year_i MOD 4 = 0 AND ( lv_year_i MOD 100 <> 0 OR lv_year_i MOD 400 = 0 ) ).
+        rv_date = |{ lv_new_year }0228|.
+      ENDIF.
     ENDIF.
   ENDMETHOD.
 
@@ -481,25 +488,20 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
       rs_tot-grn_qty   -= <ls_rev>-menge.
       rs_tot-grn_value -= <ls_rev>-dmbtr.
     ENDLOOP.
+    " Rework (Z22) has no cancellation counterpart - always adds.
     LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
-      IF <ls_rwk>-bwart = 'Z22'.
-        rs_tot-rework_qty   += <ls_rwk>-menge.
-        rs_tot-rework_value += <ls_rwk>-dmbtr.
-      ELSE.
-        " bwart = Z23
-        rs_tot-rework_qty   -= <ls_rwk>-menge.
-        rs_tot-rework_value -= <ls_rwk>-dmbtr.
-      ENDIF.
+      rs_tot-rework_qty   += <ls_rwk>-menge.
+      rs_tot-rework_value += <ls_rwk>-dmbtr.
     ENDLOOP.
   ENDMETHOD.
 
 
   METHOD get_trend.
     DATA lt_trend  TYPE ty_trend_tab.
-    DATA lv_period TYPE numc6.
+    DATA lv_period TYPE num6.
 
     LOOP AT it_base ASSIGNING FIELD-SYMBOL(<ls_base>).
-      lv_period = CONV numc6( <ls_base>-budat101(6) ).
+      lv_period = <ls_base>-budat101(6).
       ASSIGN lt_trend[ period = lv_period ] TO FIELD-SYMBOL(<ls_trend>).
       IF sy-subrc <> 0.
         INSERT VALUE #( period = lv_period ) INTO TABLE lt_trend ASSIGNING <ls_trend>.
@@ -509,7 +511,7 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     ENDLOOP.
 
     LOOP AT it_rev ASSIGNING FIELD-SYMBOL(<ls_rev>).
-      lv_period = CONV numc6( <ls_rev>-budat(6) ).
+      lv_period = <ls_rev>-budat(6).
       ASSIGN lt_trend[ period = lv_period ] TO <ls_trend>.
       IF sy-subrc <> 0.
         INSERT VALUE #( period = lv_period ) INTO TABLE lt_trend ASSIGNING <ls_trend>.
@@ -518,25 +520,20 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
       <ls_trend>-val102 += <ls_rev>-dmbtr.
     ENDLOOP.
 
+    " Rework (Z22) has no cancellation counterpart - always adds.
     LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
-      lv_period = CONV numc6( <ls_rwk>-budat(6) ).
+      lv_period = <ls_rwk>-budat(6).
       ASSIGN lt_trend[ period = lv_period ] TO <ls_trend>.
       IF sy-subrc <> 0.
         INSERT VALUE #( period = lv_period ) INTO TABLE lt_trend ASSIGNING <ls_trend>.
       ENDIF.
-      IF <ls_rwk>-bwart = 'Z22'.
-        <ls_trend>-qtyz22 += <ls_rwk>-menge.
-        <ls_trend>-valz22 += <ls_rwk>-dmbtr.
-      ELSE.
-        " bwart = Z23
-        <ls_trend>-qtyz23 += <ls_rwk>-menge.
-        <ls_trend>-valz23 += <ls_rwk>-dmbtr.
-      ENDIF.
+      <ls_trend>-qtyz22 += <ls_rwk>-menge.
+      <ls_trend>-valz22 += <ls_rwk>-dmbtr.
     ENDLOOP.
 
     LOOP AT lt_trend ASSIGNING <ls_trend>.
-      <ls_trend>-net_qty = <ls_trend>-qty101 - <ls_trend>-qty102 - ( <ls_trend>-qtyz22 - <ls_trend>-qtyz23 ).
-      <ls_trend>-net_val = <ls_trend>-val101 - <ls_trend>-val102 - ( <ls_trend>-valz22 - <ls_trend>-valz23 ).
+      <ls_trend>-net_qty = <ls_trend>-qty101 - <ls_trend>-qty102 - <ls_trend>-qtyz22.
+      <ls_trend>-net_val = <ls_trend>-val101 - <ls_trend>-val102 - <ls_trend>-valz22.
     ENDLOOP.
 
     SORT lt_trend BY period ASCENDING.
@@ -585,17 +582,14 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
       <ls_qual>-smp += <ls_base>-smp_qty.
     ENDLOOP.
 
+    " Rework (Z22) has no cancellation counterpart - always adds, always
+    " reduces net_qty.
     LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
       ASSIGN lt_vendor[ lifnr = <ls_rwk>-lifnr ] TO <ls_vendor>.
       IF sy-subrc <> 0.
         INSERT VALUE #( lifnr = <ls_rwk>-lifnr ) INTO TABLE lt_vendor ASSIGNING <ls_vendor>.
       ENDIF.
-      IF <ls_rwk>-bwart = 'Z22'.
-        lv_rwk_qty = <ls_rwk>-menge.
-      ELSE.
-        " bwart = Z23
-        lv_rwk_qty = - <ls_rwk>-menge.
-      ENDIF.
+      lv_rwk_qty = <ls_rwk>-menge.
       <ls_vendor>-net_qty -= lv_rwk_qty.
 
       ASSIGN lt_rwk[ lifnr = <ls_rwk>-lifnr ] TO FIELD-SYMBOL(<ls_rwk_acc>).
@@ -756,10 +750,10 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     DATA(lt_rwk_p)  = get_rework( ls_prior_filters ).
     DATA(ls_prior)  = period_totals( it_base = lt_base_p it_rev = lt_rev_p it_rwk = lt_rwk_p ).
 
-    DATA(lv_net_qty_curr)  = ls_curr-grn_qty    - ls_curr-rework_qty.
-    DATA(lv_net_val_curr)  = ls_curr-grn_value  - ls_curr-rework_value.
-    DATA(lv_net_qty_prior) = ls_prior-grn_qty   - ls_prior-rework_qty.
-    DATA(lv_net_val_prior) = ls_prior-grn_value - ls_prior-rework_value.
+    DATA(lv_net_qty_curr)  = CONV wrbtr( ls_curr-grn_qty    - ls_curr-rework_qty ).
+    DATA(lv_net_val_curr)  = CONV wrbtr( ls_curr-grn_value  - ls_curr-rework_value ).
+    DATA(lv_net_qty_prior) = CONV wrbtr( ls_prior-grn_qty   - ls_prior-rework_qty ).
+    DATA(lv_net_val_prior) = CONV wrbtr( ls_prior-grn_value - ls_prior-rework_value ).
 
     DATA(lv_delta_qty)   = pct( iv_part = ls_curr-grn_qty - ls_prior-grn_qty iv_whole = abs( ls_prior-grn_qty ) ).
     DATA(lv_delta_val)   = pct( iv_part = ls_curr-grn_value - ls_prior-grn_value iv_whole = abs( ls_prior-grn_value ) ).
@@ -789,8 +783,8 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     APPEND VALUE #( bucket = 'Sample' qty = ls_curr-smp_qty share_pct = lv_share_smp ) TO rs_result-quality.
     APPEND VALUE #( bucket = 'Rework GRN Qty' qty = ls_curr-rework_qty share_pct = lv_share_rwk ) TO rs_result-quality.
 
-    DATA(lv_qtot) = ls_curr-acc_qty + ls_curr-rej_qty + ls_curr-smp_qty.
-    DATA(lv_avg_value) = COND p( WHEN ls_curr-grn_qty = 0 THEN 0 ELSE ls_curr-grn_value / ls_curr-grn_qty ).
+    DATA(lv_qtot) = CONV menge_d( ls_curr-acc_qty + ls_curr-rej_qty + ls_curr-smp_qty ).
+    DATA(lv_avg_value) = COND menge_d( WHEN ls_curr-grn_qty = 0 THEN 0 ELSE ls_curr-grn_value / ls_curr-grn_qty ).
 
     APPEND VALUE #( id = 'REJ_RATE' label = 'Rejection rate'
                     value = pct( iv_part = ls_curr-rej_qty iv_whole = lv_qtot ) ) TO rs_result-ratios.

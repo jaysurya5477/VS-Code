@@ -11,16 +11,17 @@
 //     no purchasing-group filter/chart in this dashboard), MARA (bismt unused),
 //     ZMMD_RETURN_CDS / ZMMD_PYVC_CDS / ZPO_HIS_REC_SEND (out of scope, §2),
 //     MATDOC bwart-313 transfer join (unused), ZMMD_RWK_CDS rework linkage
-//     (deliberately NOT embedded here - see ZMMD_GRN_RWK_CDS header comment
+//     (deliberately NOT embedded here - see ZMMD_GRN_MVT_CDS header comment
 //     for why: embedding a 1:N rework relationship into this flat 101-line
 //     view would fan out and double-count GRN qty/value on aggregation).
 //
-// 102 (GR reversal) and Z22/Z23 (rework) are intentionally NOT part of this
-// view either - see ZMMD_GRN_REV_CDS and ZMMD_GRN_RWK_CDS, queried
-// independently by ZCL_GRN_DASH_QUERY and combined in ABAP, each keyed to
-// its own posting date so the trend chart can bucket a reversal/rework
-// event in the month it actually posted (which can differ from the
-// original 101's month).
+// 102 (GR reversal) and Z22 (rework) are intentionally NOT part of this
+// view either - see ZMMD_GRN_MVT_CDS, queried independently by
+// ZCL_GRN_DASH_QUERY and combined in ABAP, each keyed to its own posting
+// date so the trend chart can bucket a reversal/rework event in the
+// month it actually posted (which can differ from the original 101's
+// month). Rework has no cancellation counterpart (confirmed with the
+// business owner) - there is no Z23 movement type in this design.
 
 define view ZMMD_GRN_DASH_CDS as
 

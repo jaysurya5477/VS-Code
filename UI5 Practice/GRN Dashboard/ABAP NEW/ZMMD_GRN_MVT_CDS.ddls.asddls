@@ -2,33 +2,38 @@
 @AbapCatalog.compiler.compareFilter: true
 @AbapCatalog.preserveKey: true
 @AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'GRN Dashboard - correction movements (102, Z22, Z23)'
+@EndUserText.label: 'GRN Dashboard Oth. mov. (102, Z22)'
 
-// Replaces the earlier ZMMD_GRN_REV_CDS (102) and ZMMD_GRN_RWK_CDS
-// (Z22/Z23) views. Both of those traced each correction movement back to
-// its specific originating 101 line - 102 via a MATDOC self-join on
-// LFBNR, Z22/Z23 via the custom table ZMM_GR_REWORK. Neither trace is
-// actually needed: the dashboard only ever aggregates these movements by
+// Replaces the earlier ZMMD_GRN_REV_CDS (102) and ZMMD_GRN_RWK_CDS (Z22)
+// views. Both of those traced each correction movement back to its
+// specific originating 101 line - 102 via a MATDOC self-join on LFBNR,
+// Z22 via the custom table ZMM_GR_REWORK. Neither trace is actually
+// needed: the dashboard only ever aggregates these movements by
 // vendor/material/plant/doc-type/date - it never needs to know which
 // specific 101 a given correction belongs to (that granularity only
 // matters for a line-item report like ZMM_PO_HISTORY_VER2, not for a
 // dashboard that just sums things).
 //
-// Confirmed: Z22/Z23 rework movements are posted against the SAME
+// Confirmed: Z22 rework movements are posted against the SAME
 // EBELN/EBELP as the original procurement PO (not a separate rework/
 // subcontract PO), so joining straight to EKPO/EKKO on the movement's
-// own PO reference resolves the correct vendor/material/plant for all
-// three movement types, with no dependency on the custom ZMM_GR_REWORK
-// table at all.
+// own PO reference resolves the correct vendor/material/plant for both
+// movement types, with no dependency on the custom ZMM_GR_REWORK table
+// at all.
 //
-// Two branches, combined with UNION ALL:
-//   1. 102 and Z22 - plain MATDOC rows, no further validation needed.
-//   2. Z23 - additionally confirmed via the standard SAP storno linkage
-//      (Z23.SMBLN/SJAHR/SMBLP = the Z22 it cancels: MBLNR/MJAHR/ZEILE),
-//      so a Z23 only counts here if it demonstrably cancels a genuine
-//      Z22, not merely because it carries that movement type code.
-//      This is the confirmed, standard linkage mechanism - it supersedes
-//      the earlier draft's guess at a custom-table-based Z22/Z23 link.
+// NOTE: rework has no cancellation counterpart - confirmed with the
+// business owner that a Z22 rework issue is never reversed, so there is
+// no Z23 movement type and this view is a single SELECT (no UNION ALL,
+// no storno-linkage validation needed - an earlier draft modelled a Z23
+// branch validated via MATDOC's SMBLN/SJAHR/SMBLP storno fields; that
+// requirement no longer exists and the branch has been removed).
+//
+// LBBSA_SID filtering mirrors ZMMD_GRN_DASH_CDS's 101 dedup rule, applied
+// per movement type: 102 keeps the same '01'/'02'/' ' set as 101 (GR
+// stock-postings, no split valuation duplicate rows); Z22 keeps '07'
+// (the equivalent single relevant line for that movement type). Without
+// this, MATDOC's per-valuation-area/stock-split rows would double-count
+// the same physical movement on aggregation.
 //
 // One row = one correction movement, with BWART exposed so
 // ZCL_GRN_DASH_QUERY can select/group by movement type as needed.
@@ -59,39 +64,18 @@ define view ZMMD_GRN_MVT_CDS
 
 }
 where
-      c.xauto = ' '
-  and c.bwart in ( '102', 'Z22' )
+          c.xauto     = ' '
 
-union all
+  and(
+          c.bwart     = '102'
+    and(
+          c.lbbsa_sid = '01'
+      or  c.lbbsa_sid = '02'
+      or  c.lbbsa_sid = ' '
+    )
 
-select from matdoc as z23
-  inner join matdoc as z22 on  z22.mblnr = z23.smbln
-                           and z22.mjahr = z23.sjahr
-                           and z22.zeile = z23.smblp
-                           and z22.bwart = 'Z22'
-  inner join ekpo   as p   on  p.ebeln = z23.ebeln
-                           and p.ebelp = z23.ebelp
-  inner join ekko   as k   on  k.ebeln = p.ebeln
-                           and k.bstyp = 'F'
-{
-  key z23.mblnr as mblnr,
-  key z23.mjahr as mjahr,
-  key z23.zeile as zeile,
-
-      z23.bwart as bwart,
-      z23.ebeln as ebeln,
-      z23.ebelp as ebelp,
-
-      p.matnr   as matnr,
-      p.werks   as werks,
-      k.lifnr   as lifnr,
-      k.bsart   as bsart,
-
-      z23.budat as budat,
-      z23.menge as menge,
-      z23.dmbtr as dmbtr
-
-}
-where
-      z23.xauto = ' '
-  and z23.bwart = 'Z23'
+    or(
+          c.bwart     = 'Z22'
+      and c.lbbsa_sid = '07'
+    )
+  )
