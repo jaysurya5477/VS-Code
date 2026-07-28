@@ -8,13 +8,15 @@
 !*.py
 !*.ahk
 !*.html
-!*.css 
+!*.css
 !*.js
 !*.yaml
 !*.xml
 !*.gitignore
 !*.properties
- 
+!*.abap
+!*.asddls
+
 # config
 !*.json
 !*.ini
@@ -22,6 +24,7 @@
 # docs
 !*.md
 !*.txt
+!*.docx
 
  
 # force ignore folders
