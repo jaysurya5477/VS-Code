@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+
+specVersion: "4.0"
+metadata:
+  name: com.sap.zmmgrndash
+type: application
+builder:
+  # webapp/libs/echarts.min.js is a pre-minified third-party UMD bundle that is loaded by
+  # a plain <script> tag (see webapp/model/echartsLoader.js), never via sap.ui.require.
+  # Without these two excludes the default build would:
+  #   - inline all ~1 MB of it into Component-preload.js, so it downloads and parses on
+  #     every app start even though nothing requires it as a module, and then downloads
+  #     again as a standalone file when the script tag runs; and
+  #   - re-minify it and emit a 1 MB -dbg.js plus a 1.5 MB source map into dist/.
+  componentPreload:
+    excludes:
+      - "com/sap/zmmgrndash/libs/"
+  minification:
+    # Namespace-relative with no leading slash: the builder prefixes each entry with
+    # "/resources/" (see @ui5/project .../build/definitions/_utils.js
+    # enhancePatternWithExcludes). Note this is NOT the same convention as
+    # builder.resources.excludes, which is webapp-relative ("/test/**" in ui5-deploy.yaml).
+    excludes:
+      - "com/sap/zmmgrndash/libs/**"
+server:
+  customMiddleware:
+    - name: fiori-tools-proxy
+      afterMiddleware: compression
+      configuration:
+        ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
+        ui5:
+          path:
+            - /resources
+            - /test-resources
+          url: https://ui5.sap.com
+        backend:
+          - path: /sap
+            url: https://vhafbmedap01.hec.erp.alimco.in
+            client: '120'
+    - name: fiori-tools-appreload
+      afterMiddleware: compression
+      configuration:
+        port: 35729
+        path: webapp
+        delay: 300
+    - name: fiori-tools-preview
+      afterMiddleware: fiori-tools-appreload
+      configuration:
+        flp:
+          theme: sap_horizon

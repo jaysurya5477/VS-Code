@@ -32,7 +32,7 @@ a{color:var(--accent);text-decoration:none}a:hover{color:var(--ink)}
           <h1 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em;color:var(--ink)">Goods Receipt (GRN) Analysis</h1>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line);background:var(--accent-soft);padding:3px 7px;border-radius:4px">MM · Materials Management</span>
         </div>
-        <p style="margin:0;font-size:12px;color:var(--ink2)">101 Receipt · 102 Receipt reversal · Z22 Rework · Z23 Rework cancel · STO doc types excluded at source · 102 and Z23 posted negative · quantities in base UoM (EA / NOS / KG …)</p>
+        <p style="margin:0;font-size:12px;color:var(--ink2)">101 Receipt · 102 Receipt reversal · Z22 Rework · STO doc types excluded at source · 102 posted negative · quantities in base UoM (EA / NOS / KG …)</p>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px">
@@ -312,20 +312,19 @@ class Component extends DCLogic{
       const base=(58000+r()*24000)*scale*yearBoost*(1+0.12*Math.sin(i/1.7));
       const rev=-base*(0.02+r()*0.04);
       const rework=base*(0.03+r()*0.045);
-      const reworkNeg=-rework*(0.25+r()*0.4);
       const rej=base*(0.011+r()*0.026);
       const sample=base*(0.02+r()*0.028);
       const insp=base*(0.015+r()*0.03);
       const price=340+r()*180;
-      return{m,gross:base,rev,rework,reworkNeg,rej,sample,insp,acc:base-rej-sample-insp,value:(base+rev)*price,price};
+      return{m,gross:base,rev,rework,rej,sample,insp,acc:base-rej-sample-insp,value:(base+rev)*price,price};
     });
     const sum=k=>series.reduce((a,b)=>a+b[k],0);
-    const gross=sum('gross'),rev=sum('rev'),rework=sum('rework'),reworkNeg=sum('reworkNeg'),rej=sum('rej'),sample=sum('sample'),insp=sum('insp'),accQ=sum('acc'),value=sum('value');
-    const netQty=gross+rev-(rework+reworkNeg);
+    const gross=sum('gross'),rev=sum('rev'),rework=sum('rework'),rej=sum('rej'),sample=sum('sample'),insp=sum('insp'),accQ=sum('acc'),value=sum('value');
+    const netQty=gross+rev-rework;
     const netValue=value*(netQty/Math.max(1,gross+rev));
     const avgPrice=value/Math.max(1,gross+rev);
     const vendorRows=vends.map(v=>{const rr=rng(hash(v)+this.seed());const q=(gross/vends.length)*(0.55+rr()*0.9);const rejr=0.4+rr()*4.2;const rwk=1.5+rr()*7;const val=q*(300+rr()*220);const score=Math.max(38,Math.min(98,Math.round(100-rejr*9-rwk*1.6+rr()*8)));return{name:v,qty:q,net:q*(1-rwk/100),value:val,rej:rejr,rework:rwk,score}}).sort((a,b)=>b.score-a.score);
-    return{months,series,plants,mats,vends,types,gross,rev,rework,reworkNeg,rej,sample,insp,accQ,value,netQty,netValue,avgPrice,vendorRows};
+    return{months,series,plants,mats,vends,types,gross,rev,rework,rej,sample,insp,accQ,value,netQty,netValue,avgPrice,vendorRows};
   }
 
   ax(o){const p=this.pal();const a={axisLine:{lineStyle:{color:p.line}},axisTick:{show:false},axisLabel:{color:p.ink2,fontFamily:'IBM Plex Mono',fontSize:10},splitLine:{lineStyle:{color:p.line2}}};
@@ -345,11 +344,10 @@ class Component extends DCLogic{
     const recv=d.series.map(s=>Math.round(isQty?s.gross:s.gross*s.price));
     const revv=d.series.map(s=>Math.round(isQty?s.rev:s.rev*s.price));
     const rwkv=d.series.map(s=>Math.round(isQty?s.rework:s.rework*s.price));
-    const rwcv=d.series.map(s=>Math.round(isQty?s.reworkNeg:s.reworkNeg*s.price));
-    const netv=d.series.map((s,i)=>recv[i]+revv[i]-(rwkv[i]+rwcv[i]));
+    const netv=d.series.map((s,i)=>recv[i]+revv[i]-rwkv[i]);
     this.charts.trend=this.set(this.refs.trend,Object.assign({},base,{
       grid:{left:70,right:28,top:46,bottom:26},
-      legend:legend({data:['101 Receipt','102 Reversal','Z22 Rework','Z23 Rework cancel','Net trend'],top:4,left:0}),
+      legend:legend({data:['101 Receipt','102 Reversal','Z22 Rework','Net trend'],top:4,left:0}),
       tooltip:Object.assign({trigger:'axis',axisPointer:{type:'cross',lineStyle:{color:p.line}},valueFormatter:unitFmt},this.tip()),
       xAxis:this.ax({type:'category',data:d.months}),
       yAxis:this.ax({type:'value',name:isQty?'Qty (base UoM)':'Value (₹)',nameGap:14,nameTextStyle:{color:p.ink3,fontSize:10,align:'right'},axisLabel:{formatter:scaled(Math.max.apply(null,recv))}}),
@@ -357,7 +355,6 @@ class Component extends DCLogic{
         {name:'101 Receipt',type:'bar',stack:'q',data:recv,itemStyle:{color:new window.echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:A},{offset:1,color:A+'66'}]),borderRadius:[3,3,0,0]},barWidth:'46%'},
         {name:'102 Reversal',type:'bar',stack:'q',data:revv,itemStyle:{color:p.neg,borderRadius:[0,0,3,3]}},
         {name:'Z22 Rework',type:'bar',stack:'r',data:rwkv,itemStyle:{color:p.alt,borderRadius:[3,3,0,0]},barWidth:'18%'},
-        {name:'Z23 Rework cancel',type:'bar',stack:'r',data:rwcv,itemStyle:{color:p.warn,borderRadius:[0,0,3,3]}},
         {name:'Net trend',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:netv,lineStyle:{width:2.4,color:p.warn},itemStyle:{color:p.warn,borderColor:p.panel,borderWidth:2}}
       ]}));
 
@@ -461,7 +458,7 @@ class Component extends DCLogic{
 
     const spark=(ref,vals,color)=>this.set(ref,{animation:animate,grid:{left:0,right:0,top:3,bottom:3},xAxis:{type:'category',show:false,boundaryGap:false,data:vals.map((_,i)=>i)},yAxis:{show:false,type:'value',min:v=>v.min-Math.abs(v.min)*0.35},tooltip:{show:false},
       series:[{type:'line',data:vals,smooth:true,symbol:'none',lineStyle:{width:1.9,color},areaStyle:{color:new window.echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:color+'40'},{offset:1,color:color+'00'}])}}]});
-    const sp=[{v:d.series.map(s=>Math.round(s.gross+s.rev)),c:A},{v:d.series.map(s=>Math.round(s.value)),c:p.warn},{v:d.series.map(s=>Math.round(s.gross+s.rev-s.rework-s.reworkNeg)),c:p.pos},{v:d.series.map(s=>Math.round(s.value*0.94)),c:p.alt}];
+    const sp=[{v:d.series.map(s=>Math.round(s.gross+s.rev)),c:A},{v:d.series.map(s=>Math.round(s.value)),c:p.warn},{v:d.series.map(s=>Math.round(s.gross+s.rev-s.rework)),c:p.pos},{v:d.series.map(s=>Math.round(s.value*0.94)),c:p.alt}];
     this.refs.sparks.forEach((ref,i)=>spark(ref,sp[i].v,sp[i].c));
   }
 
@@ -516,9 +513,9 @@ class Component extends DCLogic{
       q('Quality Accepted','101',d.accQ,A,false),
       q('Quality Rejected','101 / 102',-d.rej,p.neg,true),
       q('Quality Sample','101',d.sample,p.alt,false),
-      q('Rework GRN Qty','Z22 − Z23',d.rework+d.reworkNeg,p.warn,false)
+      q('Rework GRN Qty','Z22',d.rework,p.warn,false)
     ];
-    const qtot=d.accQ+d.rej+d.sample+d.insp,rejRate=d.rej/Math.max(1,qtot)*100,reworkRate=(d.rework+d.reworkNeg)/Math.max(1,d.gross)*100;
+    const qtot=d.accQ+d.rej+d.sample+d.insp,rejRate=d.rej/Math.max(1,qtot)*100,reworkRate=d.rework/Math.max(1,d.gross)*100;
     const ratios=[
       {label:'Rejection rate',value:rejRate.toFixed(2)+'%',note:rejRate>2?'above target':'within target',color:rejRate>2?p.neg:p.pos},
       {label:'Rework rate',value:reworkRate.toFixed(2)+'%',note:'of gross qty',color:reworkRate>4?p.warn:p.ink},
@@ -541,7 +538,7 @@ class Component extends DCLogic{
     const modeBtns=[{k:'qty',label:'GRN Qty'},{k:'value',label:'GRN Value'}].map(m=>({label:m.label,bg:mode===m.k?A:'transparent',fg:mode===m.k?'#fff':p.ink2,pick:()=>this.setState({mode:m.k})}));
     return{filters,heroes,quals,ratios,rows,rowCount:rows.length,themeBtns,modeBtns,
       zoomReset:()=>{if(window.echarts)this.draw()},
-      trendSub:mode==='qty'?'101 receipt vs 102 reversal (negative) · Z22 rework net of Z23 cancel · net line':'Receipt value vs reversal value (negative) · Z22 rework net of Z23 cancel · net line',
+      trendSub:mode==='qty'?'101 receipt vs 102 reversal (negative) · Z22 rework · net line':'Receipt value vs reversal value (negative) · Z22 rework · net line',
       scope:scopeBits.join('  ·  '),dateFrom:st.from,dateTo:st.to,
       setFrom:e=>this.setState({from:e.target.value}),setTo:e=>this.setState({to:e.target.value}),
       reset:()=>this.setState({open:null,from:'',to:'',sel:{vendor:[],material:[],plant:[],potype:[],year:'2026',month:[]}}),

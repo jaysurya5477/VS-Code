@@ -1,0 +1,1742 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PERSONALDATA',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.PersonalData.v1" Alias="PersonalData"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ANALYTICS',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Analytics.v1" Alias="Analytics"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMON',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="SAP__common"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_MEASURES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Measures.V1" Alias="SAP__measures"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CORE',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Core.V1" Alias="SAP__core"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CAPABILITIES',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="SAP__capabilities"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_AGGREGATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Aggregation.V1" Alias="SAP__aggregation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_VALIDATION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="Org.OData.Validation.V1" Alias="SAP__validation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CODELIST',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.CodeList.v1" Alias="SAP__CodeList"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_UI',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="SAP__UI"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_HTML5',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.HTML5.v1" Alias="SAP__HTML5"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PDF',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.PDF.v1" Alias="SAP__PDF"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_SESSION',Version='0001',SAP__Origin='LOCAL')/$value">
+        <edmx:Include Namespace="com.sap.vocabularies.Session.v1" Alias="SAP__session"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001" Alias="SAP__self">
+            <Annotation Term="SAP__core.SchemaVersion" String="1.0.0"/>
+            <EntityType Name="QualityParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualityType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="TrendType">
+                <Key>
+                    <PropertyRef Name="Period"/>
+                </Key>
+                <Property Name="Period" Type="Edm.String" Nullable="false" MaxLength="6"/>
+                <Property Name="Qty101" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="Qty102" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="QtyZ22" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="Val101" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="Val102" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="ValZ22" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="NetQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="NetVal" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.TrendParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="MaterialTop20Type">
+                <Key>
+                    <PropertyRef Name="Material"/>
+                </Key>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18"/>
+                <Property Name="MaterialName" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialTop20Parameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="RatioParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.RatioType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="PlantTop10Type">
+                <Key>
+                    <PropertyRef Name="Plant"/>
+                </Key>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="TotalQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="AcceptedPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="RejectedPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="SamplePct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="InspectPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.PlantTop10Parameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="MaterialRejWorst10Parameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialRejWorst10Type)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="KPIParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KPIType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="DoctypeRankedType">
+                <Key>
+                    <PropertyRef Name="DocType"/>
+                </Key>
+                <Property Name="DocType" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="DocTypeName" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.DoctypeRankedParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="DoctypeRankedParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.DoctypeRankedType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="VendorTop10Parameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorTop10Type)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="QualityType">
+                <Key>
+                    <PropertyRef Name="Bucket"/>
+                </Key>
+                <Property Name="Bucket" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="SharePct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualityParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="PlantTop10Parameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.PlantTop10Type)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="RatioType">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="RatioLabel" Type="Edm.String" Nullable="false" MaxLength="60"/>
+                <Property Name="RatioValue" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.RatioParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="MaterialRejWorst10Type">
+                <Key>
+                    <PropertyRef Name="Material"/>
+                </Key>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18"/>
+                <Property Name="MaterialName" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="RejQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="RejPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialRejWorst10Parameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="TrendParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.TrendType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="VendorScorecardType">
+                <Key>
+                    <PropertyRef Name="Vendor"/>
+                </Key>
+                <Property Name="Vendor" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="VendorName" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="NetQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="RejPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="ReworkPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="Score" Type="Edm.Decimal" Nullable="false" Precision="8"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorScorecardParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="VendorScorecardParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorScorecardType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="MaterialTop20Parameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialTop20Type)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="KPIType">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.String" Nullable="false" MaxLength="20"/>
+                <Property Name="KpiLabel" Type="Edm.String" Nullable="false" MaxLength="60"/>
+                <Property Name="CurrValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="PriorValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KPIParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="VendorTop10Type">
+                <Key>
+                    <PropertyRef Name="Vendor"/>
+                </Key>
+                <Property Name="Vendor" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="VendorName" Type="Edm.String" Nullable="false" MaxLength="35"/>
+                <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="NetQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="RejPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="ReworkPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="Score" Type="Edm.Decimal" Nullable="false" Precision="8"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorTop10Parameters" Nullable="false"/>
+            </EntityType>
+            <EntityContainer Name="Container">
+                <EntitySet Name="DoctypeRanked" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.DoctypeRankedParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="DoctypeRanked"/>
+                </EntitySet>
+                <EntitySet Name="KPI" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KPIParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="KPI"/>
+                </EntitySet>
+                <EntitySet Name="MaterialRejWorst10" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialRejWorst10Parameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="MaterialRejWorst10"/>
+                </EntitySet>
+                <EntitySet Name="MaterialTop20" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialTop20Parameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="MaterialTop20"/>
+                </EntitySet>
+                <EntitySet Name="PlantTop10" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.PlantTop10Parameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="PlantTop10"/>
+                </EntitySet>
+                <EntitySet Name="Quality" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualityParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="Quality"/>
+                </EntitySet>
+                <EntitySet Name="Ratio" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.RatioParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="Ratio"/>
+                </EntitySet>
+                <EntitySet Name="Trend" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.TrendParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="Trend"/>
+                </EntitySet>
+                <EntitySet Name="VendorScorecard" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorScorecardParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="VendorScorecard"/>
+                </EntitySet>
+                <EntitySet Name="VendorTop10" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorTop10Parameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="VendorTop10"/>
+                </EntitySet>
+            </EntityContainer>
+            <Annotations Target="SAP__self.QualityParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/Quality">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendType/Period">
+                <Annotation Term="SAP__common.IsDigitSequence"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendType">
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Receipt flow over time"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Type/Material">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Type">
+                <Annotation Term="SAP__common.Label" String="GRN Dash. - Top 20 materials by GRN val"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/Ratio">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Type/Plant">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Plant"/>
+                <Annotation Term="SAP__common.Heading" String="Plnt"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Type">
+                <Annotation Term="SAP__common.Label" String="GRN Dash. - Top 10 plants, quality comp."/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/MaterialRejWorst10">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/KPI">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedType/DocType">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Purchasing Doc. Type"/>
+                <Annotation Term="SAP__common.Heading" String="Type"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Purchasing Document Type"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedType">
+                <Annotation Term="SAP__common.Label" String="GRN Dash. - GRN value by PO doc ty. rank"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/DoctypeRanked">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/VendorTop10">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityType">
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Quality buckets"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/PlantTop10">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.RatioType">
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Ratios"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Type/Material">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Material"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Material Number"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Type">
+                <Annotation Term="SAP__common.Label" String="GRN Dash. - Worst 10 mat. by rejection"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/Trend">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.TrendParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardType/Vendor">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Supplier"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Account Number of Supplier"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardType">
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Vendor scorecard, top 15"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/VendorScorecard">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_DateFrom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_DateTo">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Date"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_Vendor">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_Material">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_Plant">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container/MaterialTop20">
+                <Annotation Term="SAP__capabilities.NavigationRestrictions">
+                    <Record>
+                        <PropertyValue Property="RestrictedProperties">
+                            <Collection>
+                                <Record>
+                                    <PropertyValue Property="NavigationProperty" NavigationPropertyPath="Set"/>
+                                    <PropertyValue Property="InsertRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Insertable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="UpdateRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Updatable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="DeleteRestrictions">
+                                        <Record>
+                                            <PropertyValue Property="Deletable" Bool="false"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SearchRestrictions">
+                    <Record>
+                        <PropertyValue Property="Searchable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.FilterRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonFilterableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SortRestrictions">
+                    <Record>
+                        <PropertyValue Property="NonSortableProperties">
+                            <Collection>
+                                <PropertyPath>P_DateFrom</PropertyPath>
+                                <PropertyPath>P_DateTo</PropertyPath>
+                                <PropertyPath>P_Vendor</PropertyPath>
+                                <PropertyPath>P_Material</PropertyPath>
+                                <PropertyPath>P_Plant</PropertyPath>
+                                <PropertyPath>P_DocType</PropertyPath>
+                            </Collection>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.ReadRestrictions">
+                    <Record>
+                        <PropertyValue Property="Readable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                        <PropertyValue Property="QueryOptions">
+                            <Record>
+                                <PropertyValue Property="SelectSupported" Bool="true"/>
+                            </Record>
+                        </PropertyValue>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters">
+                <Annotation Term="SAP__common.ResultContext"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIType">
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - KPI cards"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Type/Vendor">
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Supplier"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Account Number of Supplier"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Type">
+                <Annotation Term="SAP__common.Label" String="GRN Dash. - Top 10 vendors by GRN value"/>
+            </Annotations>
+            <Annotations Target="SAP__self.Container">
+                <Annotation Term="SAP__aggregation.ApplySupported">
+                    <Record>
+                        <PropertyValue Property="Transformations">
+                            <Collection>
+                                <String>aggregate</String>
+                                <String>groupby</String>
+                                <String>filter</String>
+                            </Collection>
+                        </PropertyValue>
+                        <PropertyValue Property="Rollup" EnumMember="SAP__aggregation.RollupType/None"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+                <Annotation Term="SAP__capabilities.FilterFunctions">
+                    <Collection>
+                        <String>eq</String>
+                        <String>ne</String>
+                        <String>gt</String>
+                        <String>ge</String>
+                        <String>lt</String>
+                        <String>le</String>
+                        <String>and</String>
+                        <String>or</String>
+                        <String>contains</String>
+                        <String>startswith</String>
+                        <String>endswith</String>
+                        <String>any</String>
+                        <String>all</String>
+                    </Collection>
+                </Annotation>
+                <Annotation Term="SAP__capabilities.SupportedFormats">
+                    <Collection>
+                        <String>application/json</String>
+                        <String>application/pdf</String>
+                    </Collection>
+                </Annotation>
+                <Annotation Term="SAP__PDF.Features">
+                    <Record>
+                        <PropertyValue Property="DocumentDescriptionReference" String="../../../../default/iwbep/common/0001/$metadata"/>
+                        <PropertyValue Property="DocumentDescriptionCollection" String="MyDocumentDescriptions"/>
+                        <PropertyValue Property="ArchiveFormat" Bool="true"/>
+                        <PropertyValue Property="Border" Bool="true"/>
+                        <PropertyValue Property="CoverPage" Bool="true"/>
+                        <PropertyValue Property="FitToPage" Bool="true"/>
+                        <PropertyValue Property="FontName" Bool="true"/>
+                        <PropertyValue Property="FontSize" Bool="true"/>
+                        <PropertyValue Property="Margin" Bool="true"/>
+                        <PropertyValue Property="Signature" Bool="true"/>
+                        <PropertyValue Property="ResultSizeDefault" Int="20000"/>
+                        <PropertyValue Property="ResultSizeMaximum" Int="20000"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Type/MaterialName">
+                <Annotation Term="SAP__common.Label" String="Short Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedType/DocTypeName">
+                <Annotation Term="SAP__common.Label" String="Doc. Type Descript."/>
+                <Annotation Term="SAP__common.QuickInfo" String="Short Description of Purchasing Document Type"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Type/MaterialName">
+                <Annotation Term="SAP__common.Label" String="Short Text"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardType/VendorName">
+                <Annotation Term="SAP__common.Label" String="Name"/>
+                <Annotation Term="SAP__common.Heading" String="Name 1"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name 1"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Type/VendorName">
+                <Annotation Term="SAP__common.Label" String="Name"/>
+                <Annotation Term="SAP__common.Heading" String="Name 1"/>
+                <Annotation Term="SAP__common.QuickInfo" String="Name 1"/>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

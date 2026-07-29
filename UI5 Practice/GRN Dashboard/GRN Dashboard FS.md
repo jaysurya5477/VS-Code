@@ -62,7 +62,7 @@ SAPUI5 Fiori app (Fiori Launchpad tile — assigned only to named dashboard user
                   ↕
        ABAP query class ZCL_GRN_DASH_QUERY
          - selects from new CDS view ZMMD_GRN_DASH_CDS (§6.1 — trimmed join logic, not ZMMD_PO_CDS directly)
-         - adds MATDOC lookups for 102 / Z22 / Z23 (§6.2)
+         - adds MATDOC lookups for 102 / Z22 (§6.2)
          - returns pre-aggregated, chart-shaped JSON/OData results
 ```
 
@@ -97,7 +97,7 @@ Instead: a new view, **`ZMMD_GRN_DASH_CDS`**, rebuilds only the join logic the d
 | `EKPO` ⋈ `EKKO` (bstyp='F') ⋈ `MATDOC` (bwart='101', xauto=' ', lbbsa_sid IN ('01','02',' ')) ⋈ `MKPF` — core GRN fact | `ZMMD_RETURN_CDS` (return/122 linkage) — out of scope |
 | `LFA1` — vendor name/GST | `ZMMD_PYVC_CDS` (payment voucher) — out of scope |
 | `T024` (purchasing group desc.), `T161T` (doc type desc.), `MARA` (old material no.) | `ZPO_HIS_REC_SEND` (finance handshake) — out of scope |
-| `ZMMD_RWK_CDS` — rework doc-number linkage (needed to drive the §6.2 Z22/Z23 lookup) | `MATDOC` bwart-313 transfer join — not used by any KPI/chart |
+| `ZMMD_RWK_CDS` — rework doc-number linkage (needed to drive the §6.2 Z22 lookup) | `MATDOC` bwart-313 transfer join — not used by any KPI/chart |
 | `ZMMD_QU_CDS` — quality result per GRN line (needed for §7.3 buckets) | |
 
 Fields/lookup patterns transferring into the new view and its consuming query class, with the same enrichment technique the report uses (bulk `SELECT ... FOR ALL ENTRIES` into HASHED/SORTED tables, `READ TABLE` per row where a join isn't practical in the view itself):
@@ -121,7 +121,7 @@ Fields/lookup patterns transferring into the new view and its consuming query cl
 | Gap | Why it's missing today | Required addition |
 |---|---|---|
 | **102 (GR reversal) as its own time-series row** | `ZMMD_PO_CDS` is hard-filtered to `c.bwart = '101'` (view line 10) — 102 only ever appears as a cancellation *flag* on the original 101 line, never as its own dated row | Separate `SELECT` against `MATDOC` for `bwart = '102'`, keyed by `lfbnr = mblnr101`, carrying its **own** `budat` (a 102 can post in a later month than its 101) and `dmbtr`/`menge`, so the trend chart can bucket reversals by their actual posting month |
-| **Z22 / Z23 rework quantity & value** | `ZMM_GR_REWORK` / `ZMMD_RWK_CDS` store only the rework document *number*, not its movement type, quantity or value | New `SELECT` against `MATDOC` using `mblnr = rework_mblnr` / `mjahr = rework_mjahr` (from `ZMMD_PO_CDS`), filtered to `bwart IN ('Z22','Z23')`, pulling `menge`/`dmbtr` and `budat` — **confirmed approach**, reuses the existing rework linkage, just extends it one join further into MATDOC exactly as the report already does for the 102 cancellation case |
+| **Z22 rework quantity & value** | `ZMM_GR_REWORK` / `ZMMD_RWK_CDS` store only the rework document *number*, not its movement type, quantity or value | New `SELECT` against `MATDOC` using `mblnr = rework_mblnr` / `mjahr = rework_mjahr` (from `ZMMD_PO_CDS`), filtered to `bwart = 'Z22'`, pulling `menge`/`dmbtr` and `budat` — **confirmed approach**, reuses the existing rework linkage, just extends it one join further into MATDOC exactly as the report already does for the 102 cancellation case. **Confirmed with business owner: rework has no cancellation counterpart** — a Z22 rework issue is never reversed/cancelled, so there is no Z23 movement type in scope and no netting against it |
 | **Prior-year comparison ("vs last year" KPI delta)** | Report is a flat point-in-time list; no period-over-period logic exists | Service accepts the resolved date range, additionally re-runs the same aggregation for the equivalent prior-year range (same calendar days, year − 1), returns both periods; UI computes `%Δ` |
 | **Quality bucket aggregation** | Per-line fields exist (`kurztext`, `losmenge`, `lmenge01/03/04`) but nothing aggregates them into the 4 dashboard buckets | Aggregate rule (see §9, Quality KPIs) built from existing fields — no new source data, just a GROUP BY/SUM layer |
 | **Chart-shaped aggregates** (monthly series, top-10 vendor, top-20 material, plant composition, doc-type ranking, worst-10 material rejection) | Report returns a flat ALV line list only | New GROUP BY aggregate queries per chart, built on top of the same base extraction — see §10 |
@@ -136,11 +136,10 @@ This overlaps almost entirely with the report's existing default-exclude range (
 
 Document the exclusion in the dashboard subtitle/footer, per the original plan's UX note (already present in the prototype: *"STO doc types excluded at source"*).
 
-### 7.2 Negative-value display (102, Z23)
+### 7.2 Negative-value display (102)
 
 - `102` (GR reversal) quantities and values are shown as **negative** in all charts, KPI cards, and the vendor/material tables.
-- `Z23` (rework cancel) quantities and values are shown as **negative**.
-- Net calculations (`GRN Qty − Rework Qty`, `GRN Value − Rework Value`) use signed arithmetic — negative components subtract naturally, no separate "reversal" branch needed in formulas.
+- Net calculations (`GRN Qty − Rework Qty`, `GRN Value − Rework Value`) use signed arithmetic — the `102` component subtracts naturally, no separate "reversal" branch needed in formulas. Rework (`Z22`) has no cancellation counterpart (§6.2) and is always a positive quantity/value.
 - Red color coding (`--neg` token) applied consistently, matching the prototype's palette.
 
 ### 7.3 Quality bucket derivation
@@ -167,7 +166,7 @@ No row-level authority-object checks (`M_BEST_EKG` / `M_BEST_WRK`) and no port o
 | 3 | Quality Accepted | 101 | Per §7.3 Accepted rule |
 | 4 | Quality Rejected | 101 | Per §7.3 Rejected rule. **Confirmed**: 102 never applies here — a 101 line can only be reversed via 102 *before* a quality decision is posted (the system blocks cancellation once UD exists), so an already-Rejected/Accepted line can never carry a 102 to net out |
 | 5 | Quality Sample | 101 | Per §7.3 Sample rule |
-| 6 | Rework GRN Qty | Z22, Z23 | `Σ menge (Z22) + Σ menge (Z23, negative)` — new source, §6.2 |
+| 6 | Rework GRN Qty | Z22 | `Σ menge (Z22)` — new source, §6.2. No cancellation counterpart (confirmed: rework is never reversed) |
 | 7 | GRN Qty − Rework GRN Qty | — | KPI 1 − KPI 6 (net effective receipt qty) |
 | 8 | GRN Value − Rework GRN Value | — | KPI 2 − rework value equivalent of KPI 6 |
 
@@ -189,7 +188,7 @@ All charts implemented in `GRN Dashboard v2.dc.html` via ECharts 5.5; the backen
 
 | Chart | Type | Dimensions | Measures | Notes |
 |---|---|---|---|---|
-| Receipt flow over time | Stacked bar + line | Month | 101 qty/value, 102 qty/value (neg), Z22 qty/value, Z23 qty/value (neg), net line | Qty/Value toggle switches unit basis, not the query |
+| Receipt flow over time | Stacked bar + line | Month | 101 qty/value, 102 qty/value (neg), Z22 qty/value, net line | Qty/Value toggle switches unit basis, not the query |
 | Quality disposition | Donut + gauge | Accepted/Rejected/Sample/Under inspection | Qty, Rejection Rate % (gauge) | §7.3 buckets |
 | Top vendors by GRN value | Horizontal bar + scatter | Vendor (top 10 by value) | GRN Value, Rejection % (secondary axis) | |
 | Quality composition — top 10 plants | 100% stacked horizontal bar | Plant (top 10) | % share Accepted/Rejected/Sample/Under inspection | |

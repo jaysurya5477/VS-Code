@@ -1,0 +1,274 @@
+<mvc:View
+	controllerName="com.sap.zmmgrndash.controller.zmm_grn_dash"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:core="sap.ui.core"
+	xmlns:viz="com.sap.zmmgrndash.control"
+	displayBlock="true"
+	height="100%">
+
+	<!--
+		Only the filter bar is built from Fiori controls. Everything below it - cards, ratio
+		strip, chart panels and the vendor scorecard - is the HTML prototype's own markup,
+		rendered by the custom controls in webapp/control and styled by webapp/css/style.css.
+	-->
+	<Page id="page" showHeader="false" class="grnDashPage" backgroundDesign="Transparent">
+		<content>
+
+			<!-- ====================== Header + filter bar ====================== -->
+			<viz:Box class="grnTopBar">
+
+				<viz:Head
+					id="head"
+					title="{i18n>title}"
+					badge="{i18n>headBadge}"
+					subtitle="{i18n>movementLegend}"
+					scopeLabel="{i18n>scopeLabel}"
+					scope="{dash>/scopeText}">
+					<viz:actions>
+						<viz:Toggle
+							id="themeToggle"
+							items="{dash>/themeOptions}"
+							selectedKey="{dash>/themeMode}"
+							select=".onThemeSelect"/>
+					</viz:actions>
+				</viz:Head>
+
+				<viz:Box class="grnFilterRow">
+
+					<VBox class="grnField">
+						<Label text="{i18n>filterPeriod}" labelFor="periodSelect" class="grnFieldLabel"/>
+						<Select
+							id="periodSelect"
+							width="100%"
+							selectedKey="CURR_FY"
+							change=".onPeriodPresetChange">
+							<core:Item key="CURR_FY" text="{i18n>periodCurrFy}"/>
+							<core:Item key="PREV_FY" text="{i18n>periodPrevFy}"/>
+							<core:Item key="LAST12" text="{i18n>periodLast12}"/>
+							<core:Item key="YTD" text="{i18n>periodYtd}"/>
+							<core:Item key="CURR_MONTH" text="{i18n>periodCurrMonth}"/>
+							<core:Item key="CUSTOM" text="{i18n>periodCustom}"/>
+						</Select>
+					</VBox>
+
+					<VBox class="grnField grnField--wide">
+						<Label text="{i18n>filterDateRange}" required="true" labelFor="dateRange" class="grnFieldLabel"/>
+						<DateRangeSelection
+							id="dateRange"
+							width="100%"
+							valueFormat="yyyy-MM-dd"
+							change=".onDateRangeChange"/>
+					</VBox>
+
+					<VBox class="grnField">
+						<Label text="{i18n>filterPlant}" labelFor="plantFilter" class="grnFieldLabel"/>
+						<MultiComboBox
+							id="plantFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							selectionFinish=".onFilterChange"
+							selectionChange=".onFilterSelectionChange"
+							items="{dash>/options/plant}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="grnField">
+						<Label text="{i18n>filterVendor}" labelFor="vendorFilter" class="grnFieldLabel"/>
+						<MultiComboBox
+							id="vendorFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							selectionFinish=".onFilterChange"
+							selectionChange=".onFilterSelectionChange"
+							items="{dash>/options/vendor}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="grnField">
+						<Label text="{i18n>filterDocType}" labelFor="docTypeFilter" class="grnFieldLabel"/>
+						<MultiComboBox
+							id="docTypeFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							selectionFinish=".onFilterChange"
+							selectionChange=".onFilterSelectionChange"
+							items="{dash>/options/docType}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="grnField">
+						<Label text="{i18n>filterMaterial}" labelFor="materialFilter" class="grnFieldLabel"/>
+						<MultiComboBox
+							id="materialFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							selectionFinish=".onFilterChange"
+							selectionChange=".onFilterSelectionChange"
+							items="{dash>/options/material}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="grnField grnField--actions">
+						<HBox class="grnFilterActions">
+							<Button
+								id="goBtn"
+								text="{i18n>go}"
+								type="Emphasized"
+								press=".onGo"/>
+							<Button
+								id="resetBtn"
+								text="{i18n>reset}"
+								icon="sap-icon://clear-filter"
+								press=".onReset"/>
+							<Button
+								id="refreshBtn"
+								icon="sap-icon://refresh"
+								tooltip="{dash>/lastRefreshedText}"
+								press=".onGo"/>
+						</HBox>
+					</VBox>
+
+				</viz:Box>
+
+				<Text text="{i18n>filterHint}" class="grnFilterHint"/>
+
+			</viz:Box>
+
+			<MessageStrip
+				id="errorStrip"
+				visible="{= !!${dash>/errorText} }"
+				text="{dash>/errorText}"
+				type="Error"
+				showIcon="true"
+				showCloseButton="true"
+				class="grnMessageStrip"/>
+
+			<!-- ============================ KPI cards ============================ -->
+			<viz:Box id="kpiGrid" layout="hero" items="{dash>/kpis}">
+				<viz:KpiCard
+					label="{dash>label}"
+					mvt="{dash>mvt}"
+					valueText="{dash>valueText}"
+					unit="{dash>unit}"
+					deltaText="{dash>deltaText}"
+					deltaNote="{i18n>vsPriorPeriod}"
+					deltaTone="{dash>deltaTone}">
+					<viz:spark>
+						<viz:EChart option="{dash>spark}" height="2.875rem"/>
+					</viz:spark>
+				</viz:KpiCard>
+			</viz:Box>
+
+			<!-- ======================= Quality bucket cards ======================= -->
+			<viz:Box id="qualityGrid" layout="quality" items="{dash>/quality}">
+				<viz:QualCard
+					label="{dash>label}"
+					mvt="{dash>mvt}"
+					valueText="{dash>valueText}"
+					shareText="{dash>shareText}"
+					sharePct="{dash>sharePct}"
+					tone="{dash>tone}"
+					negative="{dash>negative}"/>
+			</viz:Box>
+
+			<!-- ========================== Ratio strip ========================== -->
+			<viz:Box layout="full">
+				<viz:RatioStrip id="ratioStrip" cells="{dash>/ratios}"/>
+			</viz:Box>
+
+			<!-- ====================== Charts and scorecard ====================== -->
+			<viz:Box layout="charts">
+
+				<viz:Card
+					span="8"
+					title="{i18n>chartTrendTitle}"
+					subtitle="{dash>/trendSubtitle}">
+					<viz:actions>
+						<viz:Toggle
+							id="trendMode"
+							items="{dash>/modeOptions}"
+							selectedKey="{dash>/trendMode}"
+							select=".onTrendModeChange"/>
+					</viz:actions>
+					<viz:EChart id="chartTrend" option="{dash>/charts/trend}" height="18.5rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="4"
+					title="{i18n>chartQualityTitle}"
+					subtitle="{i18n>chartQualitySub}">
+					<viz:EChart id="chartQuality" option="{dash>/charts/quality}" height="18.5rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="6"
+					title="{i18n>chartVendorTitle}"
+					subtitle="{i18n>chartVendorSub}"
+					badge="{i18n>badgeTop10}">
+					<viz:EChart
+						id="chartVendor"
+						option="{dash>/charts/vendorTop10}"
+						height="21.25rem"
+						dataPointSelected=".onVendorChartSelect"/>
+				</viz:Card>
+
+				<viz:Card
+					span="6"
+					title="{i18n>chartPlantTitle}"
+					subtitle="{i18n>chartPlantSub}">
+					<viz:EChart id="chartPlant" option="{dash>/charts/plantTop10}" height="21.25rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="12"
+					title="{i18n>chartMaterialTitle}"
+					subtitle="{i18n>chartMaterialSub}">
+					<viz:EChart id="chartMaterial" option="{dash>/charts/materialTop20}" height="31.25rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="12"
+					title="{i18n>chartDocTypeTitle}"
+					subtitle="{i18n>chartDocTypeSub}">
+					<viz:actions>
+						<viz:Btn
+							id="docTypeResetBtn"
+							text="{i18n>resetView}"
+							press=".onResetDocTypeZoom"/>
+					</viz:actions>
+					<viz:EChart id="chartDocType" option="{dash>/charts/doctypeRanked}" height="26.875rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="12"
+					title="{i18n>chartMatRejTitle}"
+					subtitle="{i18n>chartMatRejSub}"
+					badge="{i18n>badgeWorst10}">
+					<viz:EChart id="chartMatRej" option="{dash>/charts/materialRejWorst10}" height="18.75rem"/>
+				</viz:Card>
+
+				<viz:Scorecard
+					id="scorecard"
+					span="12"
+					title="{i18n>scorecardTitle}"
+					subtitle="{i18n>scorecardSub}"
+					badge="{dash>/scorecardCountText}"
+					columns="{dash>/scorecardColumns}"
+					rows="{dash>/scorecard}"
+					noDataText="{i18n>noDataScorecard}"
+					rowPress=".onScorecardRowPress"/>
+
+			</viz:Box>
+
+		</content>
+	</Page>
+</mvc:View>

@@ -1,0 +1,761 @@
+/*
+ * GRN Dashboard - panel styling.
+ *
+ * The panels below the filter bar are a direct port of the reviewed HTML prototype
+ * (../../../GRN Dashboard v2.dc.html): its palette, its typography, its card chrome and its
+ * grid. Only the filter bar is stock Fiori, so the two have to agree on light/dark - the
+ * theme switcher sets data-grn-theme on <html> (which selects the token block below) and
+ * the matching sap_horizon / sap_horizon_dark theme at the same time. See model/appTheme.js.
+ *
+ * The tokens keep the prototype's names, prefixed with --grn- so nothing collides with the
+ * --sapXxx theme parameters the Fiori controls in the filter bar rely on.
+ */
+
+/* ------------------------------------------------------------------ tokens --- */
+
+:root {
+	--grn-bg: #f4f6f8;
+	--grn-panel: #ffffff;
+	--grn-panel2: #fafbfc;
+	--grn-line: #e2e6ea;
+	--grn-line2: #eef1f4;
+	--grn-ink: #1c2330;
+	--grn-ink2: #5b6676;
+	--grn-ink3: #8b95a3;
+	--grn-accent: #1a6fb5;
+	--grn-accent-soft: #e8f1f9;
+	--grn-pos: #12836b;
+	--grn-neg: #c0392f;
+	--grn-warn: #c07d16;
+	--grn-alt: #6a55b8;
+	--grn-alt2: #0f766e;
+	--grn-accent-tint: #1a6fb51f;
+	--grn-pos-tint: #12836b1f;
+	--grn-neg-tint: #c0392f1f;
+	--grn-warn-tint: #c07d161f;
+	--grn-alt-tint: #6a55b81f;
+	--grn-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .05);
+	--grn-shadow-pop: 0 14px 34px rgba(16, 24, 40, .16);
+	--grn-font: "IBM Plex Sans", "72", "72full", Arial, Helvetica, sans-serif;
+	--grn-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root[data-grn-theme="dark"] {
+	--grn-bg: #0d1117;
+	--grn-panel: #151b22;
+	--grn-panel2: #121820;
+	--grn-line: #242c36;
+	--grn-line2: #1c232c;
+	--grn-ink: #e8ecf1;
+	--grn-ink2: #9aa5b2;
+	--grn-ink3: #6d7885;
+	--grn-accent: #4da3e8;
+	--grn-accent-soft: #16283a;
+	--grn-pos: #3fbf9c;
+	--grn-neg: #ef6f66;
+	--grn-warn: #e0a437;
+	--grn-alt: #9b86ee;
+	--grn-alt2: #2bb3a3;
+	--grn-accent-tint: #4da3e82e;
+	--grn-pos-tint: #3fbf9c2e;
+	--grn-neg-tint: #ef6f662e;
+	--grn-warn-tint: #e0a4372e;
+	--grn-alt-tint: #9b86ee2e;
+	--grn-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+	--grn-shadow-pop: 0 14px 34px rgba(0, 0, 0, .55);
+}
+
+/* Only relevant for the moment between first paint and appTheme.js setting the attribute. */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-grn-theme="light"]) {
+		--grn-bg: #0d1117;
+		--grn-panel: #151b22;
+		--grn-panel2: #121820;
+		--grn-line: #242c36;
+		--grn-line2: #1c232c;
+		--grn-ink: #e8ecf1;
+		--grn-ink2: #9aa5b2;
+		--grn-ink3: #6d7885;
+		--grn-accent: #4da3e8;
+		--grn-accent-soft: #16283a;
+		--grn-pos: #3fbf9c;
+		--grn-neg: #ef6f66;
+		--grn-warn: #e0a437;
+		--grn-alt: #9b86ee;
+		--grn-alt2: #2bb3a3;
+		--grn-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+		--grn-shadow-pop: 0 14px 34px rgba(0, 0, 0, .55);
+	}
+}
+
+/*
+ * Semantic tone -> colour pair. Any panel carrying a state gets one of these classes and
+ * then styles itself off --grn-tone / --grn-tone-tint, so the same markup serves every
+ * state and both themes.
+ */
+.grnTone--accent { --grn-tone: var(--grn-accent); --grn-tone-tint: var(--grn-accent-tint); }
+.grnTone--pos { --grn-tone: var(--grn-pos); --grn-tone-tint: var(--grn-pos-tint); }
+.grnTone--neg { --grn-tone: var(--grn-neg); --grn-tone-tint: var(--grn-neg-tint); }
+.grnTone--warn { --grn-tone: var(--grn-warn); --grn-tone-tint: var(--grn-warn-tint); }
+.grnTone--alt { --grn-tone: var(--grn-alt); --grn-tone-tint: var(--grn-alt-tint); }
+.grnTone--none { --grn-tone: var(--grn-ink); --grn-tone-tint: transparent; }
+
+/* -------------------------------------------------------------------- page --- */
+
+.grnDashPage .sapMPageEnableScrolling,
+.grnDashPage > section {
+	background: var(--grn-bg);
+}
+
+.grnBox {
+	box-sizing: border-box;
+}
+
+.grnBox *,
+.grnBox *::before,
+.grnBox *::after {
+	box-sizing: border-box;
+}
+
+/* ----------------------------------------------------------------- top bar --- */
+
+.grnTopBar {
+	background: var(--grn-panel);
+	border-bottom: 1px solid var(--grn-line);
+	padding: 14px 26px 0;
+}
+
+.grnHead {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 24px;
+	flex-wrap: wrap;
+	font-family: var(--grn-font);
+}
+
+.grnHeadMain {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.grnHeadTitleRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.grnHeadTitle {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	letter-spacing: -.01em;
+	color: var(--grn-ink);
+}
+
+.grnHeadSub {
+	margin: 0;
+	font-size: 12px;
+	color: var(--grn-ink2);
+	line-height: 1.45;
+}
+
+.grnHeadActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* Uppercase mono chip - module tag, movement types, TOP N markers. */
+.grnTag {
+	font-family: var(--grn-mono);
+	font-size: 10px;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--grn-accent);
+	border: 1px solid var(--grn-line);
+	background: var(--grn-accent-soft);
+	padding: 3px 7px;
+	border-radius: 4px;
+	white-space: nowrap;
+}
+
+.grnScopeLine {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 12px 0 14px;
+	font-family: var(--grn-mono);
+	font-size: 10.5px;
+	color: var(--grn-ink3);
+}
+
+.grnScopeLine .grnScopeLabel {
+	color: var(--grn-accent);
+	letter-spacing: .1em;
+}
+
+/* --------------------------------------------------------------- filter bar --- */
+
+/*
+ * Stock Fiori controls, deliberately: this is the one region the user interacts with, and
+ * value help, token handling and keyboard support are worth far more here than a bespoke
+ * look. Only spacing and label size are touched.
+ */
+.grnFilterRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px 12px;
+	padding: 12px 0 2px;
+}
+
+.grnField {
+	min-width: 11.5rem;
+	flex: 1 1 11.5rem;
+	max-width: 20rem;
+}
+
+.grnField--wide {
+	min-width: 18rem;
+	flex: 1 1 18rem;
+	max-width: 26rem;
+}
+
+.grnField--actions {
+	flex: 0 0 auto;
+	max-width: none;
+}
+
+.grnFieldLabel.sapMLabel {
+	font-family: var(--grn-mono);
+	font-size: 9px;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--grn-ink3);
+	padding-bottom: 4px;
+}
+
+.grnFilterActions {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	padding-bottom: 1px;
+}
+
+.grnFilterHint {
+	display: block;
+	font-family: var(--grn-font);
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--grn-ink3);
+	padding-bottom: 10px;
+}
+
+.grnMessageStrip {
+	margin: 12px 26px 0;
+}
+
+/* ------------------------------------------------------------------- grids --- */
+
+.grnGrid {
+	display: grid;
+	gap: 12px;
+	padding: 12px 26px 0;
+}
+
+.grnGrid--hero {
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.grnGrid--quality {
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.grnGrid--full {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.grnGrid--charts {
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	padding-bottom: 40px;
+}
+
+.grnSpan4 { grid-column: span 4; }
+.grnSpan6 { grid-column: span 6; }
+.grnSpan8 { grid-column: span 8; }
+.grnSpan12 { grid-column: span 12; }
+
+/* Below ~1100px the 8/4 and 6/6 splits stop being readable - one chart per row. */
+@media (max-width: 1100px) {
+	.grnGrid--charts > .grnCard {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 600px) {
+	.grnTopBar,
+	.grnGrid {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+
+	.grnMessageStrip {
+		margin-left: 12px;
+		margin-right: 12px;
+	}
+}
+
+/* ------------------------------------------------------------------- cards --- */
+
+.grnCard {
+	background: var(--grn-panel);
+	border: 1px solid var(--grn-line);
+	border-radius: 10px;
+	box-shadow: var(--grn-shadow);
+	padding: 14px 16px 10px;
+	font-family: var(--grn-font);
+	color: var(--grn-ink);
+	min-width: 0;
+}
+
+.grnCardHead {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.grnCardHeadText {
+	min-width: 0;
+}
+
+.grnCardTitle {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--grn-ink);
+}
+
+.grnCardSub {
+	font-size: 11.5px;
+	color: var(--grn-ink2);
+	margin-top: 3px;
+	line-height: 1.4;
+}
+
+.grnCardActions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: none;
+}
+
+/* --------------------------------------------------------------- KPI cards --- */
+
+.grnKpiCard {
+	padding: 15px 16px 10px;
+}
+
+.grnKpiTop {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.grnKpiLabel {
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: .02em;
+	color: var(--grn-ink2);
+}
+
+.grnKpiBody {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 10px;
+}
+
+.grnKpiFigures {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	min-width: 0;
+}
+
+.grnKpiValueRow {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+.grnKpiValue {
+	font-size: 29px;
+	font-weight: 600;
+	letter-spacing: -.03em;
+	line-height: 1;
+	color: var(--grn-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.grnKpiUnit {
+	font-family: var(--grn-mono);
+	font-size: 11px;
+	color: var(--grn-ink3);
+}
+
+.grnKpiDeltaRow {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	white-space: nowrap;
+}
+
+.grnKpiDelta {
+	font-family: var(--grn-mono);
+	font-size: 10.5px;
+	font-weight: 600;
+	border-radius: 4px;
+	padding: 2px 6px;
+	color: var(--grn-tone, var(--grn-ink));
+	background: var(--grn-tone-tint, transparent);
+}
+
+.grnKpiDeltaNote {
+	font-size: 10.5px;
+	color: var(--grn-ink3);
+}
+
+.grnKpiSpark {
+	flex: 0 1 112px;
+	min-width: 60px;
+}
+
+/* ----------------------------------------------------- quality bucket cards --- */
+
+.grnQualCard {
+	padding: 13px 15px;
+}
+
+.grnQualTop {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.grnQualName {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	min-width: 0;
+}
+
+.grnQualDot {
+	width: 8px;
+	height: 8px;
+	border-radius: 2px;
+	background: var(--grn-tone, var(--grn-accent));
+	flex: none;
+}
+
+.grnQualLabel {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--grn-ink2);
+}
+
+.grnQualBody {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.grnQualValue {
+	font-size: 20px;
+	font-weight: 600;
+	letter-spacing: -.02em;
+	color: var(--grn-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.grnQualValue--neg {
+	color: var(--grn-neg);
+}
+
+.grnQualShare {
+	font-family: var(--grn-mono);
+	font-size: 11px;
+	color: var(--grn-ink2);
+}
+
+.grnBar {
+	height: 5px;
+	border-radius: 3px;
+	background: var(--grn-line2);
+	margin-top: 9px;
+	overflow: hidden;
+}
+
+.grnBarFill {
+	height: 100%;
+	border-radius: 3px;
+	background: var(--grn-tone, var(--grn-accent));
+}
+
+/* ------------------------------------------------------------ ratio strip --- */
+
+.grnRatioStrip {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	padding: 0;
+}
+
+@media (max-width: 700px) {
+	.grnRatioStrip {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.grnRatioCell {
+	padding: 12px 16px;
+	border-right: 1px solid var(--grn-line2);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.grnRatioCell:last-child {
+	border-right: none;
+}
+
+.grnRatioLabel {
+	font-family: var(--grn-mono);
+	font-size: 9px;
+	letter-spacing: .11em;
+	text-transform: uppercase;
+	color: var(--grn-ink3);
+}
+
+.grnRatioBody {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.grnRatioValue {
+	font-size: 17px;
+	font-weight: 600;
+	color: var(--grn-tone, var(--grn-ink));
+	font-variant-numeric: tabular-nums;
+}
+
+.grnRatioNote {
+	font-size: 10.5px;
+	color: var(--grn-ink3);
+}
+
+/* -------------------------------------------------------------- scorecard --- */
+
+.grnScoreCard {
+	padding-bottom: 16px;
+}
+
+/* The seven columns only fit above ~860px; below that the table scrolls sideways
+   rather than crushing the numbers. */
+.grnScoreScroll {
+	overflow-x: auto;
+	margin-top: 10px;
+}
+
+.grnScoreTable {
+	min-width: 860px;
+}
+
+.grnScoreHead,
+.grnScoreRow {
+	display: grid;
+	grid-template-columns: 1.7fr .9fr .9fr 1fr 1fr 1fr 1.4fr;
+	gap: 8px;
+}
+
+.grnScoreHead {
+	padding: 0 8px 8px;
+	font-family: var(--grn-mono);
+	font-size: 9px;
+	letter-spacing: .11em;
+	text-transform: uppercase;
+	color: var(--grn-ink3);
+	border-bottom: 1px solid var(--grn-line);
+}
+
+.grnScoreRow {
+	align-items: center;
+	padding: 9px 8px;
+	border-bottom: 1px solid var(--grn-line2);
+	font-size: 12.5px;
+	color: var(--grn-ink);
+	cursor: pointer;
+	font-variant-numeric: tabular-nums;
+	text-align: left;
+	width: 100%;
+	background: transparent;
+	border-left: 0;
+	border-right: 0;
+	border-top: 0;
+	font-family: inherit;
+}
+
+.grnScoreRow:hover,
+.grnScoreRow:focus-visible {
+	background: var(--grn-accent-soft);
+	outline: none;
+}
+
+.grnScoreRow--selected {
+	background: var(--grn-accent-soft);
+}
+
+.grnNum {
+	text-align: right;
+	font-family: var(--grn-mono);
+}
+
+.grnNum--muted {
+	color: var(--grn-ink2);
+}
+
+.grnNum--tone {
+	color: var(--grn-tone, var(--grn-ink));
+}
+
+.grnScoreVendor {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.grnScoreDot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--grn-tone, var(--grn-accent));
+	flex: none;
+}
+
+.grnScoreName {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.grnScoreCode {
+	font-family: var(--grn-mono);
+	font-size: 10px;
+	color: var(--grn-ink3);
+}
+
+.grnScoreValue {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.grnScoreValue .grnBar {
+	flex: 1;
+	margin-top: 0;
+}
+
+.grnScoreNumber {
+	font-family: var(--grn-mono);
+	font-size: 11px;
+	color: var(--grn-ink2);
+	width: 28px;
+	text-align: right;
+}
+
+.grnEmpty {
+	padding: 24px 8px;
+	font-size: 12.5px;
+	color: var(--grn-ink3);
+	text-align: center;
+}
+
+/* ------------------------------------------------- toggles and flat buttons --- */
+
+.grnToggle {
+	display: flex;
+	background: var(--grn-panel2);
+	border: 1px solid var(--grn-line);
+	border-radius: 7px;
+	padding: 2px;
+}
+
+.grnToggleBtn {
+	border: none;
+	background: transparent;
+	color: var(--grn-ink2);
+	font-family: var(--grn-mono);
+	font-size: 10px;
+	letter-spacing: .07em;
+	text-transform: uppercase;
+	padding: 6px 11px;
+	border-radius: 5px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.grnToggleBtn:hover {
+	color: var(--grn-ink);
+}
+
+.grnToggleBtn--on,
+.grnToggleBtn--on:hover {
+	background: var(--grn-accent);
+	color: #ffffff;
+}
+
+.grnBtn {
+	background: var(--grn-panel2);
+	border: 1px solid var(--grn-line);
+	color: var(--grn-ink2);
+	font-family: var(--grn-mono);
+	font-size: 9.5px;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	padding: 6px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.grnBtn:hover {
+	border-color: var(--grn-accent);
+	color: var(--grn-accent);
+}
+
+.grnToggleBtn:focus-visible,
+.grnBtn:focus-visible {
+	outline: 1px dotted var(--grn-ink);
+	outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------ charts --- */
+
+.grnEChart {
+	margin-top: 6px;
+}
