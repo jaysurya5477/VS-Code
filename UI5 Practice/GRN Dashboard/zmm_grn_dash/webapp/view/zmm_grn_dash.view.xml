@@ -68,8 +68,6 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
-							selectionFinish=".onFilterChange"
-							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/plant}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -82,8 +80,6 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
-							selectionFinish=".onFilterChange"
-							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/vendor}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -96,8 +92,6 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
-							selectionFinish=".onFilterChange"
-							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/docType}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -110,8 +104,6 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
-							selectionFinish=".onFilterChange"
-							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/material}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>

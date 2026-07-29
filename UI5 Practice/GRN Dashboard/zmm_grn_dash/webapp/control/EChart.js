@@ -63,6 +63,7 @@ sap.ui.define([
 		init: function () {
 			this._oChart = null;
 			this._sResizeId = null;
+			this._iApplyFrame = null;
 		},
 
 		/**
@@ -93,21 +94,28 @@ sap.ui.define([
 					return;
 				}
 
-				// A rerender replaces the DOM node, orphaning the previous canvas.
-				if (that._oChart && that._oChart.getDom() !== oDom) {
+				// The renderer below declares an empty <div> - the canvas is injected
+				// imperatively by echarts.init() afterwards, outside the declared render
+				// output. apiVersion 2 controls can be rerendered by patching the existing
+				// DOM node in place (e.g. a sibling property change invalidating an
+				// ancestor), which reuses this exact node but strips any children/attributes
+				// not part of that declared output - silently orphaning the canvas without
+				// ever replacing the node itself. getDom() still matches oDom in that case,
+				// so node-identity alone cannot detect it: always dispose and reinit here,
+				// since onAfterRendering only fires on an actual render/patch cycle anyway
+				// (data-only updates go through _apply(), not rendering).
+				if (that._oChart) {
 					that._oChart.dispose();
 					that._oChart = null;
 				}
-				if (!that._oChart) {
-					that._oChart = echarts.init(oDom, null, {
-						renderer: "canvas"
+				that._oChart = echarts.init(oDom, null, {
+					renderer: "canvas"
+				});
+				that._oChart.on("click", function (oParams) {
+					that.fireDataPointSelected({
+						data: oParams
 					});
-					that._oChart.on("click", function (oParams) {
-						that.fireDataPointSelected({
-							data: oParams
-						});
-					});
-				}
+				});
 				that._apply();
 			}).catch(function (oError) {
 				Log.error("EChart: " + oError.message, null, "com.sap.zmmgrndash.control.EChart");
@@ -117,22 +125,48 @@ sap.ui.define([
 		/**
 		 * Pushes the current option onto the instance. No-op until both the instance and
 		 * an option exist, so the order of setOption()/rendering does not matter.
+		 *
+		 * Deferred to the next animation frame rather than applied synchronously. ECharts
+		 * only re-measures its container on an explicit resize() - not on every setOption()
+		 * - and calling that resize() in the same tick as whatever DOM write triggered this
+		 * update (e.g. a sibling control patching its own attributes, or the surrounding
+		 * grid recalculating column widths) can read a size the browser has not finished
+		 * laying out yet. The chart then renders against that stale/zero geometry and stays
+		 * blank until something else - a real window resize - forces a fresh measurement.
+		 * rAF runs after the browser has committed layout for the current tick, so the
+		 * measurement is always fresh. A rebuild while an earlier one is still pending
+		 * simply reschedules on the latest option - see setOption().
 		 * @private
 		 */
 		_apply: function () {
 			var oOption = this.getOption();
-			if (this._oChart && oOption) {
+			var that = this;
+			if (!this._oChart || !oOption) {
+				return;
+			}
+			if (this._iApplyFrame) {
+				window.cancelAnimationFrame(this._iApplyFrame);
+			}
+			this._iApplyFrame = window.requestAnimationFrame(function () {
+				that._iApplyFrame = null;
+				if (!that._oChart || that._oChart.isDisposed()) {
+					return;
+				}
 				// notMerge=true: option objects are always complete, and merging would
 				// leave stale series behind when a chart's series count changes.
-				this._oChart.setOption(oOption, true);
-				this._oChart.resize();
-			}
+				that._oChart.setOption(oOption, true);
+				that._oChart.resize();
+			});
 		},
 
 		exit: function () {
 			if (this._sResizeId) {
 				ResizeHandler.deregister(this._sResizeId);
 				this._sResizeId = null;
+			}
+			if (this._iApplyFrame) {
+				window.cancelAnimationFrame(this._iApplyFrame);
+				this._iApplyFrame = null;
 			}
 			if (this._oChart) {
 				this._oChart.dispose();

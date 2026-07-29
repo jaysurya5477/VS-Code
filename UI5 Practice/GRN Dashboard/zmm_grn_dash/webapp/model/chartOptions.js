@@ -976,6 +976,8 @@ sap.ui.define([
 						},
 						label: {
 							show: true,
+							position: "insideEndTop",
+							distance: 4,
 							formatter: "target " + TARGET_REJECTION_PCT.toFixed(1) + "%",
 							color: pal.ink3,
 							fontSize: 9

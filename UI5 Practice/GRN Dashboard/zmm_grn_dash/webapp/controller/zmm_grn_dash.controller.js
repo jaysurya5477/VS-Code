@@ -220,23 +220,6 @@ sap.ui.define([
 			this._loadData();
 		},
 
-		/** Any of the four code filters closing its dropdown. */
-		onFilterChange: function () {
-			this._loadData();
-		},
-
-		/**
-		 * Ticking items inside an open dropdown is not a request to reload - that comes
-		 * when the dropdown closes (onFilterChange). Removing a token, however, only fires
-		 * this event, and it happens with the list closed.
-		 * @param {sap.ui.base.Event} oEvent selectionChange
-		 */
-		onFilterSelectionChange: function (oEvent) {
-			if (!oEvent.getSource().isOpen()) {
-				this._loadData();
-			}
-		},
-
 		onPeriodPresetChange: function (oEvent) {
 			var sKey = oEvent.getParameter("selectedItem").getKey();
 			if (sKey !== "CUSTOM") {
@@ -462,7 +445,14 @@ sap.ui.define([
 
 			var that = this;
 			var oPage = this.byId("page");
-			var oModel = this.getView().getModel();
+			// The default model is set on the Component synchronously in its own init()
+			// (from manifest.json), independent of whether the view has been inserted into
+			// its parent yet. this.getView().getModel() instead relies on propagation down
+			// the control tree, which only happens once the router parents the view - on a
+			// cold Fiori Launchpad tile open that can still be pending when onInit's
+			// promise chain resolves, so it intermittently reads back undefined even though
+			// the model exists. Same class of bug as _text()'s i18n lookup below.
+			var oModel = this.getOwnerComponent().getModel() || this.getView().getModel();
 
 			if (!oModel) {
 				this._setError(this._text("errorNoODataModel"));

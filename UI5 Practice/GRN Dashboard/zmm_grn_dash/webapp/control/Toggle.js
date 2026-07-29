@@ -68,12 +68,32 @@ sap.ui.define([
 				return;
 			}
 			var sKey = oButton.getAttribute("data-grn-key");
-			if (sKey !== this.getSelectedKey()) {
-				this.setSelectedKey(sKey);
-				this.fireSelect({
-					key: sKey
+			if (sKey === this.getSelectedKey()) {
+				return;
+			}
+
+			// setProperty(..., true) suppresses invalidate() - still stores the value and
+			// still pushes it through a two-way binding, but skips the framework re-render.
+			// A normal setSelectedKey() here would invalidate this control, and Control
+			// invalidation bubbles up through every ancestor that doesn't override it - none
+			// of Box/Card/Head do - so a plain click would force the whole page above this
+			// toggle to re-render, tearing down and recreating every sibling EChart's DOM
+			// node and disposing its live chart instance for no reason. Patch the pressed
+			// state on the existing buttons directly instead.
+			this.setProperty("selectedKey", sKey, true);
+
+			var oRoot = this.getDomRef();
+			if (oRoot) {
+				Array.prototype.forEach.call(oRoot.querySelectorAll("[data-grn-key]"), function (oBtn) {
+					var bOn = oBtn.getAttribute("data-grn-key") === sKey;
+					oBtn.classList.toggle("grnToggleBtn--on", bOn);
+					oBtn.setAttribute("aria-pressed", bOn ? "true" : "false");
 				});
 			}
+
+			this.fireSelect({
+				key: sKey
+			});
 		}
 	});
 });
