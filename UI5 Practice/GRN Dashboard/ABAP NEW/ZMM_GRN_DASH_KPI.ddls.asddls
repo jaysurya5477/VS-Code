@@ -22,7 +22,8 @@ define custom entity ZMM_GRN_DASH_KPI
     P_Vendor   : zmm_grn_dash_flt,
     P_Material : zmm_grn_dash_flt,
     P_Plant    : zmm_grn_dash_flt,
-    P_DocType  : zmm_grn_dash_flt
+    P_DocType  : zmm_grn_dash_flt,
+    P_Uom      : zmm_grn_dash_flt
 {
   key ID         : abap.char(20);
       KpiLabel   : abap.char(60);

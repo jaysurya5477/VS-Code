@@ -10,9 +10,14 @@ define custom entity ZMM_GRN_DASH_MATERIAL_TOP20
     P_Vendor   : zmm_grn_dash_flt,
     P_Material : zmm_grn_dash_flt,
     P_Plant    : zmm_grn_dash_flt,
-    P_DocType  : zmm_grn_dash_flt
+    P_DocType  : zmm_grn_dash_flt,
+    P_Uom      : zmm_grn_dash_flt
 {
   key Material     : matnr;
       MaterialName : txz01;
       Value        : abap.dec(15,2);
+      // Sum of Value across every material in scope, before the top-20 cut -
+      // repeated on every row so "% of total value" divides by the true scope
+      // total rather than just this top-20 subset's own sum.
+      GrandTotal   : abap.dec(15,2);
 }

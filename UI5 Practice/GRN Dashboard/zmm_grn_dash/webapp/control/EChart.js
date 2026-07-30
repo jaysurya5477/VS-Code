@@ -17,7 +17,7 @@ sap.ui.define([
 	 * HTML prototype nearly verbatim.
 	 *
 	 * `option` is applied imperatively and never triggers a rerender, so a filter refresh
-	 * animates the existing canvas instead of tearing down the DOM.
+	 * animates the existing chart instead of tearing down the DOM.
 	 */
 	return Control.extend("com.sap.zmmgrndash.control.EChart", {
 
@@ -94,12 +94,12 @@ sap.ui.define([
 					return;
 				}
 
-				// The renderer below declares an empty <div> - the canvas is injected
-				// imperatively by echarts.init() afterwards, outside the declared render
-				// output. apiVersion 2 controls can be rerendered by patching the existing
-				// DOM node in place (e.g. a sibling property change invalidating an
-				// ancestor), which reuses this exact node but strips any children/attributes
-				// not part of that declared output - silently orphaning the canvas without
+				// The renderer below declares an empty <div> - the chart's <svg>/<canvas>
+				// root is injected imperatively by echarts.init() afterwards, outside the
+				// declared render output. apiVersion 2 controls can be rerendered by patching
+				// the existing DOM node in place (e.g. a sibling property change invalidating
+				// an ancestor), which reuses this exact node but strips any children/attributes
+				// not part of that declared output - silently orphaning the chart root without
 				// ever replacing the node itself. getDom() still matches oDom in that case,
 				// so node-identity alone cannot detect it: always dispose and reinit here,
 				// since onAfterRendering only fires on an actual render/patch cycle anyway
@@ -109,7 +109,7 @@ sap.ui.define([
 					that._oChart = null;
 				}
 				that._oChart = echarts.init(oDom, null, {
-					renderer: "canvas"
+					renderer: "svg"
 				});
 				that._oChart.on("click", function (oParams) {
 					that.fireDataPointSelected({

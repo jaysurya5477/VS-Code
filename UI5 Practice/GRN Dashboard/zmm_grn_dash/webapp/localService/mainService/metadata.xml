@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" xmlns="http://docs.oasis-open.org/odata/ns/edm">
     <edmx:Reference Uri="/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='LOCAL')/$value">
         <edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/>
@@ -53,6 +53,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -60,6 +61,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualityType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="TrendType">
@@ -84,6 +86,7 @@
                 <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18"/>
                 <Property Name="MaterialName" Type="Edm.String" Nullable="false" MaxLength="40"/>
                 <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrandTotal" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialTop20Parameters" Nullable="false"/>
             </EntityType>
             <EntityType Name="RatioParameters">
@@ -94,6 +97,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -101,6 +105,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.RatioType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="PlantTop10Type">
@@ -123,6 +128,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -130,6 +136,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialRejWorst10Type)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="KPIParameters">
@@ -140,6 +147,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -147,6 +155,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KPIType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="DoctypeRankedType">
@@ -166,6 +175,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -173,6 +183,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.DoctypeRankedType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="VendorTop10Parameters">
@@ -183,6 +194,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -190,6 +202,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorTop10Type)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="QualityType">
@@ -201,7 +214,18 @@
                 <Property Name="SharePct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualityParameters" Nullable="false"/>
             </EntityType>
-            <EntityType Name="PlantTop10Parameters">
+            <EntityType Name="KpiByUomType">
+                <Key>
+                    <PropertyRef Name="Uom"/>
+                </Key>
+                <Property Name="Uom" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="GrossQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="NetQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KpiByUomParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="KpiByUomParameters">
                 <Key>
                     <PropertyRef Name="P_DateFrom"/>
                     <PropertyRef Name="P_DateTo"/>
@@ -216,6 +240,52 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KpiByUomType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="QualByUomType">
+                <Key>
+                    <PropertyRef Name="Bucket"/>
+                    <PropertyRef Name="Uom"/>
+                </Key>
+                <Property Name="Bucket" Type="Edm.String" Nullable="false" MaxLength="30"/>
+                <Property Name="Uom" Type="Edm.String" Nullable="false" MaxLength="3"/>
+                <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualByUomParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="QualByUomParameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualByUomType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="PlantTop10Parameters">
+                <Key>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Vendor"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
+                </Key>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Vendor" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.PlantTop10Type)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="RatioType">
@@ -245,6 +315,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -252,6 +323,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.TrendType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="VendorScorecardType">
@@ -263,6 +335,7 @@
                 <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="NetQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="Value" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="RejQty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>
                 <Property Name="RejPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="ReworkPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="Score" Type="Edm.Decimal" Nullable="false" Precision="8"/>
@@ -276,6 +349,8 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                    <PropertyRef Name="P_RankDir"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -283,6 +358,8 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_RankDir" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.VendorScorecardType)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="MaterialTop20Parameters">
@@ -293,6 +370,7 @@
                     <PropertyRef Name="P_Material"/>
                     <PropertyRef Name="P_Plant"/>
                     <PropertyRef Name="P_DocType"/>
+                <PropertyRef Name="P_Uom"/>
                 </Key>
                 <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
                 <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
@@ -300,6 +378,7 @@
                 <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <Property Name="P_DocType" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Uom" Type="Edm.String" Nullable="false" MaxLength="1000"/>
                 <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialTop20Type)" Partner="Parameters" ContainsTarget="true"/>
             </EntityType>
             <EntityType Name="KPIType">
@@ -333,6 +412,12 @@
                 </EntitySet>
                 <EntitySet Name="KPI" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KPIParameters">
                     <NavigationPropertyBinding Path="Set/Parameters" Target="KPI"/>
+                </EntitySet>
+                <EntitySet Name="KpiByUom" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.KpiByUomParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="KpiByUom"/>
+                </EntitySet>
+                <EntitySet Name="QualByUom" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.QualByUomParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="QualByUom"/>
                 </EntitySet>
                 <EntitySet Name="MaterialRejWorst10" EntityType="com.sap.gateway.srvd_a2x.zmm_grn_dash_o4.v0001.MaterialRejWorst10Parameters">
                     <NavigationPropertyBinding Path="Set/Parameters" Target="MaterialRejWorst10"/>
@@ -386,6 +471,12 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.QualityParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.QualityParameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
@@ -529,6 +620,12 @@
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
+            <Annotations Target="SAP__self.RatioParameters/P_Uom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
             <Annotations Target="SAP__self.Container/Ratio">
                 <Annotation Term="SAP__capabilities.NavigationRestrictions">
                     <Record>
@@ -661,6 +758,12 @@
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
+            <Annotations Target="SAP__self.MaterialRejWorst10Parameters/P_Uom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
             <Annotations Target="SAP__self.Container/MaterialRejWorst10">
                 <Annotation Term="SAP__capabilities.NavigationRestrictions">
                     <Record>
@@ -780,6 +883,12 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.KPIParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.KPIParameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
@@ -918,6 +1027,12 @@
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
+            <Annotations Target="SAP__self.DoctypeRankedParameters/P_Uom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
             <Annotations Target="SAP__self.Container/DoctypeRanked">
                 <Annotation Term="SAP__capabilities.NavigationRestrictions">
                     <Record>
@@ -1037,6 +1152,12 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.VendorTop10Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorTop10Parameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
@@ -1164,6 +1285,12 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.PlantTop10Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.PlantTop10Parameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
@@ -1304,6 +1431,12 @@
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
+            <Annotations Target="SAP__self.TrendParameters/P_Uom">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
             <Annotations Target="SAP__self.Container/Trend">
                 <Annotation Term="SAP__capabilities.NavigationRestrictions">
                     <Record>
@@ -1402,7 +1535,7 @@
                 <Annotation Term="SAP__common.QuickInfo" String="Account Number of Supplier"/>
             </Annotations>
             <Annotations Target="SAP__self.VendorScorecardType">
-                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Vendor scorecard, top 15"/>
+                <Annotation Term="SAP__common.Label" String="GRN Dashboard - Vendor scorecard, top/bottom 10 by score"/>
             </Annotations>
             <Annotations Target="SAP__self.VendorScorecardParameters/P_DateFrom">
                 <Annotation Term="SAP__core.Computed"/>
@@ -1431,6 +1564,18 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.VendorScorecardParameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_RankDir">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Rank Direction"/>
+                <Annotation Term="SAP__common.QuickInfo" String="ASC (worst-first) or DESC (best-first, default)"/>
+            </Annotations>
+            <Annotations Target="SAP__self.VendorScorecardParameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
@@ -1555,6 +1700,12 @@
                 <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
             </Annotations>
             <Annotations Target="SAP__self.MaterialTop20Parameters/P_DocType">
+                <Annotation Term="SAP__core.Computed"/>
+                <Annotation Term="SAP__common.IsUpperCase"/>
+                <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>
+                <Annotation Term="SAP__common.QuickInfo" String="GRN Dashboard Filter"/>
+            </Annotations>
+            <Annotations Target="SAP__self.MaterialTop20Parameters/P_Uom">
                 <Annotation Term="SAP__core.Computed"/>
                 <Annotation Term="SAP__common.IsUpperCase"/>
                 <Annotation Term="SAP__common.Label" String="Dashboard Filter"/>

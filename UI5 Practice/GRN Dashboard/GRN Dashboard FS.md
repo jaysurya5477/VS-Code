@@ -194,7 +194,7 @@ All charts implemented in `GRN Dashboard v2.dc.html` via ECharts 5.5; the backen
 | Quality composition — top 10 plants | 100% stacked horizontal bar | Plant (top 10) | % share Accepted/Rejected/Sample/Under inspection | |
 | Top 20 materials by GRN value | Pie w/ leader lines | Material (top 20 by value) | GRN Value, % of total | |
 | GRN value by PO doc type | Ranked bar, zoomable | Doc type (all, STO excluded) | GRN Value | Client-side zoom/slider; backend returns full ranked list |
-| Materials with highest rejection rate | Horizontal bar + scatter | Material (worst 10 by rejection %) | Rejected qty, Rejection % | 2.0% target reference line |
+| Materials with highest rejection rate | Horizontal bar + scatter | Material (worst 10 by rejection %) | Rejected qty, Rejection % | |
 | Vendor scorecard | Table | Vendor (top N) | Qty, Net Qty, Value, Rejection %, Rework %, Score | Row click filters whole dashboard to that vendor (frontend-only interaction, re-issues filtered query) |
 
 ## 12. Non-Functional Requirements

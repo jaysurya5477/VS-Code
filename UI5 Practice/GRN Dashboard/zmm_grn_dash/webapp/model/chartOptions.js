@@ -19,6 +19,7 @@ sap.ui.define([
 	 */
 
 	var TARGET_REJECTION_PCT = 2.0; // FS section 7: rejection-rate target ceiling.
+	var TARGET_REWORK_PCT = 4.0; // Rework-rate target ceiling (mirrors TARGET_REJECTION_PCT).
 
 	/**
 	 * @param {object} pal palette from chartTheme
@@ -119,6 +120,7 @@ sap.ui.define([
 	var chartOptions = {
 
 		TARGET_REJECTION_PCT: TARGET_REJECTION_PCT,
+		TARGET_REWORK_PCT: TARGET_REWORK_PCT,
 
 		/**
 		 * Placeholder shown in a chart card when the selection returned no rows. Better
@@ -173,7 +175,7 @@ sap.ui.define([
 				return Math.round(num(bQty ? r.NetQty : r.NetVal));
 			});
 
-			var fnValue = bQty ? formatter.compact : formatter.money;
+			var fnValue = bQty ? formatter.fmtQ : formatter.money;
 			var fMax = Math.max.apply(null, [1].concat(a101.map(Math.abs)));
 
 			var fnGradient = function (sColor) {
@@ -216,7 +218,7 @@ sap.ui.define([
 				}),
 				yAxis: axis(pal, {
 					type: "value",
-					name: bQty ? "Qty (base UoM)" : "Value (" + formatter.RUPEE + ")",
+					name: bQty ? "Qty (" + (ctx.uom || "base UoM") + ")" : "Value (" + formatter.RUPEE + ")",
 					nameGap: 14,
 					nameTextStyle: {
 						color: pal.ink3,
@@ -295,15 +297,22 @@ sap.ui.define([
 				"Accepted": pal.accent,
 				"Rejected": pal.neg,
 				"Sample": pal.alt,
-				"Rework GRN Qty": pal.warn
+				"Under Inspection": pal.warn
 			};
+			// The Quality entity also carries "Rework GRN Qty" (for the qualification
+			// card row) but rework sits outside the 100% receipt disposition - only
+			// these four buckets belong in the donut, matching the FS's quality split.
+			var DONUT_BUCKETS = ["Accepted", "Rejected", "Sample", "Under Inspection"];
+			var aDonutRows = (aRows || []).filter(function (r) {
+				return DONUT_BUCKETS.indexOf(r.Bucket) !== -1;
+			});
 			var fRej = num(fRejectionPct);
 
 			return Object.assign({}, baseOption(ctx), {
 				tooltip: Object.assign({
 					trigger: "item",
 					valueFormatter: function (v) {
-						return formatter.compact(v) + " (base UoM)";
+						return formatter.fmtQ(v) + " " + (ctx.uom || "base UoM");
 					}
 				}, tooltipStyle(pal)),
 				legend: legend(pal, {
@@ -330,7 +339,7 @@ sap.ui.define([
 						scale: true,
 						scaleSize: 6
 					},
-					data: aRows.map(function (r) {
+					data: aDonutRows.map(function (r) {
 						return {
 							name: r.Bucket,
 							value: Math.round(num(r.Qty)),
@@ -438,8 +447,8 @@ sap.ui.define([
 						return "<b>" + (oRow.VendorName || oRow.Vendor || "") + "</b>" +
 							"<br/>Vendor <b>" + (oRow.Vendor || formatter.NO_VALUE) + "</b>" +
 							"<br/>GRN value <b>" + formatter.money(oRow.Value) + "</b>" +
-							"<br/>GRN qty <b>" + formatter.compact(oRow.Qty) + "</b>" +
-							"<br/>Net qty <b>" + formatter.compact(oRow.NetQty) + "</b>" +
+							"<br/>GRN qty <b>" + formatter.fmtQ(oRow.Qty) + " " + (ctx.uom || "") + "</b>" +
+							"<br/>Net qty <b>" + formatter.fmtQ(oRow.NetQty) + " " + (ctx.uom || "") + "</b>" +
 							"<br/>Rejection <b>" + formatter.percent(oRow.RejPct) + "</b>" +
 							"<br/>Rework <b>" + formatter.percent(oRow.ReworkPct, 1) + "</b>" +
 							"<br/>Score <b>" + formatter.count(oRow.Score) + "</b>";
@@ -651,13 +660,27 @@ sap.ui.define([
 			var pal = ctx.pal;
 			var aWheel = [pal.accent, pal.pos, pal.alt, pal.warn, pal.accent2];
 
+			// GrandTotal is the sum across every material in scope, before the top-20
+			// cut, denormalised onto each row - dividing by it (rather than ECharts'
+			// own percent, which is relative only to this pie's 20 slices) gives the
+			// true "% of total value" across the whole filter scope.
+			var fGrandTotal = aRows.length ? num(aRows[0].GrandTotal) : 0;
+			if (!fGrandTotal) {
+				fGrandTotal = aRows.reduce(function (a, r) {
+					return a + num(r.Value);
+				}, 0);
+			}
+			function pctOfTotal(v) {
+				return fGrandTotal ? (num(v) / fGrandTotal * 100) : 0;
+			}
+
 			return Object.assign({}, baseOption(ctx), {
 				tooltip: Object.assign({
 					trigger: "item",
 					formatter: function (o) {
 						var oRow = aRows[o.dataIndex] || {};
 						return "<b>" + o.name + "</b><br/>" + (oRow.Material || "") +
-							"<br/>" + formatter.money(o.value) + " " + formatter.MIDDOT + " " + o.percent + "%";
+							"<br/>" + formatter.money(o.value) + " " + formatter.MIDDOT + " " + pctOfTotal(o.value).toFixed(2) + "%";
 					}
 				}, tooltipStyle(pal)),
 				legend: {
@@ -681,7 +704,7 @@ sap.ui.define([
 						fontSize: 10,
 						lineHeight: 12,
 						formatter: function (o) {
-							return "{n|" + o.name + "}\n{v|" + formatter.money(o.value) + " " + formatter.MIDDOT + " " + o.percent.toFixed(2) + "%}";
+							return "{n|" + o.name + "}\n{v|" + formatter.money(o.value) + " " + formatter.MIDDOT + " " + pctOfTotal(o.value).toFixed(2) + "%}";
 						},
 						rich: {
 							n: {
@@ -858,7 +881,7 @@ sap.ui.define([
 
 		/**
 		 * Materials with the highest rejection rate — rejected quantity as bars, rate as a
-		 * scatter on a secondary axis, against the 2% target as a dashed mark line.
+		 * scatter on a secondary axis.
 		 * @param {object[]} aRows MaterialRejWorst10 entity rows
 		 * @param {object} ctx {echarts, pal, animate}
 		 * @returns {object} ECharts option
@@ -889,9 +912,8 @@ sap.ui.define([
 						var oRow = aData[aParams[0].dataIndex] || {};
 						return "<b>" + (oRow.MaterialName || oRow.Material || "") + "</b>" +
 							"<br/>Material <b>" + (oRow.Material || formatter.NO_VALUE) + "</b>" +
-							"<br/>Rejected <b>" + formatter.compact(oRow.RejQty) + "</b>" +
-							"<br/>Rate <b>" + formatter.percent(oRow.RejPct) + "</b>" +
-							"<br/>Target <b>" + TARGET_REJECTION_PCT.toFixed(1) + "%</b>";
+							"<br/>Rejected <b>" + formatter.fmtQ(oRow.RejQty) + " " + (ctx.uom || "") + "</b>" +
+							"<br/>Rate <b>" + formatter.percent(oRow.RejPct) + "</b>";
 					}
 				}, tooltipStyle(pal)),
 				xAxis: [
@@ -965,26 +987,6 @@ sap.ui.define([
 					}),
 					itemStyle: {
 						color: pal.neg
-					},
-					markLine: {
-						silent: true,
-						symbol: "none",
-						lineStyle: {
-							color: pal.ink3,
-							type: "dashed",
-							width: 1
-						},
-						label: {
-							show: true,
-							position: "insideEndTop",
-							distance: 4,
-							formatter: "target " + TARGET_REJECTION_PCT.toFixed(1) + "%",
-							color: pal.ink3,
-							fontSize: 9
-						},
-						data: [{
-							xAxis: TARGET_REJECTION_PCT
-						}]
 					}
 				}]
 			});

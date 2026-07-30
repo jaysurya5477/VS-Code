@@ -26,7 +26,9 @@ CLASS zcl_grn_dash_vendor_score_qry IMPLEMENTATION.
           lv_vendor   TYPE string,
           lv_material TYPE string,
           lv_plant    TYPE string,
-          lv_doctype  TYPE string.
+          lv_doctype  TYPE string,
+          lv_rankdir  TYPE string,
+          lv_uom      TYPE string.
 
     LOOP AT io_request->get_parameters( ) INTO DATA(ls_param).
       CASE to_upper( ls_param-parameter_name ).
@@ -36,16 +38,20 @@ CLASS zcl_grn_dash_vendor_score_qry IMPLEMENTATION.
         WHEN 'P_MATERIAL'. lv_material = ls_param-value.
         WHEN 'P_PLANT'.    lv_plant    = ls_param-value.
         WHEN 'P_DOCTYPE'.  lv_doctype  = ls_param-value.
+        WHEN 'P_RANKDIR'.  lv_rankdir  = to_upper( ls_param-value ).
+        WHEN 'P_UOM'.      lv_uom      = ls_param-value.
       ENDCASE.
     ENDLOOP.
 
     DATA(ls_filters) = VALUE zcl_grn_dash_query=>ty_filters(
-      date_from = lv_datefrom
-      date_to   = lv_dateto
-      vendor    = CORRESPONDING #( csv_to_range( lv_vendor ) )
-      material  = CORRESPONDING #( csv_to_range( lv_material ) )
-      plant     = CORRESPONDING #( csv_to_range( lv_plant ) )
-      doc_type  = CORRESPONDING #( csv_to_range( lv_doctype ) ) ).
+      date_from       = lv_datefrom
+      date_to         = lv_dateto
+      vendor          = CORRESPONDING #( csv_to_range( lv_vendor ) )
+      material        = CORRESPONDING #( csv_to_range( lv_material ) )
+      plant           = CORRESPONDING #( csv_to_range( lv_plant ) )
+      doc_type        = CORRESPONDING #( csv_to_range( lv_doctype ) )
+      vendor_rank_dir = lv_rankdir
+      uom             = CORRESPONDING #( csv_to_range( lv_uom ) ) ).
 
     DATA(ls_dash) = zcl_grn_dash_query=>get_dashboard_data( ls_filters ).
 
@@ -56,6 +62,7 @@ CLASS zcl_grn_dash_vendor_score_qry IMPLEMENTATION.
                         qty        = ls-qty
                         netqty     = ls-net_qty
                         value      = ls-value
+                        rejqty     = ls-rej_qty
                         rejpct     = ls-rej_pct
                         reworkpct  = ls-rework_pct
                         score      = ls-score ) ).

@@ -67,6 +67,32 @@ sap.ui.define([], function () {
 		},
 
 		/**
+		 * Indian short-scale abbreviation with the unit spelled out, for quantities.
+		 * Distinct from compact()'s "Cr"/"L" so a quantity in LTR is never misread as
+		 * the "L" abbreviation for lakh.
+		 * @param {number|string} v raw number
+		 * @returns {string} e.g. "2.34 crore", "15.60 lakh", "8.2k", "-940"
+		 */
+		fmtQ: function (v) {
+			var n = parseFloat(v);
+			if (!isFinite(n)) {
+				return NO_VALUE;
+			}
+			var a = Math.abs(n);
+			var s = n < 0 ? "-" : "";
+			if (a >= 1e7) {
+				return s + (a / 1e7).toFixed(2) + " crore";
+			}
+			if (a >= 1e5) {
+				return s + (a / 1e5).toFixed(2) + " lakh";
+			}
+			if (a >= 1e3) {
+				return s + (a / 1e3).toFixed(1) + "k";
+			}
+			return s + Math.round(a).toLocaleString("en-IN");
+		},
+
+		/**
 		 * Percentage with fixed decimals, no sign forced.
 		 * @param {number|string} v the percentage (already x100, i.e. 2.4 means 2.4%)
 		 * @param {number} [iDecimals=2] decimal places

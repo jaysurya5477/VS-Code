@@ -10,7 +10,8 @@ define custom entity ZMM_GRN_DASH_MAT_REJ_WORST10
     P_Vendor   : zmm_grn_dash_flt,
     P_Material : zmm_grn_dash_flt,
     P_Plant    : zmm_grn_dash_flt,
-    P_DocType  : zmm_grn_dash_flt
+    P_DocType  : zmm_grn_dash_flt,
+    P_Uom      : zmm_grn_dash_flt
 {
   key Material     : matnr;
       MaterialName : txz01;

@@ -55,6 +55,7 @@ define view ZMMD_GRN_MVT_CDS
 
       p.matnr as matnr,
       p.werks as werks,
+      p.meins as meins,     // material base UoM - EKPO already in scope, no new join
       k.lifnr as lifnr,
       k.bsart as bsart,
 

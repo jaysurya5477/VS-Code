@@ -440,6 +440,62 @@
 	min-width: 60px;
 }
 
+/* Always-on per-UoM breakdown, shared by KpiCard and QualCard - quantities are
+   never summed across UoMs, so this is the one place a card shows every base
+   UoM at once regardless of the dashboard's UoM picker selection. */
+.grnUomBreakdown {
+	display: flex;
+	flex-direction: column;
+	margin-top: 10px;
+}
+
+.grnUomRow {
+	display: grid;
+	grid-template-columns: 44px 1fr auto;
+	gap: 9px;
+	align-items: center;
+	padding: 5px 0;
+	border-bottom: 1px solid var(--grn-line2);
+}
+
+.grnUomRow--flat {
+	grid-template-columns: 40px 1fr;
+}
+
+.grnUomRow:last-child {
+	border-bottom: none;
+}
+
+.grnUomCode {
+	font-family: var(--grn-mono);
+	font-size: 10px;
+	letter-spacing: .06em;
+	color: var(--grn-ink3);
+}
+
+.grnUomBar {
+	height: 5px;
+	border-radius: 3px;
+	background: var(--grn-line2);
+	overflow: hidden;
+}
+
+.grnUomBarFill {
+	height: 100%;
+	border-radius: 3px;
+	background: var(--grn-tone, var(--grn-accent));
+}
+
+.grnUomQty {
+	font-family: var(--grn-mono);
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--grn-ink);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	text-align: right;
+}
+
 /* ----------------------------------------------------- quality bucket cards --- */
 
 .grnQualCard {
@@ -563,6 +619,11 @@
 	font-variant-numeric: tabular-nums;
 }
 
+.grnRatioFlag {
+	font-size: 10.5px;
+	color: var(--grn-tone, var(--grn-ink3));
+}
+
 .grnRatioNote {
 	font-size: 10.5px;
 	color: var(--grn-ink3);
@@ -574,7 +635,7 @@
 	padding-bottom: 16px;
 }
 
-/* The seven columns only fit above ~860px; below that the table scrolls sideways
+/* The eight columns only fit above ~940px; below that the table scrolls sideways
    rather than crushing the numbers. */
 .grnScoreScroll {
 	overflow-x: auto;
@@ -582,13 +643,13 @@
 }
 
 .grnScoreTable {
-	min-width: 860px;
+	min-width: 940px;
 }
 
 .grnScoreHead,
 .grnScoreRow {
 	display: grid;
-	grid-template-columns: 1.7fr .9fr .9fr 1fr 1fr 1fr 1.4fr;
+	grid-template-columns: 1.7fr .9fr .9fr 1fr .9fr 1fr 1fr 1.4fr;
 	gap: 8px;
 }
 

@@ -109,6 +109,18 @@
 						</MultiComboBox>
 					</VBox>
 
+					<VBox class="grnField">
+						<Label text="{i18n>filterUom}" labelFor="uomToggle" class="grnFieldLabel"/>
+						<Select
+							id="uomToggle"
+							width="100%"
+							selectedKey="{dash>/uomFilter}"
+							items="{dash>/uomOptions}"
+							change=".onUomSelect">
+							<core:Item key="{dash>key}" text="{dash>text}"/>
+						</Select>
+					</VBox>
+
 					<VBox class="grnField grnField--actions">
 						<HBox class="grnFilterActions">
 							<Button
@@ -153,7 +165,8 @@
 					unit="{dash>unit}"
 					deltaText="{dash>deltaText}"
 					deltaNote="{i18n>vsPriorPeriod}"
-					deltaTone="{dash>deltaTone}">
+					deltaTone="{dash>deltaTone}"
+					breakdown="{dash>breakdown}">
 					<viz:spark>
 						<viz:EChart option="{dash>spark}" height="2.875rem"/>
 					</viz:spark>
@@ -169,7 +182,8 @@
 					shareText="{dash>shareText}"
 					sharePct="{dash>sharePct}"
 					tone="{dash>tone}"
-					negative="{dash>negative}"/>
+					negative="{dash>negative}"
+					breakdown="{dash>breakdown}"/>
 			</viz:Box>
 
 			<!-- ========================== Ratio strip ========================== -->
@@ -257,7 +271,15 @@
 					columns="{dash>/scorecardColumns}"
 					rows="{dash>/scorecard}"
 					noDataText="{i18n>noDataScorecard}"
-					rowPress=".onScorecardRowPress"/>
+					rowPress=".onScorecardRowPress">
+					<viz:actions>
+						<viz:Toggle
+							id="vendorRankToggle"
+							items="{dash>/rankOptions}"
+							selectedKey="{dash>/vendorRankDir}"
+							select=".onVendorRankSelect"/>
+					</viz:actions>
+				</viz:Scorecard>
 
 			</viz:Box>
 

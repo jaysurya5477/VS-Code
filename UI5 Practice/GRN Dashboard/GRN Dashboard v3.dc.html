@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{--bg:#f4f6f8;--panel:#ffffff;--panel2:#fafbfc;--line:#e2e6ea;--line2:#eef1f4;--ink:#1c2330;--ink2:#5b6676;--ink3:#8b95a3;--accent:#1a6fb5;--accent-soft:#e8f1f9;--pos:#12836b;--neg:#c0392f;--warn:#c07d16;--alt:#6a55b8;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);--field:#ffffff}
+:root[data-theme="dark"]{--bg:#0d1117;--panel:#151b22;--panel2:#121820;--line:#242c36;--line2:#1c232c;--ink:#e8ecf1;--ink2:#9aa5b2;--ink3:#6d7885;--accent:#4da3e8;--accent-soft:#16283a;--pos:#3fbf9c;--neg:#ef6f66;--warn:#e0a437;--alt:#9b86ee;--shadow:0 1px 2px rgba(0,0,0,.5);--field:#0f151c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1117;--panel:#151b22;--panel2:#121820;--line:#242c36;--line2:#1c232c;--ink:#e8ecf1;--ink2:#9aa5b2;--ink3:#6d7885;--accent:#4da3e8;--accent-soft:#16283a;--pos:#3fbf9c;--neg:#ef6f66;--warn:#e0a437;--alt:#9b86ee;--shadow:0 1px 2px rgba(0,0,0,.5);--field:#0f151c}}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{color:var(--ink)}
+*{box-sizing:border-box}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:var(--bg);padding:0 0 40px">
+
+  <div style="background:var(--panel);border-bottom:1px solid var(--line);padding:14px 26px 0">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h1 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em;color:var(--ink)">Goods Receipt (GRN) Analysis</h1>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line);background:var(--accent-soft);padding:3px 7px;border-radius:4px">MM · Materials Management</span>
+        </div>
+        <p style="margin:0;font-size:12px;color:var(--ink2)">101 Receipt · 102 Receipt reversal · Z22 Rework · STO doc types excluded at source · 102 posted negative · <strong style="font-weight:600;color:var(--ink)">quantities reported per base UoM, never summed across UoMs · value split by the UoM group of the material</strong></p>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px">
+          <sc-for list="{{ themeBtns }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.pick }}" style="border:none;background:{{ t.bg }};color:{{ t.fg }};font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:6px 10px;border-radius:5px;cursor:pointer">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <button onClick="{{ reset }}" style="background:var(--panel2);border:1px solid var(--line);color:var(--ink2);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:8px 12px;border-radius:7px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent)">Reset</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:14px 0 14px;position:relative;z-index:40">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
+        <div style="position:relative;display:flex;flex-direction:column;gap:4px;min-width:148px">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)">{{ f.label }}</label>
+          <button onClick="{{ f.toggle }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:148px;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;cursor:pointer;text-align:left" style-hover="border-color:var(--accent)">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px">{{ f.summary }}</span>
+            <span style="color:var(--ink3);font-size:8px">▼</span>
+          </button>
+          <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:100%;left:0;margin-top:5px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 34px rgba(16,24,40,.16);padding:5px;min-width:250px;max-height:300px;overflow:auto;z-index:60;animation:rise .13s ease-out">
+              <sc-if value="{{ f.searchable }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:5px;padding:3px 3px 6px;position:sticky;top:-5px;background:var(--panel);border-bottom:1px solid var(--line2);margin-bottom:4px">
+                  <input value="{{ f.query }}" onChange="{{ f.onQuery }}" onClick="{{ f.stop }}" placeholder="Search…" style="width:100%;background:var(--field);border:1px solid var(--line);border-radius:5px;padding:6px 8px;color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:12px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink3)">
+                    <span>{{ f.count }}</span>
+                    <span style="display:flex;gap:8px">
+                      <button onClick="{{ f.selectAll }}" style="border:none;background:transparent;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0">Select all</button>
+                      <button onClick="{{ f.clearAll }}" style="border:none;background:transparent;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0">Clear</button>
+                    </span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                <div onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--ink2)" style-hover="background:var(--accent-soft);color:var(--ink)">
+                  <span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;background:{{ o.box }}">{{ o.mark }}</span>
+                  <span>{{ o.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)">Quantity UoM (all qty panels · not KPI tables)</label>
+        <div style="display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px;height:35px;align-items:center">
+          <sc-for list="{{ uomBtns }}" as="u" hint-placeholder-count="5">
+            <button onClick="{{ u.pick }}" style="border:none;background:{{ u.bg }};color:{{ u.fg }};font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;padding:6px 9px;border-radius:5px;cursor:pointer">{{ u.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)">GRN Date (overrides Year / Month)</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="date" value="{{ dateFrom }}" onChange="{{ setFrom }}" style="background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 9px;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11.5px">
+          <span style="color:var(--ink3);font-size:11px">→</span>
+          <input type="date" value="{{ dateTo }}" onChange="{{ setTo }}" style="background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 9px;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11.5px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:16px 26px 0;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink3);flex-wrap:wrap">
+    <span style="color:var(--accent);letter-spacing:.1em">SCOPE</span><span>{{ scope }}</span>
+  </div>
+
+  <div style="padding:12px 26px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;align-items:stretch">
+    <sc-for list="{{ heroes }}" as="k" hint-placeholder-count="4">
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:15px 16px 12px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--ink2)">{{ k.label }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);border:1px solid var(--line);border-radius:3px;padding:2px 5px;white-space:nowrap">{{ k.mvt }}</div>
+        </div>
+
+        <sc-if value="{{ k.isQty }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:12px">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font-size:31px;font-weight:600;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap">{{ k.headline }}</div>
+              <span style="font-size:10.5px;color:var(--ink3)">{{ k.headlineNote }}</span>
+            </div>
+            <div ref="{{ k.spark }}" style="flex:0 1 112px;min-width:60px;height:46px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;margin-top:10px">
+            <sc-for list="{{ k.uoms }}" as="u" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:44px 1fr auto;gap:9px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--ink3)">{{ u.uom }}</span>
+                <div style="height:5px;border-radius:3px;background:var(--line2);overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ u.pct }};background:{{ k.color }}"></div></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.qty }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size:10.5px;color:var(--ink3);margin-top:8px">{{ k.foot }}</span>
+        </sc-if>
+
+        <sc-if value="{{ k.isValue }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:12px">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font-size:31px;font-weight:600;letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap">{{ k.value }}</div>
+              <sc-if value="{{ k.hasDelta }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:7px;white-space:nowrap">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:{{ k.deltaColor }};background:{{ k.deltaBg }};border-radius:4px;padding:2px 6px">{{ k.delta }}</span>
+                  <span style="font-size:10.5px;color:var(--ink3);white-space:nowrap">{{ k.deltaNote }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ k.hasNote }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:10.5px;color:var(--ink3)">{{ k.note }}</span>
+              </sc-if>
+            </div>
+            <div ref="{{ k.spark }}" style="flex:0 1 112px;min-width:60px;height:46px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;margin-top:10px">
+            <div style="display:grid;grid-template-columns:44px 1fr auto;gap:9px;padding-bottom:4px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">
+              <span>UoM</span><span></span><span>Value</span>
+            </div>
+            <sc-for list="{{ k.uoms }}" as="u" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:44px 1fr auto;gap:9px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--ink3)">{{ u.uom }}</span>
+                <div style="height:5px;border-radius:3px;background:var(--line2);overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ u.pct }};background:{{ k.color }}"></div></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.qty }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="padding:12px 26px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px;align-items:stretch">
+    <sc-for list="{{ quals }}" as="k" hint-placeholder-count="5">
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:13px 15px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="width:8px;height:8px;border-radius:2px;background:{{ k.color }}"></span>
+            <span style="font-size:11.5px;font-weight:600;color:var(--ink2)">{{ k.label }}</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3)">{{ k.mvt }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
+          <div style="font-size:20px;font-weight:600;letter-spacing:-.02em;color:{{ k.valueColor }};font-variant-numeric:tabular-nums">{{ k.share }}</div>
+          <div style="font-size:10.5px;color:var(--ink3)">{{ k.shareNote }}</div>
+        </div>
+        <div style="height:5px;border-radius:3px;background:var(--line2);margin-top:8px;overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ k.barW }};background:{{ k.color }}"></div></div>
+        <div style="display:flex;flex-direction:column;margin-top:9px">
+          <div style="display:grid;grid-template-columns:40px 1fr;gap:8px;padding-bottom:4px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">
+            <span>UoM</span><span style="text-align:right">Quantity</span>
+          </div>
+          <sc-for list="{{ k.uoms }}" as="u" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line2)">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;color:var(--ink3)">{{ u.uom }}</span>
+              <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ k.valueColor }};font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.qty }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="padding:12px 26px 0">
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr))">
+      <sc-for list="{{ ratios }}" as="r" hint-placeholder-count="4">
+        <div style="padding:12px 16px;border-right:1px solid var(--line2);display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink3)">{{ r.label }}</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-size:17px;font-weight:600;color:{{ r.color }};font-variant-numeric:tabular-nums">{{ r.value }}</span>
+            <span style="font-size:10.5px;color:{{ r.flagColor }}">{{ r.flag }}</span>
+          </div>
+          <span style="font-size:10.5px;color:var(--ink3)">{{ r.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="padding:12px 26px 0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px">
+
+    <div style="grid-column:span 8;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:600">Receipt flow over time</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">{{ trendSub }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px">
+            <sc-for list="{{ modeBtns }}" as="m" hint-placeholder-count="2">
+              <button onClick="{{ m.pick }}" style="border:none;background:{{ m.bg }};color:{{ m.fg }};font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;border-radius:5px;cursor:pointer;white-space:nowrap">{{ m.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div ref="{{ rTrend }}" style="width:100%;height:296px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 4;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="font-size:14px;font-weight:600">Quality disposition</div>
+      <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">{{ qualitySub }}</div>
+      <div ref="{{ rQuality }}" style="width:100%;height:296px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 6;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600">Top vendors by GRN value</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">Net receipt value · rejection rate (of inspected qty) on the secondary axis</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);white-space:nowrap;flex:none">TOP 10</div>
+      </div>
+      <div ref="{{ rVendorBar }}" style="width:100%;height:340px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 6;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="font-size:14px;font-weight:600">Quality composition · top 10 plants</div>
+      <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">Share of receipt quantity by disposition, per plant · shares sum to 100%</div>
+      <div ref="{{ rPlant }}" style="width:100%;height:340px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600">Top 20 materials by GRN value</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">Share of net receipt value · labels lead out to both sides · hover a slice for its exact share</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);white-space:nowrap;flex:none">TOP 20</div>
+      </div>
+      <div ref="{{ rRates }}" style="width:100%;height:520px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600">GRN value by PO document type</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">All doc types ranked high → low, darker = higher value · drag the slider or scroll to move through the tail · STO excluded</div>
+        </div>
+        <button onClick="{{ zoomReset }}" style="background:var(--panel2);border:1px solid var(--line);color:var(--ink2);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;flex:none" style-hover="border-color:var(--accent);color:var(--accent)">Reset view</button>
+      </div>
+      <div ref="{{ rDocType }}" style="width:100%;height:430px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600">Materials with highest rejection rate</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">{{ matRejSub }}</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);white-space:nowrap;flex:none">WORST 10</div>
+      </div>
+      <div ref="{{ rMatRej }}" style="width:100%;height:300px;margin-top:6px"></div>
+    </div>
+
+    <div style="grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:600">Vendor scorecard</div>
+          <div style="font-size:11.5px;color:var(--ink2);margin-top:3px">{{ scoreSub }}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:3px">{{ spreadNote }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none">
+          <div style="display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px">
+            <sc-for list="{{ rankBtns }}" as="b" hint-placeholder-count="2">
+              <button onClick="{{ b.pick }}" style="border:none;background:{{ b.bg }};color:{{ b.fg }};font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;border-radius:5px;cursor:pointer;white-space:nowrap">{{ b.label }}</button>
+            </sc-for>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);white-space:nowrap">{{ rankLabel }}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.6fr .85fr .85fr .95fr .9fr .8fr .8fr 1.3fr;gap:8px;padding:0 8px 8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line)">
+        <div>Vendor</div><div style="text-align:right">{{ qtyColHead }}</div><div style="text-align:right">{{ netColHead }}</div><div style="text-align:right">GRN Value</div><div style="text-align:right">{{ rejQtyColHead }}</div><div style="text-align:right">Rej. rate</div><div style="text-align:right;padding-right:10px">Rework</div>
+        <div style="display:flex;align-items:center;gap:6px">Score<span title="{{ scoreFormula }}" style="width:12px;height:12px;border-radius:50%;border:1px solid var(--line);color:var(--ink3);font-size:8px;display:flex;align-items:center;justify-content:center;cursor:help;letter-spacing:0">i</span></div>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div onClick="{{ r.pick }}" style="display:grid;grid-template-columns:1.6fr .85fr .85fr .95fr .9fr .8fr .8fr 1.3fr;gap:8px;align-items:center;padding:9px 8px;border-bottom:1px solid var(--line2);font-size:12.5px;cursor:pointer;font-variant-numeric:tabular-nums" style-hover="background:var(--accent-soft)">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.dot }}"></span>{{ r.name }}</div>
+          <div style="text-align:right;font-family:'IBM Plex Mono',monospace">{{ r.qty }}</div>
+          <div style="text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--ink2)">{{ r.net }}</div>
+          <div style="text-align:right;font-family:'IBM Plex Mono',monospace">{{ r.value }}</div>
+          <div style="text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--ink2)">{{ r.rejQty }}</div>
+          <div style="text-align:right;font-family:'IBM Plex Mono',monospace;color:{{ r.rejColor }}">{{ r.rej }}</div>
+          <div style="text-align:right;padding-right:10px;font-family:'IBM Plex Mono',monospace;color:var(--ink2)">{{ r.rework }}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:6px;border-radius:3px;background:var(--line2);overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ r.scorePct }};background:{{ r.dot }}"></div></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink2);width:28px;text-align:right">{{ r.score }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;system&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1a6fb5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#1a6fb5&quot;,&quot;#0f766e&quot;,&quot;#4f46e5&quot;,&quot;#b45309&quot;]},&quot;rejTarget&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:2,&quot;min&quot;:0,&quot;max&quot;:10,&quot;step&quot;:0.5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Targets&quot;},&quot;reworkTarget&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:4,&quot;min&quot;:0,&quot;max&quot;:15,&quot;step&quot;:0.5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Targets&quot;},&quot;animate&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+const VENDORS=['Aurora Polymers','Krishna Steelworks','Nordic Fine Chem','Sahyadri Packaging','Vertex Components','Meridian Alloys','Bluecrest Resins','Trident Fasteners','Deccan Castings','Orbit Elastomers','Sterling Wireworks','Pinnacle Coatings','Harbour Logistics','Everline Plastics'];
+const MATERIALS=['Resin granules','CR steel coil','Solvent base','Corrugated cartons','Machined housings','Fastener kits','HR steel plate','Aluminium ingot','Copper busbar','Pigment masterbatch','PP woven sacks','Stretch film','Gasket sheets','Bearing sets','Hydraulic hose','Wiring harness','Label rolls','Adhesive resin','Zinc anodes','Filter cartridges','Brass valves','Steel wire rod'];
+const PLANTS=['1010 · Pune','1020 · Nashik','1030 · Baddi','1040 · Vizag','1050 · Halol','1060 · Hosur','1070 · Dahej','1080 · Kolkata','1090 · Jaipur','1100 · Indore','1110 · Rudrapur'];
+const UOMS=[['EA','Each'],['NOS','Numbers'],['KG','Kilogram'],['MTR','Metre'],['LTR','Litre']];
+const POTYPES=(()=>{
+  const g=[['NB','Standard PO'],['FO','Framework order'],['UB','Stock transport'],['LP','Scheduling agr.'],['ZI','Import PO'],['ZJ','Jobwork PO'],['ZS','Service PO'],['ZC','Capex PO'],['ZR','Rate contract'],['ZT','Trading PO'],['ZP','Project PO'],['ZM','MRO PO'],['ZK','Consignment'],['ZA','Asset PO'],['ZF','Freight PO'],['ZL','Local purchase'],['ZE','Export packing'],['ZD','Direct dispatch'],['ZG','Gov. supply'],['ZQ','Quality sample']];
+  const out=[];g.forEach(([c,n])=>{for(let k=1;k<=3;k++){out.push(c+String(k).padStart(2,'0')+' · '+n+(k>1?' '+k:''))}});
+  return out;
+})();
+const YEARS=['2026','2025','2024','2023'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+// currency: Indian short scale, kept for ₹ only
+function fmtV(n){const a=Math.abs(n),s=n<0?'-':'';if(a>=1e7)return s+(a/1e7).toFixed(2)+' Cr';if(a>=1e5)return s+(a/1e5).toFixed(2)+' L';if(a>=1e3)return s+(a/1e3).toFixed(1)+'k';return s+Math.round(a).toLocaleString('en-IN')}
+// quantity: spelled out so "L" is never read as litres
+function fmtQ(n){const a=Math.abs(n),s=n<0?'-':'';if(a>=1e7)return s+(a/1e7).toFixed(2)+' crore';if(a>=1e5)return s+(a/1e5).toFixed(2)+' lakh';if(a>=1e3)return s+(a/1e3).toFixed(1)+'k';return s+Math.round(a).toLocaleString('en-IN')}
+function pct(n){return (n>=0?'+':'')+n.toFixed(1)+'%'}
+function pctSmall(n){if(n>0&&n<0.05)return'<0.1%';return n.toFixed(1)+'%'}
+function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+function mix(a,b,t){const x=hex2rgb(a),y=hex2rgb(b);return'#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('')}
+
+class Component extends DCLogic{
+  state={open:null,theme:'system',sel:{vendor:[],material:[],plant:[],potype:[],year:'2026',month:[]},from:'',to:''};
+  refs={trend:React.createRef(),quality:React.createRef(),vendorBar:React.createRef(),plant:React.createRef(),rates:React.createRef(),docType:React.createRef(),matRej:React.createRef(),sparks:Array.from({length:4},()=>React.createRef())};
+  charts={};
+
+  componentDidMount(){
+    this._onDoc=()=>{if(this.state.open)this.setState({open:null})};
+    document.addEventListener('click',this._onDoc);
+    this._onRz=()=>{Object.values(this.charts).forEach(c=>c&&c.resize&&c.resize());clearTimeout(this._rzT);this._rzT=setTimeout(()=>{if(window.echarts)this.draw()},180)};
+    window.addEventListener('resize',this._onRz);
+    this._mq=window.matchMedia('(prefers-color-scheme: dark)');
+    this._onMq=()=>{if(this.theme()==='system')this.draw()};
+    this._mq.addEventListener('change',this._onMq);
+    this.applyTheme();
+    const wait=()=>{if(window.echarts&&this.refs.trend.current){this.draw()}else{this._t=setTimeout(wait,80)}};wait();
+  }
+  componentDidUpdate(){this.applyTheme();if(window.echarts)this.draw()}
+  componentWillUnmount(){document.removeEventListener('click',this._onDoc);window.removeEventListener('resize',this._onRz);this._mq.removeEventListener('change',this._onMq);clearTimeout(this._t)}
+
+  theme(){return this.state.userTheme||this.props.theme||this.state.theme}
+  applyTheme(){const t=this.theme();const r=document.documentElement;if(t==='system')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t)}
+  v(name,fallback){const c=getComputedStyle(document.documentElement).getPropertyValue(name).trim();return c||fallback}
+  pal(){return{accent:this.props.accent||this.v('--accent','#1a6fb5'),pos:this.v('--pos','#12836b'),neg:this.v('--neg','#c0392f'),warn:this.v('--warn','#c07d16'),alt:this.v('--alt','#6a55b8'),ink:this.v('--ink','#1c2330'),ink2:this.v('--ink2','#5b6676'),ink3:this.v('--ink3','#8b95a3'),line:this.v('--line','#e2e6ea'),line2:this.v('--line2','#eef1f4'),panel:this.v('--panel','#fff')}}
+  rejTarget(){return this.props.rejTarget!=null?this.props.rejTarget:2.0}
+  reworkTarget(){return this.props.reworkTarget!=null?this.props.reworkTarget:4.0}
+
+  seed(){const s=this.state.sel;return hash([s.vendor.join(),s.material.join(),s.plant.join(),s.potype.join(),s.year,s.month.join(),this.state.from,this.state.to].join('|'))}
+
+  data(){
+    const s=this.state.sel,r=rng(this.seed());
+    const monthsOn=s.month.length?MONTHS.filter(m=>s.month.includes(m)):MONTHS;
+    const useDate=!!(this.state.from||this.state.to);
+    const months=useDate?monthsOn.slice(0,Math.max(3,Math.round(monthsOn.length*0.5))):monthsOn;
+    const vends=s.vendor.length?s.vendor:VENDORS;
+    const mats=s.material.length?s.material:MATERIALS;
+    const plants=s.plant.length?s.plant:PLANTS;
+    const types=s.potype.length?s.potype:POTYPES;
+    const scale=(vends.length/VENDORS.length)*(plants.length/PLANTS.length)*(mats.length/MATERIALS.length)*(types.length/POTYPES.length+0.15);
+    const yearBoost={'2026':1,'2025':.92,'2024':.81,'2023':.7}[s.year]||1;
+    const series=months.map((m,i)=>{
+      const base=(58000+r()*24000)*scale*yearBoost*(1+0.12*Math.sin(i/1.7));
+      const rev=-base*(0.02+r()*0.04);
+      const rework=base*(0.03+r()*0.045);
+      const rej=base*(0.011+r()*0.026);
+      const sample=base*(0.02+r()*0.028);
+      const insp=base*(0.015+r()*0.03);
+      const price=340+r()*180;
+      return{m,gross:base,rev,rework,rej,sample,insp,acc:base-rej-sample-insp,value:(base+rev)*price,price};
+    });
+    const sum=k=>series.reduce((a,b)=>a+b[k],0);
+    const gross=sum('gross'),rev=sum('rev'),rework=sum('rework'),rej=sum('rej'),sample=sum('sample'),insp=sum('insp'),accQ=sum('acc'),value=sum('value');
+    const netQty=gross+rev-rework;
+    const netValue=value*(netQty/Math.max(1,gross+rev));
+    // UoM mix — stable per filter scope; quantities are only ever reported inside a UoM
+    const uw=UOMS.map(([c,n])=>{const rr=rng(hash(c)+this.seed());return{uom:c,name:n,w:0.15+rr()}});
+    const wsum=uw.reduce((a,b)=>a+b.w,0);uw.forEach(u=>{u.wn=u.w/wsum});
+    const uwSorted=uw.slice().sort((a,b)=>b.wn-a.wn);
+    const uomSplit=t=>uwSorted.map(u=>({uom:u.uom,name:u.name,qty:t*u.wn,wn:u.wn}));
+    // value mix differs from qty mix — unit prices are not equal across UoM groups
+    const vwr=uwSorted.map(u=>{const rr=rng(hash(u.uom+'val')+this.seed());return{uom:u.uom,w:u.wn*(0.45+rr()*1.9)}});
+    const vsum=vwr.reduce((a,b)=>a+b.w,0);vwr.forEach(u=>{u.wn=u.w/vsum});
+    const vwSorted=vwr.slice().sort((a,b)=>b.wn-a.wn);
+    const valSplit=t=>vwSorted.map(u=>({uom:u.uom,value:t*u.wn,wn:u.wn}));
+    const vendorRows=vends.map(v=>{const rr=rng(hash(v)+this.seed());const q=(gross/vends.length)*(0.55+rr()*0.9);const rejr=0.4+rr()*4.2;const rwk=1.5+rr()*7;const val=q*(300+rr()*220);const score=Math.max(38,Math.min(98,Math.round(100-rejr*9-rwk*1.6+rr()*8)));return{name:v,qty:q,net:q*(1-rwk/100),value:val,rej:rejr,rework:rwk,score}}).sort((a,b)=>b.score-a.score);
+    return{months,series,plants,mats,vends,types,gross,rev,rework,rej,sample,insp,accQ,value,netQty,netValue,vendorRows,uw:uwSorted,uomSplit,valSplit};
+  }
+
+  uom(){const d=this._d||this.data();return this.state.uom||d.uw[0].uom}
+  uomWeight(d){const u=this.uom();const f=d.uw.find(x=>x.uom===u);return f?f.wn:1}
+
+  ax(o){const p=this.pal();const a={axisLine:{lineStyle:{color:p.line}},axisTick:{show:false},axisLabel:{color:p.ink2,fontFamily:'IBM Plex Mono',fontSize:10},splitLine:{lineStyle:{color:p.line2}}};
+    const m=Object.assign({},a,o);m.axisLabel=Object.assign({},a.axisLabel,o.axisLabel||{});m.splitLine=Object.assign({},a.splitLine,o.splitLine||{});return m}
+  tip(){const p=this.pal();return{backgroundColor:p.panel,borderColor:p.line,textStyle:{color:p.ink,fontFamily:'IBM Plex Sans',fontSize:12},extraCssText:'border-radius:8px;box-shadow:0 10px 26px rgba(16,24,40,.16)'}}
+  set(ref,opt){const el=ref.current;if(!el)return null;let c=window.echarts.getInstanceByDom(el);if(!c)c=window.echarts.init(el,null,{renderer:'canvas'});c.setOption(opt,true);return c}
+
+  draw(){
+    const d=this.data(),p=this.pal(),A=p.accent,animate=this.props.animate!==false;
+    this._d=d;
+    const U=this.uom(),uf=this.uomWeight(d);
+    const base={animation:animate,animationDuration:650,animationEasing:'cubicOut',textStyle:{fontFamily:'IBM Plex Sans'},tooltip:this.tip()};
+    const legend=extra=>Object.assign({textStyle:{color:p.ink2,fontSize:11},icon:'roundRect',itemWidth:9,itemHeight:9},extra);
+
+    const isQty=(this.state.mode||'qty')==='qty';
+    const unitFmt=v=>isQty?fmtQ(v)+' '+U:'₹'+fmtV(v);
+    const scaled=max=>{const a=Math.abs(max);const u=isQty?(a>=1e5?[1e5,' lakh']:a>=1e3?[1e3,'k']:[1,'']):(a>=1e7?[1e7,' Cr']:a>=1e5?[1e5,' L']:a>=1e3?[1e3,'k']:[1,'']);
+      return v=>(isQty?'':'₹')+(v/u[0]).toFixed(v%u[0]===0?0:1)+u[1]};
+    const qf=v=>Math.round(v*uf);
+    const recv=d.series.map(s=>isQty?qf(s.gross):Math.round(s.gross*s.price));
+    const revv=d.series.map(s=>isQty?qf(s.rev):Math.round(s.rev*s.price));
+    const rwkv=d.series.map(s=>isQty?qf(s.rework):Math.round(s.rework*s.price));
+    const netv=d.series.map((s,i)=>recv[i]+revv[i]-rwkv[i]);
+    this.charts.trend=this.set(this.refs.trend,Object.assign({},base,{
+      grid:{left:74,right:28,top:46,bottom:26},
+      legend:legend({data:['101 Receipt','102 Reversal','Z22 Rework','Net trend'],top:4,left:0}),
+      tooltip:Object.assign({trigger:'axis',axisPointer:{type:'cross',lineStyle:{color:p.line}},valueFormatter:unitFmt},this.tip()),
+      xAxis:this.ax({type:'category',data:d.months}),
+      yAxis:this.ax({type:'value',name:isQty?'Qty ('+U+')':'Value (₹)',nameGap:14,nameTextStyle:{color:p.ink3,fontSize:10,align:'right'},axisLabel:{formatter:scaled(Math.max.apply(null,recv))}}),
+      series:[
+        {name:'101 Receipt',type:'bar',stack:'q',data:recv,itemStyle:{color:new window.echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:A},{offset:1,color:A+'66'}]),borderRadius:[3,3,0,0]},barWidth:'46%'},
+        {name:'102 Reversal',type:'bar',stack:'q',data:revv,itemStyle:{color:p.neg,borderRadius:[0,0,3,3]}},
+        {name:'Z22 Rework',type:'bar',stack:'r',data:rwkv,itemStyle:{color:p.alt,borderRadius:[3,3,0,0]},barWidth:'18%'},
+        {name:'Net trend',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:netv,lineStyle:{width:2.4,color:p.warn},itemStyle:{color:p.warn,borderColor:p.panel,borderWidth:2}}
+      ]}));
+
+    const qtot=d.accQ+d.rej+d.sample+d.insp,rejRate=d.rej/Math.max(1,qtot)*100,tgt=this.rejTarget();
+    this.charts.quality=this.set(this.refs.quality,Object.assign({},base,{
+      tooltip:Object.assign({trigger:'item',formatter:x=>`<b>${x.name}</b><br/>${fmtQ(x.value)} ${U}<br/>${x.percent.toFixed(1)}% of gross qty`},this.tip()),
+      legend:legend({bottom:0,icon:'circle',itemWidth:8,itemHeight:8,itemGap:14}),
+      series:[{type:'pie',radius:['58%','80%'],center:['50%','44%'],padAngle:2,itemStyle:{borderRadius:6,borderColor:p.panel,borderWidth:2},label:{show:false},emphasis:{scale:true,scaleSize:6},
+        data:[{value:qf(d.accQ),name:'Accepted',itemStyle:{color:A}},{value:qf(d.rej),name:'Rejected',itemStyle:{color:p.neg}},{value:qf(d.sample),name:'Sample',itemStyle:{color:p.alt}},{value:qf(d.insp),name:'Under inspection',itemStyle:{color:p.warn}}]},
+        {type:'gauge',startAngle:210,endAngle:-30,min:0,max:8,radius:'53%',center:['50%','44%'],progress:{show:true,width:4,itemStyle:{color:rejRate>tgt?p.neg:p.pos}},axisLine:{lineStyle:{width:4,color:[[1,p.line2]]}},axisTick:{show:false},splitLine:{show:false},axisLabel:{show:false},pointer:{show:false},
+         detail:{valueAnimation:animate,offsetCenter:[0,'-6%'],formatter:v=>v.toFixed(2)+'%',color:p.ink,fontSize:23,fontFamily:'IBM Plex Mono',fontWeight:600},
+         title:{offsetCenter:[0,'34%'],color:p.ink3,fontSize:9,fontFamily:'IBM Plex Mono'},
+         data:[{value:rejRate,name:'REJ ÷ INSPECTED'}]}]}));
+
+    const vr=d.vendorRows.slice().sort((a,b)=>b.value-a.value).slice(0,10).sort((a,b)=>a.value-b.value);
+    this.charts.vendorBar=this.set(this.refs.vendorBar,Object.assign({},base,{
+      grid:{left:132,right:64,top:46,bottom:52},
+      legend:legend({data:['GRN Value','Rejection %'],bottom:0,left:'center'}),
+      tooltip:Object.assign({trigger:'axis',axisPointer:{type:'shadow'},formatter:ps=>ps.map(x=>x.seriesName==='GRN Value'?`${x.name}<br/>Value <b>₹${fmtV(x.value)}</b>`:`Rejection <b>${x.value.toFixed(2)}%</b> of inspected qty`).join('<br/>')},this.tip()),
+      xAxis:[this.ax({type:'value',splitNumber:2,axisLabel:{hideOverlap:true,formatter:v=>'₹'+fmtV(v)}}),
+             this.ax({type:'value',position:'top',max:6,splitNumber:3,name:'Rejection % of inspected',nameLocation:'end',nameGap:6,nameTextStyle:{color:p.neg,fontSize:10},splitLine:{show:false},axisLine:{show:false},axisLabel:{color:p.neg,formatter:v=>v+'%'}})],
+      yAxis:this.ax({type:'category',data:vr.map(v=>v.name),splitLine:{show:false},axisLabel:{color:p.ink2,fontFamily:'IBM Plex Sans',fontSize:11.5}}),
+      series:[
+        {name:'GRN Value',type:'bar',data:vr.map(v=>Math.round(v.value)),barWidth:'52%',itemStyle:{color:new window.echarts.graphic.LinearGradient(1,0,0,0,[{offset:0,color:A},{offset:1,color:A+'55'}]),borderRadius:[0,4,4,0]}},
+        {name:'Rejection %',type:'scatter',xAxisIndex:1,symbolSize:9,data:vr.map(v=>v.rej),itemStyle:{color:p.neg}}
+      ]}));
+
+    const disp=['Accepted','Rejected','Sample','Under inspection'],dcol=[A,p.neg,p.alt,p.warn];
+    const topPlants=d.plants.slice(0,10);
+    const pdata=topPlants.map(pl=>{const rr=rng(hash(pl)+this.seed());const a=88+rr()*7,rj=0.6+rr()*3,sa=1.5+rr()*3,ins=Math.max(1,100-a-rj-sa);return[a,rj,sa,ins]});
+    this.charts.plant=this.set(this.refs.plant,Object.assign({},base,{
+      grid:{left:104,right:22,top:34,bottom:26},
+      legend:legend({data:disp,top:0,right:0}),
+      tooltip:Object.assign({trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>v.toFixed(2)+'%'},this.tip()),
+      xAxis:this.ax({type:'value',max:100,axisLabel:{formatter:v=>v+'%'}}),
+      yAxis:this.ax({type:'category',data:topPlants,splitLine:{show:false},axisLabel:{color:p.ink2,fontFamily:'IBM Plex Sans',fontSize:11}}),
+      series:disp.map((n,i)=>({name:n,type:'bar',stack:'s',barWidth:'58%',data:pdata.map(x=>+x[i].toFixed(2)),itemStyle:{color:dcol[i],borderRadius:i===0?[4,0,0,4]:i===3?[0,4,4,0]:0},
+        label:i===0?{show:true,position:'insideLeft',color:'#fff',fontFamily:'IBM Plex Mono',fontSize:9.5,formatter:x=>x.value.toFixed(1)+'%'}:{show:false}}))}));
+
+    const mr=rng(this.seed()+91);
+    const matsAll=d.mats.map(m=>({name:m,value:Math.round(d.value/d.mats.length*(0.35+mr()*1.7))})).sort((a,b)=>b.value-a.value);
+    const matTotal=matsAll.reduce((a,b)=>a+b.value,0)||1;
+    const mats=matsAll.slice(0,20);
+    const wheel=[A,p.pos,p.alt,p.warn,p.neg];
+    this.charts.rates=this.set(this.refs.rates,Object.assign({},base,{
+      tooltip:Object.assign({trigger:'item',formatter:x=>`<b>${x.name}</b><br/>₹${fmtV(x.value)} · ${(x.value/matTotal*100).toFixed(2)}% of total value`},this.tip()),
+      legend:{show:false},
+      series:[{type:'pie',radius:'52%',center:['50%','48%'],minAngle:2,avoidLabelOverlap:true,itemStyle:{borderColor:p.panel,borderWidth:1.5},
+        label:{show:true,alignTo:'edge',edgeDistance:6,formatter:x=>`{n|${x.name}}\n{v|₹${fmtV(x.value)} · ${x.percent.toFixed(2)}%}`,color:p.ink2,fontSize:10,lineHeight:12,
+          rich:{n:{color:p.ink,fontSize:10,fontWeight:600,lineHeight:12},v:{color:p.ink3,fontFamily:'IBM Plex Mono',fontSize:9,lineHeight:12}}},
+        labelLine:{length:14,length2:14,maxSurfaceAngle:80,lineStyle:{color:p.line}},
+        labelLayout:()=>({hideOverlap:true}),
+        emphasis:{scale:true,scaleSize:6},
+        data:mats.map((m,i)=>Object.assign({},m,{itemStyle:{color:wheel[i%wheel.length],opacity:1-Math.floor(i/wheel.length)*0.14}}))}]}));
+
+    const tRank=d.types.map(t=>{const rr=rng(hash(t)+this.seed());return{name:t,w:0.5+rr()*1.2}});
+    const wSum=tRank.reduce((a,b)=>a+b.w,0);
+    const dtAll=tRank.map(t=>({name:t.name,value:Math.round(d.value*t.w/wSum)})).sort((a,b)=>b.value-a.value);
+    const dtTotal=dtAll.reduce((a,b)=>a+b.value,0)||1;
+    const dEl=this.refs.docType.current;
+    const dtBars=dtAll.map(t=>{const parts=t.name.split(' · ');return{code:parts[0],desc:parts[1],full:t.name,value:t.value}});
+    const bMax=dtBars[0]?dtBars[0].value:1,bMin=dtBars[dtBars.length-1]?dtBars[dtBars.length-1].value:0,bSpan=Math.max(1,bMax-bMin);
+    const dLight=mix(A,'#ffffff',0.78),dDeep=mix(A,'#000000',0.42);
+    const visibleBars=Math.max(12,Math.min(dtBars.length,Math.floor((dEl?dEl.clientWidth:400)/26)));
+    this.charts.docType=this.set(this.refs.docType,Object.assign({},base,{
+      grid:{left:66,right:22,top:16,bottom:visibleBars<dtBars.length?70:52},
+      tooltip:Object.assign({trigger:'axis',axisPointer:{type:'shadow'},formatter:ps=>{const t=dtBars[ps[0].dataIndex];return `<b>${t.full}</b><br/>₹${fmtV(t.value)} · ${(t.value/dtTotal*100).toFixed(2)}% of value<br/>Rank ${ps[0].dataIndex+1} of ${dtBars.length}`}},this.tip()),
+      xAxis:this.ax({type:'category',data:dtBars.map(t=>t.code),axisTick:{show:false},
+        axisLabel:{interval:0,rotate:52,margin:8,fontSize:9.5,fontFamily:'IBM Plex Mono',hideOverlap:true}}),
+      yAxis:this.ax({type:'value',splitNumber:4,axisLabel:{hideOverlap:true,formatter:v=>'₹'+fmtV(v)}}),
+      dataZoom:visibleBars<dtBars.length?[
+        {type:'inside',startValue:0,endValue:visibleBars-1,zoomOnMouseWheel:true,moveOnMouseMove:true},
+        {type:'slider',height:14,bottom:8,startValue:0,endValue:visibleBars-1,borderColor:p.line,backgroundColor:p.line2,
+         fillerColor:A+'26',handleStyle:{color:A,borderColor:A},moveHandleSize:4,
+         dataBackground:{lineStyle:{color:p.line},areaStyle:{color:p.line2}},
+         selectedDataBackground:{lineStyle:{color:A},areaStyle:{color:A+'33'}},
+         textStyle:{color:p.ink3,fontSize:9.5,fontFamily:'IBM Plex Mono'}}
+      ]:[],
+      series:[{type:'bar',barMaxWidth:34,barCategoryGap:'22%',
+        data:dtBars.map(t=>({value:t.value,itemStyle:{color:mix(dLight,dDeep,(t.value-bMin)/bSpan),borderRadius:[3,3,0,0]}}))}]}));
+
+    const rj=rng(this.seed()+53);
+    const mrej=d.mats.map(m=>{const rate=0.3+rj()*5.4;return{name:m,rate:+rate.toFixed(2),qty:qf(d.gross/d.mats.length*rate/100)}}).sort((a,b)=>b.rate-a.rate).slice(0,10).sort((a,b)=>a.rate-b.rate);
+    this.charts.matRej=this.set(this.refs.matRej,Object.assign({},base,{
+      grid:{left:136,right:70,top:20,bottom:44},
+      legend:legend({data:['Rejected qty','Rejection %'],bottom:0,left:'center'}),
+      tooltip:Object.assign({trigger:'axis',axisPointer:{type:'shadow'},formatter:ps=>{const q=ps.find(x=>x.seriesName==='Rejected qty'),r=ps.find(x=>x.seriesName==='Rejection %');return `${ps[0].name}<br/>Rejected <b>${q?fmtQ(q.value)+' '+U:'—'}</b><br/>Rate <b>${r?r.value.toFixed(2):'—'}%</b> of inspected qty`}},this.tip()),
+      xAxis:[this.ax({type:'value',splitNumber:3,axisLabel:{hideOverlap:true,formatter:v=>fmtQ(v)}}),
+             this.ax({type:'value',position:'top',splitNumber:3,splitLine:{show:false},axisLine:{show:false},axisLabel:{color:p.neg,hideOverlap:true,formatter:v=>v+'%'}})],
+      yAxis:this.ax({type:'category',data:mrej.map(m=>m.name),splitLine:{show:false},axisLabel:{color:p.ink2,fontFamily:'IBM Plex Sans',fontSize:11}}),
+      series:[
+        {name:'Rejected qty',type:'bar',data:mrej.map(m=>m.qty),barWidth:'56%',itemStyle:{color:new window.echarts.graphic.LinearGradient(1,0,0,0,[{offset:0,color:p.warn},{offset:1,color:p.warn+'55'}]),borderRadius:[0,4,4,0]}},
+        {name:'Rejection %',type:'scatter',xAxisIndex:1,symbolSize:9,data:mrej.map(m=>m.rate),itemStyle:{color:p.neg},
+         markLine:{silent:true,symbol:'none',lineStyle:{color:p.ink3,type:'dashed',width:1},label:{show:true,formatter:'target '+tgt.toFixed(1)+'%',color:p.ink3,fontSize:9,fontFamily:'IBM Plex Mono'},data:[{xAxis:tgt}]}}
+      ]}));
+
+    const spark=(ref,vals,color)=>this.set(ref,{animation:animate,grid:{left:0,right:0,top:3,bottom:3},xAxis:{type:'category',show:false,boundaryGap:false,data:vals.map((_,i)=>i)},yAxis:{show:false,type:'value',min:v=>v.min-Math.abs(v.min)*0.35},tooltip:{show:false},
+      series:[{type:'line',data:vals,smooth:true,symbol:'none',lineStyle:{width:1.9,color},areaStyle:{color:new window.echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:color+'40'},{offset:1,color:color+'00'}])}}]});
+    const sp=[{v:d.series.map(s=>qf(s.gross+s.rev)),c:A},{v:d.series.map(s=>Math.round(s.value)),c:p.warn},{v:d.series.map(s=>qf(s.gross+s.rev-s.rework)),c:p.pos},{v:d.series.map(s=>Math.round(s.value*0.94)),c:p.alt}];
+    this.refs.sparks.forEach((ref,i)=>spark(ref,sp[i].v,sp[i].c));
+  }
+
+  toggleOpen(id,e){if(e)e.stopPropagation();this.setState(s=>({open:s.open===id?null:id}))}
+  pickMulti(key,val,e){if(e)e.stopPropagation();this.setState(s=>{const cur=s.sel[key];const next=cur.includes(val)?cur.filter(x=>x!==val):cur.concat([val]);return{sel:Object.assign({},s.sel,{[key]:next})}})}
+  pickOne(key,val,e){if(e)e.stopPropagation();this.setState(s=>({open:null,sel:Object.assign({},s.sel,{[key]:val})}))}
+  setQuery(id,v,e){if(e)e.stopPropagation();this.setState(s=>({q:Object.assign({},s.q,{[id]:v})}))}
+  bulk(id,all,e){if(e)e.stopPropagation();this.setState(s=>({sel:Object.assign({},s.sel,{[id]:all||[]})}))}
+
+  filterDef(){
+    const s=this.state.sel;
+    const cascade=(list,key)=>{if(!s.plant.length)return list;const r=rng(hash(s.plant.join())+key.length);return list.filter((_,i)=>r()>0.18||i<2)};
+    return[
+      {id:'vendor',label:'Vendor',multi:true,options:cascade(VENDORS,'vendor')},
+      {id:'material',label:'Material',multi:true,options:cascade(MATERIALS,'material')},
+      {id:'plant',label:'Plant',multi:true,options:PLANTS},
+      {id:'potype',label:'PO Doc. Type',multi:true,options:POTYPES},
+      {id:'year',label:'GRN Year',multi:false,options:YEARS},
+      {id:'month',label:'GRN Month',multi:true,options:MONTHS}
+    ];
+  }
+
+  renderVals(){
+    const st=this.state,s=st.sel,d=this.data(),p=this.pal(),A=p.accent;
+    this._d=d;
+    const U=this.uom(),uf=this.uomWeight(d),tgt=this.rejTarget(),rwTgt=this.reworkTarget();
+    const qmap=st.q||{};
+    const filters=this.filterDef().map(f=>{
+      const cur=f.multi?s[f.id]:[s[f.id]];
+      const query=qmap[f.id]||'';
+      const shown=query?f.options.filter(o=>o.toLowerCase().indexOf(query.toLowerCase())>=0):f.options;
+      return{label:f.label,open:st.open===f.id,
+        summary:f.multi?(cur.length===0?'All ('+f.options.length+')':cur.length===1?cur[0]:cur.length+' selected'):s[f.id],
+        toggle:e=>this.toggleOpen(f.id,e),
+        searchable:f.multi&&f.options.length>8,count:shown.length+' of '+f.options.length,
+        query,onQuery:e=>this.setQuery(f.id,e.target.value,e),stop:e=>e.stopPropagation(),
+        selectAll:e=>this.bulk(f.id,f.options.slice(),e),clearAll:e=>this.bulk(f.id,[],e),
+        options:shown.map(o=>({label:o,mark:cur.includes(o)?'✓':'',box:cur.includes(o)?A:'transparent',pick:e=>f.multi?this.pickMulti(f.id,o,e):this.pickOne(f.id,o,e)}))};
+    });
+
+    const monthsLbl=d.months.length===12?'FY':d.months[0]+'–'+d.months[d.months.length-1];
+    const lastYear=String(Number(s.year)-1);
+    const deltaNote='vs '+monthsLbl+' '+lastYear;
+    const r2=rng(this.seed()+31);
+    const uomRows=total=>{const arr=d.uomSplit(total);const max=arr[0].qty||1;return arr.map(u=>({uom:u.uom,qty:fmtQ(u.qty),pct:(u.qty/max*100).toFixed(1)+'%'}))};
+    const valRows=total=>{const arr=d.valSplit(total);const max=arr[0].value||1;return arr.map(u=>({uom:u.uom,qty:'₹'+fmtV(u.value),pct:(u.value/max*100).toFixed(1)+'%'}))};
+    const reworkRate=d.rework/Math.max(1,d.gross)*100;
+    const dv1=r2()*16-3;
+    const heroes=[
+      {label:'GRN Quantity',mvt:'101 / 102',isQty:true,isValue:false,color:A,uoms:uomRows(d.gross+d.rev),spark:this.refs.sparks[0],
+        headline:fmtQ((d.gross+d.rev)*d.uw[0].wn),headlineNote:d.uw[0].uom+' — largest UoM group of 5',foot:'Full split below · UoMs are never summed'},
+      {label:'GRN Value',mvt:'ALL MVT',isQty:false,isValue:true,value:'₹'+fmtV(d.value),spark:this.refs.sparks[1],color:p.warn,uoms:valRows(d.value),
+        hasDelta:true,hasNote:false,delta:pct(dv1),deltaNote:deltaNote,deltaColor:dv1>=0?p.pos:p.neg,deltaBg:(dv1>=0?p.pos:p.neg)+'1f'},
+      {label:'Net GRN Qty (− rework)',mvt:'NET',isQty:true,isValue:false,color:p.pos,uoms:uomRows(d.netQty),spark:this.refs.sparks[2],
+        headline:fmtQ(d.netQty*d.uw[0].wn),headlineNote:d.uw[0].uom+' — gross less Z22 rework',foot:'Full split below · UoMs are never summed'},
+      {label:'Net GRN Value (− rework)',mvt:'NET',isQty:false,isValue:true,value:'₹'+fmtV(d.netValue),spark:this.refs.sparks[3],color:p.alt,uoms:valRows(d.netValue),
+        hasDelta:false,hasNote:true,note:'GRN Value less '+reworkRate.toFixed(1)+'% rework — no separate YoY'}
+    ];
+
+    const share=v=>v/Math.max(1,d.gross)*100;
+    const qRows=(total,neg)=>d.uomSplit(Math.abs(total)).map(u=>({uom:u.uom,qty:(neg?'-':'')+fmtQ(u.qty)}));
+    const q=(label,mvt,val,color,neg,note)=>({label,mvt,color,valueColor:neg?p.neg:p.ink,
+      share:pctSmall(share(Math.abs(val))),shareNote:note,barW:Math.min(100,share(Math.abs(val)))+'%',uoms:qRows(val,neg)});
+    const quals=[
+      q('Quality Accepted','101',d.accQ,A,false,'of gross receipt qty'),
+      q('Quality Rejected','101 / 102',-d.rej,p.neg,true,'of gross receipt qty'),
+      q('Quality Sample','101',d.sample,p.alt,false,'of gross receipt qty'),
+      q('Under Inspection','101 · no UD',d.insp,p.warn,false,'of gross receipt qty'),
+      q('Rework GRN Qty','Z22',d.rework,p.alt,false,'of gross qty · outside the 100%')
+    ];
+
+    const qtot=d.accQ+d.rej+d.sample+d.insp;
+    const rejRate=d.rej/Math.max(1,qtot)*100;
+    const revRate=Math.abs(d.rev)/Math.max(1,d.gross)*100;
+    const ratios=[
+      {label:'Rejection rate',value:rejRate.toFixed(2)+'%',color:rejRate>tgt?p.neg:p.pos,
+        flag:rejRate>tgt?'above target':'within target',flagColor:rejRate>tgt?p.neg:p.pos,
+        note:'rejected ÷ inspected qty · target '+tgt.toFixed(1)+'%'},
+      {label:'Rework rate',value:reworkRate.toFixed(2)+'%',color:reworkRate>rwTgt?p.warn:p.ink,
+        flag:reworkRate>rwTgt?'above target':'within target',flagColor:reworkRate>rwTgt?p.warn:p.pos,
+        note:'Z22 ÷ gross qty · target '+rwTgt.toFixed(1)+'%'},
+      {label:'Reversal rate',value:revRate.toFixed(2)+'%',color:p.ink,flag:'',flagColor:p.ink3,
+        note:'102 reversal ÷ gross qty'},
+      {label:'Net GRN rate',value:(d.netQty/Math.max(1,d.gross)*100).toFixed(1)+'%',color:p.pos,flag:'clean receipts',flagColor:p.pos,
+        note:'net qty ÷ gross qty'}
+    ];
+
+    // colour bands are RELATIVE to the vendors in scope, so the column always separates
+    // even when every vendor is clean (real data: rework near zero across the board)
+    const allScores=d.vendorRows.map(v=>v.score).sort((a,b)=>a-b);
+    const at=f=>allScores[Math.min(allScores.length-1,Math.max(0,Math.round((allScores.length-1)*f)))];
+    const p33=at(1/3),p66=at(2/3),spread=allScores[allScores.length-1]-allScores[0];
+    const tight=spread<6;
+    const bandOf=sc=>tight?p.ink3:(sc>=p66?p.pos:sc<=p33?p.neg:p.warn);
+    const rankWorst=(st.vRank||'worst')==='worst';
+    const ordered=d.vendorRows.slice().sort((a,b)=>rankWorst?a.score-b.score:b.score-a.score).slice(0,10);
+    const sMin=allScores[0],sSpan=Math.max(1,spread);
+    const rows=ordered.map(v=>({name:v.name,dot:bandOf(v.score),
+      qty:fmtQ(v.qty*uf),net:fmtQ(v.net*uf),value:'₹'+fmtV(v.value),
+      rejQty:fmtQ(v.qty*v.rej/100*uf),
+      rej:v.rej.toFixed(2)+'%',rejColor:v.rej>tgt?p.neg:p.pos,
+      rework:v.rework.toFixed(2)+'%',score:v.score,
+      // bar spans the in-scope range, not 0–100, so small real differences stay visible
+      scorePct:(8+(v.score-sMin)/sSpan*92).toFixed(0)+'%',
+      pick:()=>this.setState(x=>({sel:Object.assign({},x.sel,{vendor:x.sel.vendor.length===1&&x.sel.vendor[0]===v.name?[]:[v.name]})}))}));
+    const rankBtns=[{k:'worst',label:'Needs attention'},{k:'best',label:'Best performers'}].map(b=>({label:b.label,bg:(st.vRank||'worst')===b.k?A:'transparent',fg:(st.vRank||'worst')===b.k?'#fff':p.ink2,pick:()=>this.setState({vRank:b.k})}));
+    const spreadNote=tight
+      ?'Scores span only '+spread.toFixed(0)+' pts across vendors in scope — too tight to rank meaningfully; judge on rejected quantity instead'
+      :'Colours are relative to the '+d.vendorRows.length+' vendors in scope (bottom third red, top third green), not fixed cut-offs';
+
+    const themeBtns=['system','light','dark'].map(t=>({label:t,bg:this.theme()===t?A:'transparent',fg:this.theme()===t?'#fff':p.ink2,pick:()=>this.setState({userTheme:t})}));
+    const scopeBits=[
+      s.vendor.length?s.vendor.length+' vendor(s)':'All vendors',
+      s.material.length?s.material.length+' material(s)':'All materials',
+      s.plant.length?s.plant.join(', '):'All plants',
+      s.potype.length?(s.potype.length>3?s.potype.length+' PO doc types':s.potype.join(', ')):'All PO types (STO excluded)',
+      (st.from||st.to)?('Date '+(st.from||'…')+' → '+(st.to||'…')+' [overrides Y/M]'):(s.year+' · '+(s.month.length?s.month.join('/'):'All months')),
+      'Qty charts in '+U
+    ];
+    const mode=st.mode||'qty';
+    const modeBtns=[{k:'qty',label:'GRN Qty'},{k:'value',label:'GRN Value'}].map(m=>({label:m.label,bg:mode===m.k?A:'transparent',fg:mode===m.k?'#fff':p.ink2,pick:()=>this.setState({mode:m.k})}));
+    const uomBtns=d.uw.map(u=>({label:u.uom,bg:U===u.uom?A:'transparent',fg:U===u.uom?'#fff':p.ink2,pick:()=>this.setState({uom:u.uom})}));
+
+    return{filters,heroes,quals,ratios,rows,rowCount:rows.length,themeBtns,modeBtns,uomBtns,showUomPicker:true,
+      rankBtns,spreadNote,rankLabel:rankWorst?'LOWEST 10':'TOP 10',rejQtyColHead:'Rej. Qty ('+U+')',
+      zoomReset:()=>{if(window.echarts)this.draw()},
+      trendSub:mode==='qty'
+        ?'101 receipt vs 102 reversal (negative) · Z22 rework · quantities in '+U+' only'
+        :'Receipt value vs reversal value (negative) · Z22 rework · net line',
+      qualitySub:'Shares of gross qty, sum to 100% · shown in '+U+' · centre gauge = rejected ÷ inspected qty against the '+tgt.toFixed(1)+'% target',
+      matRejSub:'Rejected quantity ('+U+') and rate of inspected qty · worst 10 materials against the '+tgt.toFixed(1)+'% target',
+      scoreSub:'Weighted quality score · quantities in '+U+' · click a row to filter the dashboard to that vendor',
+      qtyColHead:'GRN Qty ('+U+')',netColHead:'Net Qty ('+U+')',
+      scoreFormula:'Score = 100 − (rejection % × 9) − (rework % × 1.6), clamped to 38–98. Higher is better; ≥83 green, 69–82 amber, ≤68 red.',
+      scope:scopeBits.join('  ·  '),dateFrom:st.from,dateTo:st.to,
+      setFrom:e=>this.setState({from:e.target.value}),setTo:e=>this.setState({to:e.target.value}),
+      reset:()=>this.setState({open:null,from:'',to:'',uom:null,sel:{vendor:[],material:[],plant:[],potype:[],year:'2026',month:[]}}),
+      rTrend:this.refs.trend,rQuality:this.refs.quality,rVendorBar:this.refs.vendorBar,rPlant:this.refs.plant,rRates:this.refs.rates,rDocType:this.refs.docType,rMatRej:this.refs.matRej};
+  }
+}
+
+</script>
+</body>
+</html>

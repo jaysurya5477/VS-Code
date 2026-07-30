@@ -26,7 +26,8 @@ CLASS zcl_grn_dash_trend_qry IMPLEMENTATION.
           lv_vendor   TYPE string,
           lv_material TYPE string,
           lv_plant    TYPE string,
-          lv_doctype  TYPE string.
+          lv_doctype  TYPE string,
+          lv_uom      TYPE string.
 
     LOOP AT io_request->get_parameters( ) INTO DATA(ls_param).
       CASE to_upper( ls_param-parameter_name ).
@@ -36,6 +37,7 @@ CLASS zcl_grn_dash_trend_qry IMPLEMENTATION.
         WHEN 'P_MATERIAL'. lv_material = ls_param-value.
         WHEN 'P_PLANT'.    lv_plant    = ls_param-value.
         WHEN 'P_DOCTYPE'.  lv_doctype  = ls_param-value.
+        WHEN 'P_UOM'.      lv_uom      = ls_param-value.
       ENDCASE.
     ENDLOOP.
 
@@ -45,7 +47,8 @@ CLASS zcl_grn_dash_trend_qry IMPLEMENTATION.
       vendor    = CORRESPONDING #( csv_to_range( lv_vendor ) )
       material  = CORRESPONDING #( csv_to_range( lv_material ) )
       plant     = CORRESPONDING #( csv_to_range( lv_plant ) )
-      doc_type  = CORRESPONDING #( csv_to_range( lv_doctype ) ) ).
+      doc_type  = CORRESPONDING #( csv_to_range( lv_doctype ) )
+      uom       = CORRESPONDING #( csv_to_range( lv_uom ) ) ).
 
     DATA(ls_dash) = zcl_grn_dash_query=>get_dashboard_data( ls_filters ).
 

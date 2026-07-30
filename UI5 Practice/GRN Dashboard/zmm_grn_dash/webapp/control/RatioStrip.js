@@ -10,7 +10,11 @@ sap.ui.define([
 	 * count is fixed by the backend's Ratio entity, and a `cells` array keeps the view free
 	 * of a template for four static rows.
 	 *
-	 * Each entry: {label, valueText, note, tone}.
+	 * Each entry: {label, valueText, note, tone, flag, flagTone}.
+	 * `flag` is a short colored verdict shown inline next to the value (e.g. "above
+	 * target"); `note` is a longer, always-visible description shown on its own line
+	 * below (e.g. "rejected / inspected qty - target 2.0%"). The two are independent -
+	 * a cell may have either, both, or neither.
 	 */
 	return Control.extend("com.sap.zmmgrndash.control.RatioStrip", {
 
@@ -44,10 +48,19 @@ sap.ui.define([
 
 					oRm.openStart("div").class("grnRatioBody").openEnd();
 					oRm.openStart("span").class("grnRatioValue").openEnd().text(oCell.valueText || "").close("span");
+					if (oCell.flag) {
+						oRm.openStart("span")
+							.class("grnRatioFlag")
+							.class("grnTone--" + (oCell.flagTone || oCell.tone || "none"))
+							.openEnd()
+							.text(oCell.flag)
+							.close("span");
+					}
+					oRm.close("div");
+
 					if (oCell.note) {
 						oRm.openStart("span").class("grnRatioNote").openEnd().text(oCell.note).close("span");
 					}
-					oRm.close("div");
 
 					oRm.close("div");
 				});

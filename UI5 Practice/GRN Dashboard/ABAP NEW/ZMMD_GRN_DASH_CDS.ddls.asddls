@@ -2,7 +2,7 @@
 @AbapCatalog.compiler.compareFilter: true
 @AbapCatalog.preserveKey: true
 @AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'GRN Dashboard - core 101 fact (lean, no auth check)'
+@EndUserText.label: 'GRN Dash. cor 101 fact lean, no auth chk'
 
 // Rebuilds the join logic already proven in ZMMD_PO_CDS / ZMM_PO_HISTORY_VER2,
 // trimmed to only what the GRN Dashboard needs (see GRN Dashboard FS.md §6.1):
@@ -46,12 +46,17 @@ select from ekpo   as a
       a.matnr       as matnr,
       a.txz01       as txz01,
       a.werks       as werks,
+      a.meins       as meins,     // material base UoM - EKPO already in scope, no new join
 
       b.lifnr       as lifnr,
       b.bsart       as bsart,
 
       c.menge       as menge2,     // GRN qty (101)
+      
+      @Semantics.amount.currencyCode: 'WAERS'
       c.dmbtr       as dmbtr,      // GRN value (101)
+      c.waers       as waers,
+      
       c.budat       as budat101,   // GRN posting date - drives Year/Month/Date filters
       c.kostl       as kostl,      // needed for the Accepted/Rejected cost-center fallback rule (FS §7.3)
 

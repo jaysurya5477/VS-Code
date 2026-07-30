@@ -14,4 +14,6 @@ define service ZMM_GRN_DASH_O4 {
   expose ZMM_GRN_DASH_DOCTYPE_RANKED       as DoctypeRanked;
   expose ZMM_GRN_DASH_MAT_REJ_WORST10 as MaterialRejWorst10;
   expose ZMM_GRN_DASH_VENDOR_SCORECARD     as VendorScorecard;
+  expose ZMM_GRN_DASH_KPI_BY_UOM           as KpiByUom;
+  expose ZMM_GRN_DASH_QUAL_BY_UOM          as QualByUom;
 }

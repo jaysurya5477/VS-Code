@@ -66,8 +66,8 @@ sap.ui.define([
 	var KPI_META = {
 		GRN_QTY: {
 			mvt: "101 / 102",
-			unit: "base UoM",
 			money: false,
+			uomField: "GrossQty",
 			spark: function (r) {
 				return r.Qty101 + r.Qty102;
 			}
@@ -76,14 +76,15 @@ sap.ui.define([
 			mvt: "ALL MVT",
 			unit: "",
 			money: true,
+			uomField: "GrossValue",
 			spark: function (r) {
 				return r.Val101 + r.Val102;
 			}
 		},
 		NET_QTY: {
 			mvt: "NET",
-			unit: "base UoM",
 			money: false,
+			uomField: "NetQty",
 			spark: function (r) {
 				return r.NetQty;
 			}
@@ -92,6 +93,7 @@ sap.ui.define([
 			mvt: "NET",
 			unit: "",
 			money: true,
+			uomField: "NetValue",
 			spark: function (r) {
 				return r.NetVal;
 			}
@@ -113,9 +115,13 @@ sap.ui.define([
 			mvt: "101",
 			tone: "alt"
 		},
+		"Under Inspection": {
+			mvt: "101 - no UD",
+			tone: "warn"
+		},
 		"Rework GRN Qty": {
 			mvt: "Z22",
-			tone: "warn"
+			tone: "alt"
 		}
 	};
 
@@ -159,6 +165,13 @@ sap.ui.define([
 				themeOptions: this._toggleItems(["auto", "light", "dark"], "theme"),
 				trendMode: "qty",
 				modeOptions: this._toggleItems(["qty", "value"], "mode"),
+				uomFilter: "",
+				uomOptions: [],
+				vendorRankDir: "DESC",
+				rankOptions: [
+					{key: "DESC", text: this._text("rankBest")},
+					{key: "ASC", text: this._text("rankWorst")}
+				],
 				scopeText: "",
 				trendSubtitle: this._text("chartTrendSubQty"),
 				lastRefreshedText: "",
@@ -217,6 +230,8 @@ sap.ui.define([
 			this.byId("periodSelect").setSelectedKey("CURR_FY");
 			this._applyPeriodPreset("CURR_FY");
 			this._dash().setProperty("/trendMode", "qty");
+			this._dash().setProperty("/uomFilter", "");
+			this._dash().setProperty("/vendorRankDir", "DESC");
 			this._loadData();
 		},
 
@@ -249,6 +264,29 @@ sap.ui.define([
 			if (this._oRaw) {
 				this._buildTrend();
 			}
+		},
+
+		/**
+		 * Quantity UoM picker. Unlike the qty/value toggle above, this is a genuine data
+		 * filter - every panel except the hero KPI/qualification breakdown tables is
+		 * refetched scoped to the selected base UoM (menge/value are never summed across
+		 * UoMs, so there is no local recomputation to fall back on).
+		 */
+		onUomSelect: function (oEvent) {
+			var oItem = oEvent.getParameter("selectedItem");
+			this._dash().setProperty("/uomFilter", oItem ? oItem.getKey() : "");
+			this._loadData();
+		},
+
+		/**
+		 * Vendor scorecard best/worst toggle - a genuine refetch (see P_RankDir), but only
+		 * VendorScorecard declares that parameter, so this refetches just that one entity
+		 * instead of routing through _loadData() and re-requesting (and re-rendering) all
+		 * twelve panels for a toggle that only changes one of them.
+		 */
+		onVendorRankSelect: function (oEvent) {
+			this._dash().setProperty("/vendorRankDir", oEvent.getParameter("key"));
+			this._reloadVendorScorecard();
 		},
 
 		/** Rebuilds the doc-type chart so its zoom window is re-fitted to the current width. */
@@ -341,6 +379,8 @@ sap.ui.define([
 			Object.keys(FILTER_INPUTS).forEach(function (sKey) {
 				oFilters[sKey] = this.byId(FILTER_INPUTS[sKey]).getSelectedKeys().slice();
 			}, this);
+			oFilters.uom = this._dash().getProperty("/uomFilter") || "";
+			oFilters.rankDir = this._dash().getProperty("/vendorRankDir") || "DESC";
 
 			return oFilters;
 		},
@@ -419,6 +459,36 @@ sap.ui.define([
 			});
 		},
 
+		/**
+		 * Builds the UoM picker's button list from KpiByUom - the one entity always fetched
+		 * unfiltered by the picker itself, so its distinct Uom codes are exactly "every base
+		 * UoM actually present in the current filter scope" (never a hardcoded guess).
+		 *
+		 * On the very first load (or right after Reset) nothing is selected yet, so the
+		 * picker defaults to the largest UoM group by gross qty - KpiByUom already arrives
+		 * sorted that way (ZCL_GRN_DASH_QUERY: SORT lt_kpi BY gross_qty DESCENDING).
+		 *
+		 * @param {object} oData the service response
+		 * @returns {boolean} true if a default was just chosen (caller should reload)
+		 * @private
+		 */
+		_buildUomOptions: function (oData) {
+			var oModel = this._dash();
+			var aOptions = (oData.kpiByUom || []).map(function (r) {
+				return {
+					key: r.Uom,
+					text: r.Uom
+				};
+			});
+			oModel.setProperty("/uomOptions", aOptions);
+
+			if (!oModel.getProperty("/uomFilter") && aOptions.length) {
+				oModel.setProperty("/uomFilter", aOptions[0].key);
+				return true;
+			}
+			return false;
+		},
+
 		/* ==================================================================== */
 		/* Load                                                                 */
 		/* ==================================================================== */
@@ -468,7 +538,15 @@ sap.ui.define([
 				that._oRaw = oData;
 				that._oFilters = oFilters;
 				that._mergeCatalog(oData);
+				var bUomDefaulted = that._buildUomOptions(oData);
 				that._render();
+				if (bUomDefaulted) {
+					// The picker just got its first default (largest UoM group) - every
+					// other panel was fetched with uom="" (all), so refetch once with the
+					// real selection. _bLoading is still true here, so this only queues via
+					// the existing single-flight guard; .finally() below fires it.
+					that._loadData();
+				}
 			}).catch(function (oError) {
 				Log.error("GRN dashboard load failed", oError && oError.stack, "com.sap.zmmgrndash");
 				var sWhere = oError && oError.grnEntity ? oError.grnEntity : "?";
@@ -481,6 +559,49 @@ sap.ui.define([
 					that._bReloadQueued = false;
 					that._loadData();
 				}
+			});
+		},
+
+		/**
+		 * Refetches just the VendorScorecard entity (the only one that declares P_RankDir)
+		 * and patches the scorecard's two derived properties in place. Busies only the
+		 * Scorecard control itself, so the rest of the dashboard - including every other
+		 * EChart instance - never sees an invalidate.
+		 * @private
+		 */
+		_reloadVendorScorecard: function () {
+			if (!this._oFilters || !this._oRaw) {
+				// Nothing loaded yet (still resolving onInit's ECharts/palette promise) -
+				// there's no cached data to patch, so fall back to a normal full load.
+				this._loadData();
+				return;
+			}
+
+			var that = this;
+			var oModel = this.getOwnerComponent().getModel() || this.getView().getModel();
+			var oScorecard = this.byId("scorecard");
+			var oFilters = Object.assign({}, this._oFilters, {
+				rankDir: this._dash().getProperty("/vendorRankDir")
+			});
+
+			oScorecard.setBusyIndicatorDelay(0);
+			oScorecard.setBusy(true);
+
+			dashboardService.readEntity(oModel, "vendorScorecard", oFilters).then(function (aRows) {
+				that._oFilters = oFilters;
+				that._oRaw.vendorScorecard = aRows;
+
+				var oDash = that._dash();
+				oDash.setProperty("/scorecard", that._buildScorecard(that._oRaw));
+				oDash.setProperty("/scorecardCountText", that._text(
+					oFilters.rankDir === "ASC" ? "scorecardCountWorst" : "scorecardCountBest",
+					[aRows.length]));
+			}).catch(function (oError) {
+				Log.error("GRN vendor scorecard reload failed", oError && oError.stack, "com.sap.zmmgrndash");
+				var sWhere = oError && oError.grnEntity ? oError.grnEntity : "VendorScorecard";
+				that._setError(that._text("errorLoadFailed", [sWhere, (oError && oError.message) || String(oError)]));
+			}).finally(function () {
+				oScorecard.setBusy(false);
 			});
 		},
 
@@ -497,8 +618,10 @@ sap.ui.define([
 			oModel.setProperty("/quality", this._buildQualityCards(oData));
 			oModel.setProperty("/ratios", this._buildRatioStrip(oData));
 			oModel.setProperty("/scorecard", this._buildScorecard(oData));
-			oModel.setProperty("/scorecardCountText",
-				this._text("scorecardCount", [oData.vendorScorecard.length]));
+			oModel.setProperty("/scorecardColumns", this._scorecardColumns());
+			oModel.setProperty("/scorecardCountText", this._text(
+				oModel.getProperty("/vendorRankDir") === "ASC" ? "scorecardCountWorst" : "scorecardCountBest",
+				[oData.vendorScorecard.length]));
 			oModel.setProperty("/scopeText", this._buildScopeText());
 			oModel.setProperty("/lastRefreshedText",
 				this._text("lastRefreshed", [new Date().toLocaleTimeString()]));
@@ -516,6 +639,8 @@ sap.ui.define([
 		_buildKpiCards: function (oData) {
 			var that = this;
 			var aTrend = oData.trend;
+			var aKpiByUom = oData.kpiByUom || [];
+			var sUom = this._dash().getProperty("/uomFilter") || "";
 
 			return oData.kpi.map(function (oKpi) {
 				var oMeta = KPI_META[oKpi.ID] || {
@@ -523,7 +648,7 @@ sap.ui.define([
 					unit: "",
 					money: false
 				};
-				var fnFormat = oMeta.money ? formatter.money : formatter.compact;
+				var fnFormat = oMeta.money ? formatter.money : formatter.fmtQ;
 				var fDelta = parseFloat(oKpi.DeltaPct);
 
 				// Sparkline shares the KPI's own measure, taken across the trend periods.
@@ -545,14 +670,43 @@ sap.ui.define([
 					id: oKpi.ID,
 					label: oKpi.KpiLabel,
 					mvt: oMeta.mvt,
-					unit: oMeta.unit,
+					// Quantity cards show the currently selected UoM (there is no longer
+					// a single "base UoM" - quantities are never summed across UoMs);
+					// value cards have no unit suffix, unchanged.
+					unit: oMeta.money ? (oMeta.unit || "") : sUom,
 					valueText: fnFormat(oKpi.CurrValue),
 					deltaText: formatter.signedPercent(oKpi.DeltaPct),
 					deltaTone: isFinite(fDelta) ? (fDelta >= 0 ? "pos" : "neg") : "none",
 					spark: aSpark.length ? chartOptions.sparkline(
 						aSpark,
 						oMeta.money ? that._oPalette.warn : that._oPalette.accent,
-						that._ctx()) : null
+						that._ctx()) : null,
+					breakdown: oMeta.uomField ?
+						that._uomBreakdown(aKpiByUom, oMeta.uomField, fnFormat) : null
+				};
+			});
+		},
+
+		/**
+		 * Turns a flat array of per-UoM rows into breakdown entries with a mini-bar
+		 * width scaled to the largest magnitude in the array - shared by the hero KPI
+		 * and qualification cards' always-on per-UoM tables.
+		 * @param {object[]} aRows rows carrying a Uom property and the given field
+		 * @param {string} sField numeric property to read off each row
+		 * @param {function} fnFormat number -> display text
+		 * @returns {object[]} [{uom, qtyText, pct}]
+		 * @private
+		 */
+		_uomBreakdown: function (aRows, sField, fnFormat) {
+			var fMax = (aRows || []).reduce(function (m, r) {
+				return Math.max(m, Math.abs(parseFloat(r[sField]) || 0));
+			}, 0) || 1;
+			return (aRows || []).map(function (r) {
+				var fVal = parseFloat(r[sField]) || 0;
+				return {
+					uom: r.Uom,
+					qtyText: fnFormat(fVal),
+					pct: Math.min(100, Math.abs(fVal) / fMax * 100).toFixed(1) + "%"
 				};
 			});
 		},
@@ -564,6 +718,7 @@ sap.ui.define([
 		 */
 		_buildQualityCards: function (oData) {
 			var that = this;
+			var aQualByUom = oData.qualByUom || [];
 
 			return oData.quality.map(function (oRow) {
 				var oMeta = QUALITY_META[oRow.Bucket] || {
@@ -571,21 +726,26 @@ sap.ui.define([
 					tone: "accent"
 				};
 				var fShare = parseFloat(oRow.SharePct) || 0;
+				var aBucketUom = aQualByUom.filter(function (r) {
+					return r.Bucket === oRow.Bucket;
+				});
 				return {
 					label: oRow.Bucket,
 					mvt: oMeta.mvt,
 					tone: oMeta.tone,
 					negative: !!oMeta.negative,
-					valueText: formatter.compact(oRow.Qty),
+					valueText: formatter.fmtQ(oRow.Qty),
 					shareText: that._text("shareOfGross", [formatter.percent(fShare, 1)]),
-					sharePct: Math.max(0, Math.min(100, Math.abs(fShare)))
+					sharePct: Math.max(0, Math.min(100, Math.abs(fShare))),
+					breakdown: that._uomBreakdown(aBucketUom, "Qty", formatter.fmtQ)
 				};
 			});
 		},
 
 		/**
-		 * The ratio strip. AVG_VALUE is a currency amount, not a percentage - the other
-		 * three are rates - so formatting is chosen per ID rather than uniformly.
+		 * The ratio strip: rejection rate, rework rate, reversal rate, net GRN rate.
+		 * Each cell gets a short colored flag (verdict) and a longer always-visible
+		 * note (the formula), formatted per ID since the target/tone logic differs.
 		 * @param {object} oData the service response
 		 * @returns {object[]} one entry per ratio cell
 		 * @private
@@ -599,27 +759,35 @@ sap.ui.define([
 					label: oRow.RatioLabel,
 					valueText: formatter.percent(fValue),
 					note: "",
+					flag: "",
+					flagTone: "none",
 					tone: "none"
 				};
 
 				switch (oRow.ID) {
 				case "REJ_RATE":
-					oCell.note = fValue > chartOptions.TARGET_REJECTION_PCT ?
+					oCell.flag = fValue > chartOptions.TARGET_REJECTION_PCT ?
 						that._text("aboveTarget") : that._text("withinTarget");
-					oCell.tone = fValue > chartOptions.TARGET_REJECTION_PCT ? "neg" : "pos";
+					oCell.flagTone = fValue > chartOptions.TARGET_REJECTION_PCT ? "neg" : "pos";
+					oCell.tone = oCell.flagTone;
+					oCell.note = that._text("rejRateNote", [chartOptions.TARGET_REJECTION_PCT.toFixed(1)]);
 					break;
 				case "RWK_RATE":
-					oCell.note = that._text("ofGrossQty");
-					oCell.tone = fValue > 4 ? "warn" : "none";
+					oCell.flag = fValue > chartOptions.TARGET_REWORK_PCT ?
+						that._text("aboveTarget") : that._text("withinTarget");
+					oCell.flagTone = fValue > chartOptions.TARGET_REWORK_PCT ? "warn" : "pos";
+					oCell.tone = fValue > chartOptions.TARGET_REWORK_PCT ? "warn" : "none";
+					oCell.note = that._text("reworkRateNote", [chartOptions.TARGET_REWORK_PCT.toFixed(1)]);
+					break;
+				case "REV_RATE":
+					oCell.note = that._text("reversalRateNote");
 					break;
 				case "NET_RATE":
 					oCell.valueText = formatter.percent(fValue, 1);
-					oCell.note = that._text("cleanReceipts");
+					oCell.flag = that._text("cleanReceipts");
+					oCell.flagTone = "pos";
 					oCell.tone = "pos";
-					break;
-				case "AVG_VALUE":
-					oCell.valueText = formatter.money(fValue);
-					oCell.note = that._text("perUnit");
+					oCell.note = that._text("netRateNote");
 					break;
 				default:
 					break;
@@ -646,9 +814,10 @@ sap.ui.define([
 				return {
 					code: oRow.Vendor,
 					name: oRow.VendorName || oRow.Vendor,
-					qtyText: formatter.compact(oRow.Qty),
-					netText: formatter.compact(oRow.NetQty),
+					qtyText: formatter.fmtQ(oRow.Qty),
+					netText: formatter.fmtQ(oRow.NetQty),
 					valueText: formatter.money(oRow.Value),
+					rejQtyText: formatter.fmtQ(oRow.RejQty),
 					rejText: formatter.percent(fRej),
 					rejTone: fRej > chartOptions.TARGET_REJECTION_PCT ? "neg" : "pos",
 					reworkText: formatter.percent(oRow.ReworkPct, 1),
@@ -700,6 +869,7 @@ sap.ui.define([
 				echarts: this._oECharts,
 				pal: this._oPalette,
 				mode: this._dash().getProperty("/trendMode"),
+				uom: this._dash().getProperty("/uomFilter") || "",
 				animate: true
 			}, oExtra || {});
 		},
@@ -811,12 +981,21 @@ sap.ui.define([
 			});
 		},
 
-		/** @returns {string[]} the seven scorecard column headers @private */
+		/** @returns {string[]} the eight scorecard column headers @private */
 		_scorecardColumns: function () {
 			var that = this;
-			return ["colVendor", "colGrnQty", "colNetQty", "colGrnValue", "colRejRate", "colRework", "colScore"]
+			var oModel = this._dash();
+			var sUom = (oModel && oModel.getProperty("/uomFilter")) || "";
+			return ["colVendor", "colGrnQty", "colNetQty", "colGrnValue", "colRejQty", "colRejRate", "colRework", "colScore"]
 				.map(function (sKey) {
-					return that._text(sKey);
+					var sText = that._text(sKey);
+					// Qty columns show the currently selected UoM - quantities are never
+					// summed across UoMs, so there is no longer one fixed unit to print
+					// in the static i18n label.
+					if (sUom && (sKey === "colGrnQty" || sKey === "colNetQty" || sKey === "colRejQty")) {
+						sText += " (" + sUom + ")";
+					}
+					return sText;
 				});
 		},
 

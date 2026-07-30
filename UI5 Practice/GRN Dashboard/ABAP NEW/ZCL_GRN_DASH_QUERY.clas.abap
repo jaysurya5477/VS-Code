@@ -49,15 +49,25 @@ CLASS zcl_grn_dash_query DEFINITION
       ty_range_matnr TYPE RANGE OF matnr,
       ty_range_werks TYPE RANGE OF werks_d,
       ty_range_bsart TYPE RANGE OF esart,
+      ty_range_meins TYPE RANGE OF meins,
 
       BEGIN OF ty_filters,
-        vendor    TYPE ty_range_lifnr,
-        material  TYPE ty_range_matnr,
-        plant     TYPE ty_range_werks,
+        vendor          TYPE ty_range_lifnr,
+        material        TYPE ty_range_matnr,
+        plant           TYPE ty_range_werks,
         " caller's positive selection; STO exclusion is ALWAYS applied on top
-        doc_type  TYPE ty_range_bsart,
-        date_from TYPE dats,
-        date_to   TYPE dats,
+        doc_type        TYPE ty_range_bsart,
+        date_from       TYPE dats,
+        date_to         TYPE dats,
+        " Vendor scorecard rank direction - 'DESC' (default, best-first, unchanged
+        " behaviour) or 'ASC' (worst-first). Left blank means 'DESC' so existing
+        " callers that never set this field keep today's result.
+        vendor_rank_dir TYPE string,
+        " Quantity UoM picker - filters every panel (qty and value alike) down to
+        " rows whose material base UoM (MEINS) is in this range. Blank means "all
+        " UoMs", i.e. today's behaviour - so this is a pure filter, never a new
+        " grouping dimension threaded through the aggregation getters below.
+        uom             TYPE ty_range_meins,
       END OF ty_filters,
 
       BEGIN OF ty_kpi,
@@ -105,6 +115,7 @@ CLASS zcl_grn_dash_query DEFINITION
         qty        TYPE p LENGTH 15 DECIMALS 3,
         net_qty    TYPE p LENGTH 15 DECIMALS 3,
         value      TYPE p LENGTH 15 DECIMALS 2,
+        rej_qty    TYPE p LENGTH 15 DECIMALS 3,
         rej_pct    TYPE p LENGTH 8 DECIMALS 2,
         rework_pct TYPE p LENGTH 8 DECIMALS 2,
         score      TYPE p LENGTH 8 DECIMALS 0,
@@ -122,9 +133,14 @@ CLASS zcl_grn_dash_query DEFINITION
       ty_plant_row_tab TYPE STANDARD TABLE OF ty_plant_row WITH EMPTY KEY,
 
       BEGIN OF ty_material_row,
-        matnr TYPE matnr,
-        txz01 TYPE txz01,
-        value TYPE p LENGTH 15 DECIMALS 2,
+        matnr       TYPE matnr,
+        txz01       TYPE txz01,
+        value       TYPE p LENGTH 15 DECIMALS 2,
+        " Sum of Value across every material in scope, before the top-20 cut -
+        " denormalised onto each row (same figure repeated) so the frontend's
+        " "% of total value" can divide by the true scope total, not just the
+        " top-20 subset's own sum.
+        grand_total TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_material_row,
       ty_material_row_tab TYPE STANDARD TABLE OF ty_material_row WITH EMPTY KEY,
 
@@ -143,6 +159,27 @@ CLASS zcl_grn_dash_query DEFINITION
       END OF ty_material_rej_row,
       ty_material_rej_row_tab TYPE STANDARD TABLE OF ty_material_rej_row WITH EMPTY KEY,
 
+      " Always-on per-UoM breakdown for the hero KPI cards and qualification
+      " cards - these two are the one exception to the UoM picker: callers
+      " never set is_filters-uom for them (their query classes declare no
+      " P_Uom parameter), so it_base/it_rev/it_rwk here always carry every
+      " UoM in scope, and meins becomes the grouping key instead of a filter.
+      BEGIN OF ty_kpi_uom_row,
+        meins       TYPE meins,
+        gross_qty   TYPE p LENGTH 15 DECIMALS 3,
+        gross_value TYPE p LENGTH 15 DECIMALS 2,
+        net_qty     TYPE p LENGTH 15 DECIMALS 3,
+        net_value   TYPE p LENGTH 15 DECIMALS 2,
+      END OF ty_kpi_uom_row,
+      ty_kpi_uom_row_tab TYPE STANDARD TABLE OF ty_kpi_uom_row WITH EMPTY KEY,
+
+      BEGIN OF ty_qual_uom_row,
+        bucket TYPE string,
+        meins  TYPE meins,
+        qty    TYPE p LENGTH 15 DECIMALS 3,
+      END OF ty_qual_uom_row,
+      ty_qual_uom_row_tab TYPE STANDARD TABLE OF ty_qual_uom_row WITH EMPTY KEY,
+
       BEGIN OF ty_dashboard,
         kpis                 TYPE ty_kpi_tab,
         quality              TYPE ty_quality_tab,
@@ -154,6 +191,8 @@ CLASS zcl_grn_dash_query DEFINITION
         doctype_ranked       TYPE ty_doctype_row_tab,
         material_rej_worst10 TYPE ty_material_rej_row_tab,
         vendor_scorecard     TYPE ty_vendor_row_tab,
+        kpi_by_uom           TYPE ty_kpi_uom_row_tab,
+        qual_by_uom          TYPE ty_qual_uom_row_tab,
       END OF ty_dashboard.
 
     CLASS-METHODS:
@@ -182,6 +221,7 @@ CLASS zcl_grn_dash_query DEFINITION
         matnr    TYPE matnr,
         txz01    TYPE txz01,
         werks    TYPE werks_d,
+        meins    TYPE meins,
         lifnr    TYPE lifnr,
         bsart    TYPE esart,
         batxt    TYPE batxt,
@@ -216,6 +256,7 @@ CLASS zcl_grn_dash_query DEFINITION
         ebelp TYPE ebelp,
         matnr TYPE matnr,
         werks TYPE werks_d,
+        meins TYPE meins,
         lifnr TYPE lifnr,
         bsart TYPE esart,
         budat TYPE dats,
@@ -233,6 +274,11 @@ CLASS zcl_grn_dash_query DEFINITION
         insp_qty     TYPE p LENGTH 15 DECIMALS 3,
         rework_qty   TYPE p LENGTH 15 DECIMALS 3,
         rework_value TYPE p LENGTH 15 DECIMALS 2,
+        " 102 reversal, retained separately (period_totals nets it into
+        " grn_qty/grn_value above for backward compatibility) so a
+        " reversal-rate ratio can be reported without re-deriving it.
+        rev_qty      TYPE p LENGTH 15 DECIMALS 3,
+        rev_value    TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_period_totals,
 
       " small per-key accumulators used only inside get_vendor_agg /
@@ -267,7 +313,17 @@ CLASS zcl_grn_dash_query DEFINITION
         rej   TYPE p LENGTH 15 DECIMALS 3,
         smp   TYPE p LENGTH 15 DECIMALS 3,
       END OF ty_material_rej_acc,
-      ty_material_rej_acc_tab TYPE STANDARD TABLE OF ty_material_rej_acc WITH EMPTY KEY.
+      ty_material_rej_acc_tab TYPE STANDARD TABLE OF ty_material_rej_acc WITH EMPTY KEY,
+
+      BEGIN OF ty_qual_uom_acc,
+        meins TYPE meins,
+        acc   TYPE p LENGTH 15 DECIMALS 3,
+        rej   TYPE p LENGTH 15 DECIMALS 3,
+        smp   TYPE p LENGTH 15 DECIMALS 3,
+        insp  TYPE p LENGTH 15 DECIMALS 3,
+        rwk   TYPE p LENGTH 15 DECIMALS 3,
+      END OF ty_qual_uom_acc,
+      ty_qual_uom_acc_tab TYPE STANDARD TABLE OF ty_qual_uom_acc WITH EMPTY KEY.
 
     CLASS-METHODS:
       apply_sto_exclusion
@@ -331,7 +387,22 @@ CLASS zcl_grn_dash_query DEFINITION
 
       get_material_rejection_worst10
         IMPORTING it_base      TYPE ty_base_row_tab
-        RETURNING VALUE(rt_mr) TYPE ty_material_rej_row_tab.
+        RETURNING VALUE(rt_mr) TYPE ty_material_rej_row_tab,
+
+      "! Per-UoM breakdown for the hero KPI cards. Always called with an
+      "! unfiltered-by-uom it_base/it_rev/it_rwk (see ty_kpi_uom_row).
+      get_kpi_by_uom
+        IMPORTING it_base           TYPE ty_base_row_tab
+                  it_rev            TYPE ty_mvt_row_tab
+                  it_rwk            TYPE ty_mvt_row_tab
+        RETURNING VALUE(rt_kpi_uom) TYPE ty_kpi_uom_row_tab,
+
+      "! Per-UoM breakdown for the qualification cards (Accepted/Rejected/
+      "! Sample/Under Inspection/Rework). Always called unfiltered by uom.
+      get_qual_by_uom
+        IMPORTING it_base            TYPE ty_base_row_tab
+                  it_rwk             TYPE ty_mvt_row_tab
+        RETURNING VALUE(rt_qual_uom) TYPE ty_qual_uom_row_tab.
 
 ENDCLASS.
 
@@ -365,7 +436,7 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     DATA(lt_doc_type) = is_filters-doc_type.
     apply_sto_exclusion( CHANGING ct_doc_type = lt_doc_type ).
 
-    SELECT ebeln, ebelp, mblnr101, mjahr101, zeile101, matnr, txz01, werks,
+    SELECT ebeln, ebelp, mblnr101, mjahr101, zeile101, matnr, txz01, werks, meins,
            lifnr, bsart, batxt, menge2, dmbtr, budat101, kostl, name1,
            kurztext, losmenge, lmenge01, lmenge03, lmenge04
       FROM zmmd_grn_dash_cds
@@ -373,6 +444,7 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
         AND matnr    IN @is_filters-material
         AND werks    IN @is_filters-plant
         AND bsart    IN @lt_doc_type
+        AND meins    IN @is_filters-uom
         AND budat101 BETWEEN @is_filters-date_from AND @is_filters-date_to
       ORDER BY mblnr101, zeile101
       INTO CORRESPONDING FIELDS OF TABLE @rt_base.
@@ -385,13 +457,14 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     DATA(lt_doc_type) = is_filters-doc_type.
     apply_sto_exclusion( CHANGING ct_doc_type = lt_doc_type ).
 
-    SELECT mblnr, mjahr, zeile, bwart, ebeln, ebelp, matnr, werks, lifnr, bsart, budat, menge, dmbtr
+    SELECT mblnr, mjahr, zeile, bwart, ebeln, ebelp, matnr, werks, meins, lifnr, bsart, budat, menge, dmbtr
       FROM zmmd_grn_mvt_cds
       WHERE bwart  = '102'
         AND lifnr  IN @is_filters-vendor
         AND matnr  IN @is_filters-material
         AND werks  IN @is_filters-plant
         AND bsart  IN @lt_doc_type
+        AND meins  IN @is_filters-uom
         AND budat  BETWEEN @is_filters-date_from AND @is_filters-date_to
       ORDER BY mblnr
       INTO CORRESPONDING FIELDS OF TABLE @rt_rev.
@@ -406,13 +479,14 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     " date) - see FS section 6.2 and ZMMD_GRN_MVT_CDS's header comment.
     " Rework has no cancellation counterpart (confirmed: never reversed),
     " so BWART is always Z22 here - no Z23 to filter for.
-    SELECT mblnr, mjahr, zeile, bwart, ebeln, ebelp, matnr, werks, lifnr, bsart, budat, menge, dmbtr
+    SELECT mblnr, mjahr, zeile, bwart, ebeln, ebelp, matnr, werks, meins, lifnr, bsart, budat, menge, dmbtr
       FROM zmmd_grn_mvt_cds
       WHERE bwart  = 'Z22'
         AND lifnr  IN @is_filters-vendor
         AND matnr  IN @is_filters-material
         AND werks  IN @is_filters-plant
         AND bsart  IN @lt_doc_type
+        AND meins  IN @is_filters-uom
         AND budat  BETWEEN @is_filters-date_from AND @is_filters-date_to
       ORDER BY mblnr
       INTO CORRESPONDING FIELDS OF TABLE @rt_rwk.
@@ -487,6 +561,8 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     LOOP AT it_rev ASSIGNING FIELD-SYMBOL(<ls_rev>).
       rs_tot-grn_qty   -= <ls_rev>-menge.
       rs_tot-grn_value -= <ls_rev>-dmbtr.
+      rs_tot-rev_qty   += <ls_rev>-menge.
+      rs_tot-rev_value += <ls_rev>-dmbtr.
     ENDLOOP.
     " Rework (Z22) has no cancellation counterpart - always adds.
     LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
@@ -602,6 +678,7 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
     LOOP AT lt_vendor ASSIGNING <ls_vendor>.
       READ TABLE lt_qual ASSIGNING <ls_qual> WITH KEY lifnr = <ls_vendor>-lifnr.
       IF sy-subrc = 0.
+        <ls_vendor>-rej_qty = <ls_qual>-rej.
         <ls_vendor>-rej_pct = pct( iv_part = <ls_qual>-rej
                                     iv_whole = <ls_qual>-acc + <ls_qual>-rej + <ls_qual>-smp ).
       ENDIF.
@@ -674,10 +751,18 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
       <ls_mat>-value -= <ls_rev>-dmbtr.
     ENDLOOP.
 
+    DATA(lv_grand_total) = REDUCE #( INIT s TYPE wrbtr
+                                     FOR ls IN lt_mat NEXT s += ls-value ).
+
     SORT lt_mat BY value DESCENDING.
     IF lines( lt_mat ) > 20.
       DELETE lt_mat FROM 21 TO lines( lt_mat ).
     ENDIF.
+
+    LOOP AT lt_mat ASSIGNING FIELD-SYMBOL(<ls_mat_out>).
+      <ls_mat_out>-grand_total = lv_grand_total.
+    ENDLOOP.
+
     rt_mat = lt_mat.
   ENDMETHOD.
 
@@ -734,6 +819,83 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD get_kpi_by_uom.
+    DATA lt_kpi TYPE ty_kpi_uom_row_tab.
+
+    LOOP AT it_base ASSIGNING FIELD-SYMBOL(<ls_base>).
+      ASSIGN lt_kpi[ meins = <ls_base>-meins ] TO FIELD-SYMBOL(<ls_kpi>).
+      IF sy-subrc <> 0.
+        INSERT VALUE #( meins = <ls_base>-meins ) INTO TABLE lt_kpi ASSIGNING <ls_kpi>.
+      ENDIF.
+      <ls_kpi>-gross_qty   += <ls_base>-menge2.
+      <ls_kpi>-gross_value += <ls_base>-dmbtr.
+    ENDLOOP.
+
+    LOOP AT it_rev ASSIGNING FIELD-SYMBOL(<ls_rev>).
+      ASSIGN lt_kpi[ meins = <ls_rev>-meins ] TO <ls_kpi>.
+      IF sy-subrc <> 0.
+        INSERT VALUE #( meins = <ls_rev>-meins ) INTO TABLE lt_kpi ASSIGNING <ls_kpi>.
+      ENDIF.
+      <ls_kpi>-gross_qty   -= <ls_rev>-menge.
+      <ls_kpi>-gross_value -= <ls_rev>-dmbtr.
+    ENDLOOP.
+
+    LOOP AT lt_kpi ASSIGNING <ls_kpi>.
+      <ls_kpi>-net_qty   = <ls_kpi>-gross_qty.
+      <ls_kpi>-net_value = <ls_kpi>-gross_value.
+    ENDLOOP.
+
+    " Rework (Z22) has no cancellation counterpart - always adds, always
+    " reduces net (mirrors period_totals).
+    LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
+      ASSIGN lt_kpi[ meins = <ls_rwk>-meins ] TO <ls_kpi>.
+      IF sy-subrc <> 0.
+        INSERT VALUE #( meins = <ls_rwk>-meins ) INTO TABLE lt_kpi ASSIGNING <ls_kpi>.
+      ENDIF.
+      <ls_kpi>-net_qty   -= <ls_rwk>-menge.
+      <ls_kpi>-net_value -= <ls_rwk>-dmbtr.
+    ENDLOOP.
+
+    SORT lt_kpi BY gross_qty DESCENDING.
+    rt_kpi_uom = lt_kpi.
+  ENDMETHOD.
+
+
+  METHOD get_qual_by_uom.
+    DATA lt_acc TYPE ty_qual_uom_acc_tab.
+
+    LOOP AT it_base ASSIGNING FIELD-SYMBOL(<ls_base>).
+      ASSIGN lt_acc[ meins = <ls_base>-meins ] TO FIELD-SYMBOL(<ls_acc>).
+      IF sy-subrc <> 0.
+        INSERT VALUE #( meins = <ls_base>-meins ) INTO TABLE lt_acc ASSIGNING <ls_acc>.
+      ENDIF.
+      <ls_acc>-acc  += <ls_base>-acc_qty.
+      <ls_acc>-rej  += <ls_base>-rej_qty.
+      <ls_acc>-smp  += <ls_base>-smp_qty.
+      <ls_acc>-insp += <ls_base>-insp_qty.
+    ENDLOOP.
+
+    LOOP AT it_rwk ASSIGNING FIELD-SYMBOL(<ls_rwk>).
+      ASSIGN lt_acc[ meins = <ls_rwk>-meins ] TO <ls_acc>.
+      IF sy-subrc <> 0.
+        INSERT VALUE #( meins = <ls_rwk>-meins ) INTO TABLE lt_acc ASSIGNING <ls_acc>.
+      ENDIF.
+      <ls_acc>-rwk += <ls_rwk>-menge.
+    ENDLOOP.
+
+    " Same 5 buckets as the dashboard-level Quality entity (get_dashboard_data),
+    " one set per UoM - Under Inspection and Rework both included here since
+    " the qualification-card row (unlike the donut) shows all 5.
+    LOOP AT lt_acc ASSIGNING <ls_acc>.
+      APPEND VALUE #( bucket = 'Accepted' meins = <ls_acc>-meins qty = <ls_acc>-acc ) TO rt_qual_uom.
+      APPEND VALUE #( bucket = 'Rejected' meins = <ls_acc>-meins qty = <ls_acc>-rej ) TO rt_qual_uom.
+      APPEND VALUE #( bucket = 'Sample' meins = <ls_acc>-meins qty = <ls_acc>-smp ) TO rt_qual_uom.
+      APPEND VALUE #( bucket = 'Under Inspection' meins = <ls_acc>-meins qty = <ls_acc>-insp ) TO rt_qual_uom.
+      APPEND VALUE #( bucket = 'Rework GRN Qty' meins = <ls_acc>-meins qty = <ls_acc>-rwk ) TO rt_qual_uom.
+    ENDLOOP.
+  ENDMETHOD.
+
+
   METHOD get_dashboard_data.
     " --- current period ---
     DATA(lt_base) = get_base( is_filters ).
@@ -773,27 +935,31 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
                     curr_value = lv_net_val_curr prior_value = lv_net_val_prior
                     delta_pct = lv_delta_nval ) TO rs_result-kpis.
 
-    DATA(lv_share_acc) = pct( iv_part = ls_curr-acc_qty iv_whole = ls_curr-grn_qty ).
-    DATA(lv_share_rej) = pct( iv_part = ls_curr-rej_qty iv_whole = ls_curr-grn_qty ).
-    DATA(lv_share_smp) = pct( iv_part = ls_curr-smp_qty iv_whole = ls_curr-grn_qty ).
-    DATA(lv_share_rwk) = pct( iv_part = ls_curr-rework_qty iv_whole = ls_curr-grn_qty ).
+    DATA(lv_share_acc)  = pct( iv_part = ls_curr-acc_qty iv_whole = ls_curr-grn_qty ).
+    DATA(lv_share_rej)  = pct( iv_part = ls_curr-rej_qty iv_whole = ls_curr-grn_qty ).
+    DATA(lv_share_smp)  = pct( iv_part = ls_curr-smp_qty iv_whole = ls_curr-grn_qty ).
+    DATA(lv_share_insp) = pct( iv_part = ls_curr-insp_qty iv_whole = ls_curr-grn_qty ).
+    DATA(lv_share_rwk)  = pct( iv_part = ls_curr-rework_qty iv_whole = ls_curr-grn_qty ).
 
     APPEND VALUE #( bucket = 'Accepted' qty = ls_curr-acc_qty share_pct = lv_share_acc ) TO rs_result-quality.
     APPEND VALUE #( bucket = 'Rejected' qty = ls_curr-rej_qty share_pct = lv_share_rej ) TO rs_result-quality.
     APPEND VALUE #( bucket = 'Sample' qty = ls_curr-smp_qty share_pct = lv_share_smp ) TO rs_result-quality.
+    " Under Inspection is the donut's 4th bucket (FS section 7.3 / 11); Rework is
+    " reported alongside it for the qualification-card row only - it sits outside
+    " the 100% receipt disposition, so the frontend excludes it from the donut.
+    APPEND VALUE #( bucket = 'Under Inspection' qty = ls_curr-insp_qty share_pct = lv_share_insp ) TO rs_result-quality.
     APPEND VALUE #( bucket = 'Rework GRN Qty' qty = ls_curr-rework_qty share_pct = lv_share_rwk ) TO rs_result-quality.
 
     DATA(lv_qtot) = CONV menge_d( ls_curr-acc_qty + ls_curr-rej_qty + ls_curr-smp_qty ).
-    DATA(lv_avg_value) = COND menge_d( WHEN ls_curr-grn_qty = 0 THEN 0 ELSE ls_curr-grn_value / ls_curr-grn_qty ).
 
     APPEND VALUE #( id = 'REJ_RATE' label = 'Rejection rate'
                     value = pct( iv_part = ls_curr-rej_qty iv_whole = lv_qtot ) ) TO rs_result-ratios.
     APPEND VALUE #( id = 'RWK_RATE' label = 'Rework rate'
                     value = pct( iv_part = ls_curr-rework_qty iv_whole = ls_curr-grn_qty ) ) TO rs_result-ratios.
+    APPEND VALUE #( id = 'REV_RATE' label = 'Reversal rate'
+                    value = pct( iv_part = ls_curr-rev_qty iv_whole = ls_curr-grn_qty ) ) TO rs_result-ratios.
     APPEND VALUE #( id = 'NET_RATE' label = 'Net GRN rate'
                     value = pct( iv_part = lv_net_qty_curr iv_whole = ls_curr-grn_qty ) ) TO rs_result-ratios.
-    APPEND VALUE #( id = 'AVG_VALUE' label = 'Avg. GRN value per unit'
-                    value = lv_avg_value ) TO rs_result-ratios.
 
     rs_result-trend                = get_trend( it_base = lt_base it_rev = lt_rev it_rwk = lt_rwk ).
     DATA(lt_vendor_all)            = get_vendor_agg( it_base = lt_base it_rev = lt_rev it_rwk = lt_rwk ).
@@ -808,11 +974,21 @@ CLASS zcl_grn_dash_query IMPLEMENTATION.
       DELETE rs_result-vendor_top10 FROM 11 TO lines( rs_result-vendor_top10 ).
     ENDIF.
 
+    " Best/worst toggle: both directions slice from the full, untruncated
+    " lt_vendor_all - never re-slice an already-truncated buffer, or a true
+    " "worst 10" would only ever reflect the top 15 by score.
     rs_result-vendor_scorecard = lt_vendor_all.
-    SORT rs_result-vendor_scorecard BY score DESCENDING.
-    IF lines( rs_result-vendor_scorecard ) > 15.
-      DELETE rs_result-vendor_scorecard FROM 16 TO lines( rs_result-vendor_scorecard ).
+    IF is_filters-vendor_rank_dir = 'ASC'.
+      SORT rs_result-vendor_scorecard BY score ASCENDING.
+    ELSE.
+      SORT rs_result-vendor_scorecard BY score DESCENDING.
     ENDIF.
+    IF lines( rs_result-vendor_scorecard ) > 10.
+      DELETE rs_result-vendor_scorecard FROM 11 TO lines( rs_result-vendor_scorecard ).
+    ENDIF.
+
+    rs_result-kpi_by_uom  = get_kpi_by_uom( it_base = lt_base it_rev = lt_rev it_rwk = lt_rwk ).
+    rs_result-qual_by_uom = get_qual_by_uom( it_base = lt_base it_rwk = lt_rwk ).
   ENDMETHOD.
 
 ENDCLASS.

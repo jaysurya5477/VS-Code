@@ -42,6 +42,14 @@ sap.ui.define([
 				negative: {
 					type: "boolean",
 					defaultValue: false
+				},
+				/**
+				 * Always-on per-UoM split, regardless of the dashboard's UoM picker -
+				 * array of {uom, qtyText}. Quantities are never summed across UoMs.
+				 */
+				breakdown: {
+					type: "object",
+					defaultValue: null
 				}
 			}
 		},
@@ -79,6 +87,18 @@ sap.ui.define([
 				oRm.openStart("div").class("grnBar").openEnd();
 				oRm.openStart("div").class("grnBarFill").style("width", fShare + "%").openEnd().close("div");
 				oRm.close("div");
+
+				var aBreakdown = oControl.getBreakdown();
+				if (aBreakdown && aBreakdown.length) {
+					oRm.openStart("div").class("grnUomBreakdown").openEnd();
+					aBreakdown.forEach(function (oRow) {
+						oRm.openStart("div").class("grnUomRow").class("grnUomRow--flat").openEnd();
+						oRm.openStart("span").class("grnUomCode").openEnd().text(oRow.uom || "").close("span");
+						oRm.openStart("span").class("grnUomQty").openEnd().text(oRow.qtyText || "").close("span");
+						oRm.close("div");
+					});
+					oRm.close("div");
+				}
 
 				oRm.close("div");
 			}

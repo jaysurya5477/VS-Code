@@ -7,7 +7,7 @@ sap.ui.define([
 	 * One hero KPI tile: label, movement-type chip, big value, delta pill and a sparkline.
 	 *
 	 * Everything except the sparkline is plain markup; the sparkline is an EChart control
-	 * in the `spark` aggregation so it keeps its own canvas lifecycle.
+	 * in the `spark` aggregation so it keeps its own chart lifecycle.
 	 */
 	return Control.extend("com.sap.zmmgrndash.control.KpiCard", {
 
@@ -43,6 +43,16 @@ sap.ui.define([
 				deltaTone: {
 					type: "string",
 					defaultValue: "none"
+				},
+				/**
+				 * Always-on per-UoM split, regardless of the dashboard's UoM picker -
+				 * array of {uom, qtyText, pct} (pct: CSS width string, e.g. "42%").
+				 * Quantities are never summed across UoMs, so this is the only place
+				 * a hero card shows every base UoM at once.
+				 */
+				breakdown: {
+					type: "object",
+					defaultValue: null
 				}
 			},
 			aggregations: {
@@ -101,6 +111,22 @@ sap.ui.define([
 				}
 
 				oRm.close("div");
+
+				var aBreakdown = oControl.getBreakdown();
+				if (aBreakdown && aBreakdown.length) {
+					oRm.openStart("div").class("grnUomBreakdown").openEnd();
+					aBreakdown.forEach(function (oRow) {
+						oRm.openStart("div").class("grnUomRow").openEnd();
+						oRm.openStart("span").class("grnUomCode").openEnd().text(oRow.uom || "").close("span");
+						oRm.openStart("div").class("grnUomBar").openEnd();
+						oRm.openStart("div").class("grnUomBarFill").style("width", oRow.pct || "0%").openEnd().close("div");
+						oRm.close("div");
+						oRm.openStart("span").class("grnUomQty").openEnd().text(oRow.qtyText || "").close("span");
+						oRm.close("div");
+					});
+					oRm.close("div");
+				}
+
 				oRm.close("div");
 			}
 		}

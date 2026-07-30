@@ -1,7 +1,10 @@
-*"* Query provider for custom entity ZMM_GRN_DASH_RATIO.
+*"* Query provider for custom entity ZMM_GRN_DASH_QUAL_BY_UOM.
 *"* Thin shell: reads parameters -> calls ZCL_GRN_DASH_QUERY -> maps -> returns.
 *"* See ZCL_GRN_DASH_KPI_QRY's header comment for the overall pattern.
-CLASS zcl_grn_dash_ratio_qry DEFINITION
+*"* Deliberately reads no P_Uom parameter - this entity always returns
+*"* every UoM (see ZMM_GRN_DASH_QUAL_BY_UOM's header comment); the
+*"* dashboard's UoM picker never scopes this one.
+CLASS zcl_grn_dash_qual_uom_qry DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC.
@@ -17,7 +20,7 @@ CLASS zcl_grn_dash_ratio_qry DEFINITION
 ENDCLASS.
 
 
-CLASS zcl_grn_dash_ratio_qry IMPLEMENTATION.
+CLASS zcl_grn_dash_qual_uom_qry IMPLEMENTATION.
 
   METHOD if_rap_query_provider~select.
 
@@ -26,8 +29,7 @@ CLASS zcl_grn_dash_ratio_qry IMPLEMENTATION.
           lv_vendor   TYPE string,
           lv_material TYPE string,
           lv_plant    TYPE string,
-          lv_doctype  TYPE string,
-          lv_uom      TYPE string.
+          lv_doctype  TYPE string.
 
     LOOP AT io_request->get_parameters( ) INTO DATA(ls_param).
       CASE to_upper( ls_param-parameter_name ).
@@ -37,7 +39,6 @@ CLASS zcl_grn_dash_ratio_qry IMPLEMENTATION.
         WHEN 'P_MATERIAL'. lv_material = ls_param-value.
         WHEN 'P_PLANT'.    lv_plant    = ls_param-value.
         WHEN 'P_DOCTYPE'.  lv_doctype  = ls_param-value.
-        WHEN 'P_UOM'.      lv_uom      = ls_param-value.
       ENDCASE.
     ENDLOOP.
 
@@ -47,16 +48,15 @@ CLASS zcl_grn_dash_ratio_qry IMPLEMENTATION.
       vendor    = CORRESPONDING #( csv_to_range( lv_vendor ) )
       material  = CORRESPONDING #( csv_to_range( lv_material ) )
       plant     = CORRESPONDING #( csv_to_range( lv_plant ) )
-      doc_type  = CORRESPONDING #( csv_to_range( lv_doctype ) )
-      uom       = CORRESPONDING #( csv_to_range( lv_uom ) ) ).
+      doc_type  = CORRESPONDING #( csv_to_range( lv_doctype ) ) ).
 
     DATA(ls_dash) = zcl_grn_dash_query=>get_dashboard_data( ls_filters ).
 
-    DATA lt_out TYPE STANDARD TABLE OF zmm_grn_dash_ratio.
-    lt_out = VALUE #( FOR ls IN ls_dash-ratios (
-                        id         = ls-id
-                        ratiolabel = ls-label
-                        ratiovalue = ls-value ) ).
+    DATA lt_out TYPE STANDARD TABLE OF zmm_grn_dash_qual_by_uom.
+    lt_out = VALUE #( FOR ls IN ls_dash-qual_by_uom (
+                        bucket = ls-bucket
+                        uom    = ls-meins
+                        qty    = ls-qty ) ).
 
     IF io_request->is_total_numb_of_rec_requested( ).
       io_response->set_total_number_of_records( lines( lt_out ) ).

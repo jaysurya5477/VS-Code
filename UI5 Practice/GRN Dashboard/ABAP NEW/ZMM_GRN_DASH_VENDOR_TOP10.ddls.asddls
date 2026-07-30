@@ -14,7 +14,8 @@ define custom entity ZMM_GRN_DASH_VENDOR_TOP10
     P_Vendor   : zmm_grn_dash_flt,
     P_Material : zmm_grn_dash_flt,
     P_Plant    : zmm_grn_dash_flt,
-    P_DocType  : zmm_grn_dash_flt
+    P_DocType  : zmm_grn_dash_flt,
+    P_Uom      : zmm_grn_dash_flt
 {
   key Vendor     : lifnr;
       VendorName : name1_gp;

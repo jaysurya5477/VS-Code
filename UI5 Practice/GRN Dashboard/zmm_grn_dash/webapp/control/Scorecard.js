@@ -12,8 +12,8 @@ sap.ui.define([
 	 * documented interaction is "click a row to filter the dashboard to that vendor".
 	 *
 	 * Row shape:
-	 *   {name, code, qtyText, netText, valueText, rejText, rejTone, reworkText,
-	 *    scoreText, scorePct, tone, selected}
+	 *   {name, code, qtyText, netText, valueText, rejQtyText, rejText, rejTone,
+	 *    reworkText, scoreText, scorePct, tone, selected}
 	 */
 	return Control.extend("com.sap.zmmgrndash.control.Scorecard", {
 
@@ -32,7 +32,7 @@ sap.ui.define([
 					type: "string",
 					defaultValue: ""
 				},
-				/** Seven column headers, left to right. */
+				/** Eight column headers, left to right. */
 				columns: {
 					type: "object",
 					defaultValue: null
@@ -48,6 +48,14 @@ sap.ui.define([
 				span: {
 					type: "int",
 					defaultValue: 12
+				}
+			},
+			aggregations: {
+				/** The best/worst rank Toggle, rendered next to the badge. */
+				actions: {
+					type: "sap.ui.core.Control",
+					multiple: true,
+					singularName: "action"
 				}
 			},
 			events: {
@@ -71,6 +79,7 @@ sap.ui.define([
 			render: function (oRm, oControl) {
 				var aRows = oControl.getRows() || [];
 				var aColumns = oControl.getColumns() || [];
+				var aActions = oControl.getActions() || [];
 
 				oRm.openStart("div", oControl);
 				oRm.class("grnCard");
@@ -89,6 +98,9 @@ sap.ui.define([
 				if (oControl.getBadge()) {
 					oRm.openStart("span").class("grnTag").openEnd().text(oControl.getBadge()).close("span");
 				}
+				aActions.forEach(function (oAction) {
+					oRm.renderControl(oAction);
+				});
 				oRm.close("div");
 				oRm.close("div");
 
@@ -136,6 +148,8 @@ sap.ui.define([
 					oRm.openStart("div").class("grnNum").class("grnNum--muted").openEnd()
 						.text(oRow.netText || "").close("div");
 					oRm.openStart("div").class("grnNum").openEnd().text(oRow.valueText || "").close("div");
+					oRm.openStart("div").class("grnNum").class("grnNum--muted").openEnd()
+						.text(oRow.rejQtyText || "").close("div");
 
 					// The rejection rate carries its own tone, so it opens a nested scope.
 					oRm.openStart("div")

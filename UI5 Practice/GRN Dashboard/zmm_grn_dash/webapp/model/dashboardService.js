@@ -6,18 +6,23 @@ sap.ui.define([
 	/**
 	 * Read layer over the ZMM_GRN_DASH_O4 OData V4 service.
 	 *
-	 * The 10 entities are CDS *custom entities with parameters*, so the metadata exposes
+	 * The 12 entities are CDS *custom entities with parameters*, so the metadata exposes
 	 * each one as a "…Parameters" entity set whose `Set` navigation property carries the
 	 * rows. The parameters are therefore part of the resource path, not $filter:
 	 *
 	 *   /KPI(P_DateFrom=2026-01-01,P_DateTo=2026-07-29,P_Vendor='',P_Material='',
-	 *        P_Plant='',P_DocType='')/Set
+	 *        P_Plant='',P_DocType='',P_Uom='')/Set
 	 *
 	 * The parameter entity sets themselves are annotated Readable=false — reading
 	 * `/KPI` directly is rejected by the backend; only the `/Set` navigation works.
 	 * See ../../../README.md, "Phase 2: OData V4 design".
 	 *
-	 * All ten reads are issued through one ODataModel using the default $auto group, so
+	 * KpiByUom and QualByUom are the two exceptions: they back the hero KPI and
+	 * qualification cards' always-on per-UoM breakdown tables, so the UoM picker never
+	 * scopes them - their entity definitions set `noUom: true` and buildPath() omits
+	 * P_Uom for those two paths entirely (see `noUom` doc below).
+	 *
+	 * All twelve reads are issued through one ODataModel using the default $auto group, so
 	 * UI5 folds them into a single $batch round trip per dashboard refresh.
 	 */
 
@@ -50,8 +55,12 @@ sap.ui.define([
 		},
 		vendorScorecard: {
 			set: "VendorScorecard",
-			select: "Vendor,VendorName,Qty,NetQty,Value,RejPct,ReworkPct,Score",
-			orderby: "Score desc"
+			select: "Vendor,VendorName,Qty,NetQty,Value,RejQty,RejPct,ReworkPct,Score",
+			orderby: "Score desc",
+			// Only this entity declares P_RankDir - 'DESC' (best-first, default) or
+			// 'ASC' (worst/needs-attention first). Everything else uses the shared
+			// six-parameter path built by buildPath().
+			rankDir: true
 		},
 		plantTop10: {
 			set: "PlantTop10",
@@ -60,7 +69,7 @@ sap.ui.define([
 		},
 		materialTop20: {
 			set: "MaterialTop20",
-			select: "Material,MaterialName,Value",
+			select: "Material,MaterialName,Value,GrandTotal",
 			orderby: "Value desc"
 		},
 		materialRejWorst10: {
@@ -72,6 +81,20 @@ sap.ui.define([
 			set: "DoctypeRanked",
 			select: "DocType,DocTypeName,Value",
 			orderby: "Value desc"
+		},
+		// The two "always full UoM breakdown" entities backing the hero KPI and
+		// qualification cards - the UoM picker never scopes these, so their query
+		// classes declare no P_Uom parameter and buildPath() must omit it entirely
+		// (sending an undeclared parameter is an OData error, not just a no-op).
+		kpiByUom: {
+			set: "KpiByUom",
+			select: "Uom,GrossQty,GrossValue,NetQty,NetValue",
+			noUom: true
+		},
+		qualByUom: {
+			set: "QualByUom",
+			select: "Bucket,Uom,Qty",
+			noUom: true
 		}
 	};
 
@@ -118,19 +141,29 @@ sap.ui.define([
 		 * place the path is assembled.
 		 *
 		 * @param {string} sEntitySet e.g. "KPI"
-		 * @param {object} oFilters {dateFrom, dateTo, vendor, material, plant, docType}
+		 * @param {object} oFilters {dateFrom, dateTo, vendor, material, plant, docType, uom, rankDir}
+		 * @param {boolean} [bRankDir] append P_RankDir - only VendorScorecard declares it
+		 * @param {boolean} [bNoUom] omit P_Uom - the two "always full breakdown" entities
+		 *   don't declare it, and sending an undeclared parameter is a 400, not a no-op
 		 * @returns {string} absolute binding path ending in /Set
 		 */
-		buildPath: function (sEntitySet, oFilters) {
+		buildPath: function (sEntitySet, oFilters, bRankDir, bNoUom) {
 			var f = oFilters || {};
-			return "/" + sEntitySet + "(" + [
+			var aParams = [
 				"P_DateFrom=" + formatter.isoDate(f.dateFrom),
 				"P_DateTo=" + formatter.isoDate(f.dateTo),
 				"P_Vendor='" + quote(csv(f.vendor)) + "'",
 				"P_Material='" + quote(csv(f.material)) + "'",
 				"P_Plant='" + quote(csv(f.plant)) + "'",
 				"P_DocType='" + quote(csv(f.docType)) + "'"
-			].join(",") + ")/Set";
+			];
+			if (!bNoUom) {
+				aParams.push("P_Uom='" + quote(csv(f.uom)) + "'");
+			}
+			if (bRankDir) {
+				aParams.push("P_RankDir='" + quote(f.rankDir === "ASC" ? "ASC" : "DESC") + "'");
+			}
+			return "/" + sEntitySet + "(" + aParams.join(",") + ")/Set";
 		},
 
 		/**
@@ -159,7 +192,7 @@ sap.ui.define([
 				mParameters.$orderby = oDef.orderby;
 			}
 
-			var oBinding = oModel.bindList(this.buildPath(oDef.set, oFilters), null, [], [], mParameters);
+			var oBinding = oModel.bindList(this.buildPath(oDef.set, oFilters, oDef.rankDir, oDef.noUom), null, [], [], mParameters);
 
 			return oBinding.requestContexts(0, MAX_ROWS).then(function (aContexts) {
 				return aContexts.map(function (oContext) {
@@ -178,14 +211,15 @@ sap.ui.define([
 		},
 
 		/**
-		 * Reads all ten entity sets for one filter selection.
+		 * Reads all twelve entity sets for one filter selection.
 		 *
-		 * Uses Promise.all on the default $auto group so the ten GETs leave the browser
+		 * Uses Promise.all on the default $auto group so the twelve GETs leave the browser
 		 * as one $batch. Rejects on the first failure — a dashboard missing a chart is
 		 * more misleading than one that says it could not load.
 		 *
 		 * @param {sap.ui.model.odata.v4.ODataModel} oModel the OData model
-		 * @param {object} oFilters the six filter values
+		 * @param {object} oFilters the filter values (dateFrom, dateTo, vendor, material,
+		 *   plant, docType, uom, rankDir)
 		 * @returns {Promise<object>} one property per ENTITIES key, each an array of rows
 		 */
 		readAll: function (oModel, oFilters) {
