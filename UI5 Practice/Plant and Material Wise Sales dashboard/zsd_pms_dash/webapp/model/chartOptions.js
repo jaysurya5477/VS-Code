@@ -163,7 +163,11 @@ sap.ui.define([
 							color: pal.line
 						}
 					},
-					valueFormatter: formatter.money
+					// Wrapped, not passed by reference: ECharts calls valueFormatter with a
+					// second argument, which money()'s optional decimals would swallow.
+					valueFormatter: function (v) {
+						return formatter.money(v);
+					}
 				}, tooltipStyle(pal)),
 				xAxis: axis(pal, {
 					type: "category",
@@ -207,81 +211,6 @@ sap.ui.define([
 						color: pal.c6,
 						borderColor: pal.panel,
 						borderWidth: 2
-					}
-				}]
-			});
-		},
-
-		/**
-		 * Scheme performance roll-up - horizontal bar ranked by net value, one colour per
-		 * scheme from the shared 8-colour ramp.
-		 * @param {object[]} aRows Scheme entity rows
-		 * @param {object} ctx {pal, animate}
-		 * @returns {object} ECharts option
-		 */
-		scheme: function (aRows, ctx) {
-			var pal = ctx.pal;
-			var aRamp = chartTheme.ramp(pal);
-			var aData = aRows.slice().reverse();
-			var fMax = maxOf(aData, "NetValue");
-
-			return Object.assign({}, baseOption(ctx), {
-				grid: {
-					left: 168,
-					right: 30,
-					top: 12,
-					bottom: 22
-				},
-				tooltip: Object.assign({
-					trigger: "axis",
-					axisPointer: {
-						type: "shadow"
-					},
-					formatter: function (aParams) {
-						var o = aParams[0];
-						var r = aData[o.dataIndex] || {};
-						return "<b>" + (r.CatDesc || r.Category) + "</b><br/>" +
-							formatter.money(r.NetValue) + " " + formatter.MIDDOT + " " +
-							formatter.percent(r.SharePct, 1) + " of total<br/>" +
-							formatter.signedPercent(r.DeltaPct) + " YoY " + formatter.MIDDOT + " " +
-							formatter.count(r.InvoiceCount) + " invoices";
-					}
-				}, tooltipStyle(pal)),
-				xAxis: axis(pal, {
-					type: "value",
-					axisLabel: {
-						formatter: scaledAxis(fMax)
-					}
-				}),
-				yAxis: axis(pal, {
-					type: "category",
-					data: aData.map(function (r) {
-						return r.CatDesc || r.Category;
-					}),
-					splitLine: {
-						show: false
-					}
-				}),
-				series: [{
-					type: "bar",
-					barWidth: "58%",
-					data: aData.map(function (r, i) {
-						return {
-							value: Math.round(num(r.NetValue)),
-							itemStyle: {
-								color: aRamp[(aData.length - 1 - i) % aRamp.length],
-								borderRadius: [0, 4, 4, 0]
-							}
-						};
-					}),
-					label: {
-						show: true,
-						position: "right",
-						color: pal.ink2,
-						fontSize: 10.5,
-						formatter: function (o) {
-							return formatter.money(o.value);
-						}
 					}
 				}]
 			});
@@ -433,63 +362,6 @@ sap.ui.define([
 					}
 				}]
 			});
-		},
-
-		/**
-		 * A tiny sparkline for a KPI card - area-filled line, no axes.
-		 * @param {number[]} aValues series values
-		 * @param {string} sColor line/fill colour
-		 * @param {object} ctx {echarts, animate}
-		 * @returns {object} ECharts option
-		 */
-		sparkline: function (aValues, sColor, ctx) {
-			var echarts = ctx.echarts;
-			return {
-				animation: ctx.animate !== false,
-				grid: {
-					left: 0,
-					right: 0,
-					top: 3,
-					bottom: 3
-				},
-				xAxis: {
-					type: "category",
-					show: false,
-					boundaryGap: false,
-					data: aValues.map(function (v, i) {
-						return i;
-					})
-				},
-				yAxis: {
-					show: false,
-					type: "value",
-					min: function (o) {
-						return o.min - Math.abs(o.min) * 0.35;
-					}
-				},
-				tooltip: {
-					show: false
-				},
-				series: [{
-					type: "line",
-					data: aValues,
-					smooth: true,
-					symbol: "none",
-					lineStyle: {
-						width: 1.9,
-						color: sColor
-					},
-					areaStyle: {
-						color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-							offset: 0,
-							color: chartTheme.alpha(sColor, 0.25)
-						}, {
-							offset: 1,
-							color: chartTheme.alpha(sColor, 0)
-						}])
-					}
-				}]
-			};
 		}
 	};
 

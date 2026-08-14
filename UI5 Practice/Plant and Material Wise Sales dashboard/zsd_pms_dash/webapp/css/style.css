@@ -44,9 +44,34 @@
 	--pms-neg-soft: #fbe9e7;
 	--pms-shadow: 0 1px 2px rgba(13, 36, 48, .04), 0 8px 24px -18px rgba(13, 36, 48, .35);
 	--pms-shadow-pop: 0 14px 34px rgba(13, 36, 48, .18);
-	--pms-font: "IBM Plex Sans", "72", "72full", Arial, Helvetica, sans-serif;
-	--pms-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-	--pms-heading: "Archivo", var(--pms-font);
+	--pms-hover: #f5f8f9;
+	--pms-sel: #eef4f5;
+
+	/* Sequential ramp for the choropleth, plus the "nothing billed" fill and the zone
+	   boundary stroke. Emitted as var() references by control/IndiaMap.js, so switching
+	   light/dark re-colours the map with no redraw. Light values are the prototype's own
+	   SCALE_VALUE/NO_DATA. */
+	--pms-scale-0: #e3eef0;
+	--pms-scale-1: #afd6da;
+	--pms-scale-2: #72b8c0;
+	--pms-scale-3: #2e8b9b;
+	--pms-scale-4: #12596e;
+	--pms-nodata: #f2f5f6;
+	--pms-zonediv: rgba(13, 36, 48, .28);
+	--pms-dot: #e4162a;
+
+	/*
+	 * IBM Plex and Archivo are the prototype's fonts but cannot be fetched here - public CDNs
+	 * are blocked in this landscape (see the sibling GRN Dashboard's own libs_README.md) and
+	 * neither family ships with Windows or with UI5. The stacks below therefore lead with the
+	 * prototype's choice and fall back to fonts that are actually present: "72" is SAP's own
+	 * (so the panels match the Fiori filter bar), then the platform UI font. Naming a missing
+	 * family first costs nothing; leaving the fallbacks vague is what produces the mismatched
+	 * text the panels showed before.
+	 */
+	--pms-font: "IBM Plex Sans", "72", "72full", "Segoe UI Variable Text", "Segoe UI", system-ui, Arial, sans-serif;
+	--pms-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, "Liberation Mono", monospace;
+	--pms-heading: "Archivo", "72", "Segoe UI Variable Display", "Segoe UI", system-ui, Arial, sans-serif;
 }
 
 :root[data-pms-theme="dark"] {
@@ -56,8 +81,24 @@
 	--pms-line: #242c36;
 	--pms-line2: #1c232c;
 	--pms-ink: #e8ecf1;
-	--pms-ink2: #9aa5b2;
-	--pms-ink3: #6d7885;
+	--pms-ink2: #aab5c2;
+	/* Was #6d7885, which sits at roughly 3.4:1 on the dark panel - under AA for the mono
+	   sub-lines and legends that use it almost exclusively. */
+	--pms-ink3: #8b96a4;
+	--pms-hover: #1b232c;
+	--pms-sel: #1e2833;
+
+	/* Dark ramp runs muted -> bright rather than pale -> deep: on a near-black panel the
+	   light ramp's palest steps read as "no data" instead of "a little". */
+	--pms-scale-0: #1c3038;
+	--pms-scale-1: #23515c;
+	--pms-scale-2: #2c7684;
+	--pms-scale-3: #3aa0ae;
+	--pms-scale-4: #5fcbd6;
+	--pms-nodata: #1a212a;
+	--pms-zonediv: rgba(232, 236, 241, .3);
+	--pms-dot: #ff5f68;
+
 	--pms-c1: #39a6af;
 	--pms-c2: #5c9ae8;
 	--pms-c3: #8b84e8;
@@ -75,6 +116,10 @@
 	--pms-shadow-pop: 0 14px 34px rgba(0, 0, 0, .55);
 }
 
+/*
+ * Only in play before model/appTheme.js has written data-pms-theme (it always writes one of
+ * light/dark). Kept in sync with the block above so the first paint is never the wrong theme.
+ */
 @media (prefers-color-scheme: dark) {
 	:root:not([data-pms-theme="light"]) {
 		--pms-bg: #0d1117;
@@ -83,8 +128,18 @@
 		--pms-line: #242c36;
 		--pms-line2: #1c232c;
 		--pms-ink: #e8ecf1;
-		--pms-ink2: #9aa5b2;
-		--pms-ink3: #6d7885;
+		--pms-ink2: #aab5c2;
+		--pms-ink3: #8b96a4;
+		--pms-hover: #1b232c;
+		--pms-sel: #1e2833;
+		--pms-scale-0: #1c3038;
+		--pms-scale-1: #23515c;
+		--pms-scale-2: #2c7684;
+		--pms-scale-3: #3aa0ae;
+		--pms-scale-4: #5fcbd6;
+		--pms-nodata: #1a212a;
+		--pms-zonediv: rgba(232, 236, 241, .3);
+		--pms-dot: #ff5f68;
 		--pms-accent-soft: #16283a;
 		--pms-pos: #3fbf9c;
 		--pms-pos-soft: #12291f;
@@ -252,103 +307,286 @@
 .pmsCardSub { font-size: 11.5px; color: var(--pms-ink2); margin-top: 3px; line-height: 1.4; }
 .pmsCardActions { display: flex; align-items: center; gap: 8px; flex: none; }
 
+/* ----------------------------------------------------------- shared atoms --- */
+
+.pmsEyebrow {
+	font-family: var(--pms-mono);
+	font-size: 9.5px;
+	letter-spacing: .16em;
+	text-transform: uppercase;
+	color: var(--pms-ink3);
+}
+
+.pmsDivider { border-top: 1px solid var(--pms-line2); margin: 12px 0 10px; }
+
+.pmsEmpty {
+	padding: 26px 12px;
+	text-align: center;
+	font-size: 12px;
+	color: var(--pms-ink3);
+	line-height: 1.5;
+}
+
+/* Delta pill, the prototype's .delta. Tone comes from the --pms-tone pair. */
+.pmsDelta {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11.5px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	padding: 2px 8px;
+	border-radius: 20px;
+	white-space: nowrap;
+	color: var(--pms-ink3);
+	background: var(--pms-line2);
+}
+.pmsDelta--up { color: var(--pms-pos); background: var(--pms-pos-soft); }
+.pmsDelta--down { color: var(--pms-neg); background: var(--pms-neg-soft); }
+.pmsDeltaArrow { font-size: 9px; line-height: 1; }
+
 /* --------------------------------------------------------------- KPI cards --- */
 
-.pmsKpiCard { padding: 15px 16px 10px; }
-.pmsKpiTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.pmsKpiLabel { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; color: var(--pms-ink2); }
-.pmsKpiBody { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; }
-.pmsKpiFigures { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.pmsKpiValueRow { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.pmsKpi { position: relative; padding: 15px 15px 13px; overflow: hidden; }
+
+.pmsKpi::before {
+	content: "";
+	position: absolute;
+	top: 0; left: 0; right: 0; height: 3px;
+	background: var(--pms-kpi-accent, var(--pms-accent));
+}
+
+/* The prototype's four card gradients, expressed against the categorical ramp so both
+   themes get them: net c1->c7, tax c3->c4, gross c4->c5, daily c6->c1. --pms-kpi-ink is
+   the sparkline colour, picked up through currentColor on the .pmsSpark element. */
+.pmsKpi--net {
+	--pms-kpi-accent: linear-gradient(90deg, var(--pms-c1), var(--pms-c7));
+	--pms-kpi-ink: var(--pms-c1);
+}
+.pmsKpi--tax {
+	--pms-kpi-accent: linear-gradient(90deg, var(--pms-c3), var(--pms-c4));
+	--pms-kpi-ink: var(--pms-c3);
+}
+.pmsKpi--gross {
+	--pms-kpi-accent: linear-gradient(90deg, var(--pms-c4), var(--pms-c5));
+	--pms-kpi-ink: var(--pms-c4);
+}
+.pmsKpi--daily {
+	--pms-kpi-accent: linear-gradient(90deg, var(--pms-c6), var(--pms-c1));
+	--pms-kpi-ink: var(--pms-c6);
+}
+
+.pmsKpiTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pmsKpiHeadText { min-width: 0; }
 
 .pmsKpiValue {
 	font-family: var(--pms-heading);
-	font-size: 27px;
+	font-size: 26px;
 	font-weight: 700;
 	letter-spacing: -.025em;
-	line-height: 1;
+	line-height: 1.05;
+	margin-top: 9px;
 	color: var(--pms-ink);
 	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 
-.pmsKpiUnit { font-family: var(--pms-mono); font-size: 11px; color: var(--pms-ink3); }
-.pmsKpiDeltaRow { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.pmsKpiUnit { font-size: 14px; font-weight: 600; color: var(--pms-ink2); margin-left: 2px; }
 
-.pmsKpiDelta {
+.pmsKpiFoot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 9px;
+}
+
+.pmsKpiSub {
 	font-family: var(--pms-mono);
 	font-size: 10.5px;
-	font-weight: 600;
-	border-radius: 20px;
-	padding: 2px 8px;
-	color: var(--pms-tone, var(--pms-ink));
-	background: var(--pms-tone-tint, transparent);
+	color: var(--pms-ink3);
+	text-align: right;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.pmsKpiDeltaNote { font-size: 10.5px; color: var(--pms-ink3); }
-.pmsKpiSubNote { font-size: 10.5px; color: var(--pms-ink3); margin-top: 6px; font-family: var(--pms-mono); }
-.pmsKpiSpark { flex: 0 1 112px; min-width: 60px; }
+.pmsSpark { display: block; width: 74px; height: 26px; flex: none; color: var(--pms-kpi-ink, var(--pms-accent)); }
+.pmsSparkArea { fill: currentColor; fill-opacity: .18; stroke: none; }
+.pmsSparkLine { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.pmsSparkHead { fill: currentColor; }
 
 /* -------------------------------------------------------------- india map --- */
 
 .pmsMapWrap { position: relative; display: flex; justify-content: center; width: 100%; }
 .pmsMapSvg { width: 100%; height: 100%; display: block; }
 
-.pmsMapState {
+.pmsMapArea {
 	stroke: var(--pms-panel);
 	stroke-width: .6;
 	cursor: pointer;
-	transition: fill .2s, stroke-width .1s;
+	transition: fill .25s, stroke-width .12s;
 }
-.pmsMapState:hover { stroke: var(--pms-ink); stroke-width: 1.4; }
-.pmsMapState--sel { stroke: var(--pms-ink); stroke-width: 1.8; }
+.pmsMapArea:hover { stroke: var(--pms-ink); stroke-width: 1.4; }
+.pmsMapArea--sel { stroke: var(--pms-ink); stroke-width: 1.7; }
 
 .pmsMapZoneDiv {
 	fill: none;
-	stroke: rgba(13, 36, 48, .28);
+	stroke: var(--pms-zonediv);
 	stroke-width: 1;
 	pointer-events: none;
 	stroke-linejoin: round;
 }
 
 .pmsMapDot {
-	fill: #e4162a;
-	fill-opacity: .82;
-	stroke: #ffffff;
-	stroke-width: 1;
-	cursor: default;
-	transition: stroke-width .1s;
+	fill: var(--pms-dot);
+	fill-opacity: .66;
+	stroke: var(--pms-panel);
+	stroke-width: .9;
+	cursor: pointer;
+	transition: stroke-width .1s, fill-opacity .1s;
 }
-.pmsMapDot:hover { stroke: var(--pms-ink); stroke-width: 2; }
+.pmsMapDot:hover { fill-opacity: .95; stroke: var(--pms-ink); stroke-width: 2; }
 
-.pmsMapLegend {
+/* Colour scale: one flex cell per step, labelled with the actual quantile break. */
+.pmsMapScale {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	margin-top: 10px;
-	padding-top: 12px;
+	margin-top: 16px;
+	padding-top: 14px;
 	border-top: 1px solid var(--pms-line2);
 	flex-wrap: wrap;
+}
+
+.pmsScaleCap {
+	font-family: var(--pms-mono);
+	font-size: 9.5px;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--pms-ink3);
+	margin-right: 10px;
+	align-self: flex-start;
+}
+
+.pmsScaleSwatch { flex: 1 1 44px; min-width: 44px; }
+.pmsScaleChip { display: block; height: 9px; border-radius: 2px; }
+.pmsScaleChip--none { background: var(--pms-nodata); box-shadow: inset 0 0 0 1px var(--pms-line); }
+
+.pmsScaleLabel {
+	display: block;
+	font-family: var(--pms-mono);
+	font-size: 9.5px;
+	color: var(--pms-ink3);
+	margin-top: 4px;
+	min-height: 12px;
+	line-height: 12px;
+}
+
+.pmsMapDotKey {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 14px;
+	font-size: 10.5px;
+	color: var(--pms-ink3);
+}
+.pmsMapDotKeyChip { width: 9px; height: 9px; border-radius: 50%; background: var(--pms-dot); }
+
+/* Hover card. Lives on <body>, so it is never clipped by a panel's overflow. */
+.pmsTip {
+	position: fixed;
+	z-index: 200;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity .1s;
+	background: var(--pms-ink);
+	color: var(--pms-panel);
+	border-radius: 9px;
+	padding: 9px 11px;
+	font-family: var(--pms-font);
+	font-size: 11.5px;
+	box-shadow: var(--pms-shadow-pop);
+	max-width: 250px;
+}
+
+.pmsTipHead {
+	display: block;
+	font-family: var(--pms-mono);
+	font-size: 10.5px;
+	opacity: .62;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+}
+.pmsTipName { display: block; font-weight: 600; margin: 2px 0 6px; font-size: 12.5px; }
+.pmsTipRow { display: flex; justify-content: space-between; gap: 16px; line-height: 1.7; }
+.pmsTipRow span:last-child { font-family: var(--pms-heading); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------ scheme list --- */
+
+.pmsSchemeList { padding-top: 4px; }
+
+.pmsZRow {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 9px 8px;
+	border: none;
+	background: none;
+	border-radius: 9px;
+	cursor: pointer;
+	font-family: inherit;
+	color: var(--pms-ink);
+	transition: background .12s;
+}
+.pmsZRow:hover { background: var(--pms-hover); }
+.pmsZRow--sel { background: var(--pms-sel); box-shadow: inset 0 0 0 1px var(--pms-line); }
+
+.pmsZTop { display: flex; align-items: center; gap: 8px; }
+.pmsZChip { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.pmsZName { flex: 1; font-size: 12.5px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmsZVal { font-family: var(--pms-heading); font-weight: 600; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+.pmsZBar { display: block; height: 6px; border-radius: 4px; background: var(--pms-line2); margin-top: 7px; overflow: hidden; }
+.pmsZBarFill { display: block; height: 100%; border-radius: 4px; }
+
+.pmsZMeta {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 5px;
 	font-family: var(--pms-mono);
 	font-size: 10px;
 	color: var(--pms-ink3);
 }
+.pmsZDelta { color: var(--pms-tone, var(--pms-ink3)); white-space: nowrap; }
 
-/* Five-stop choropleth scale, drawn as one gradient so the legend needs no
-   markup of its own (raw HTML tags are not allowed inside an XML view). */
-.pmsMapScale {
-	width: 110px;
-	height: 9px;
-	border-radius: 2px;
-	background: linear-gradient(to right,
-		#E3EEF0 0 20%,
-		#AFD6DA 20% 40%,
-		#72B8C0 40% 60%,
-		#2E8B9B 60% 80%,
-		#12596E 80% 100%);
+.pmsSchemeSectionLabel { padding: 0 8px 6px; }
+
+.pmsStRow {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	width: 100%;
+	text-align: left;
+	padding: 5px 8px;
+	border: none;
+	background: none;
+	border-radius: 7px;
+	cursor: pointer;
+	font-family: inherit;
+	color: var(--pms-ink);
+	transition: background .12s;
 }
+.pmsStRow:hover { background: var(--pms-hover); }
+.pmsStRow--sel { background: var(--pms-sel); box-shadow: inset 0 0 0 1px var(--pms-line); }
 
-.pmsMapDotKey { display: inline-flex; align-items: center; gap: 6px; }
-.pmsMapDotKey .d { width: 9px; height: 9px; border-radius: 50%; background: #e4162a; opacity: .82; }
+.pmsStRank { font-family: var(--pms-mono); font-size: 10px; color: var(--pms-ink3); width: 16px; flex: none; }
+.pmsStName { flex: 1; font-size: 12px; color: var(--pms-ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmsStVal { font-family: var(--pms-heading); font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
+.pmsStDelta { width: 52px; text-align: right; font-family: var(--pms-mono); font-size: 10.5px; color: var(--pms-tone, var(--pms-ink3)); }
+
+.pmsZRow:focus-visible, .pmsStRow:focus-visible { outline: 2px solid var(--pms-accent); outline-offset: -2px; }
 
 /* ----------------------------------------------------- toggles and flat buttons --- */
 
@@ -374,7 +612,9 @@
 	white-space: nowrap;
 }
 .pmsToggleBtn:hover { color: var(--pms-ink); }
-.pmsToggleBtn--on, .pmsToggleBtn--on:hover { background: var(--pms-ink); color: #ffffff; }
+/* Not a literal white: in dark, --pms-ink is the *light* colour, so white-on-ink would be
+   white on near-white. Pairing it with --pms-panel keeps the contrast inverted in both themes. */
+.pmsToggleBtn--on, .pmsToggleBtn--on:hover { background: var(--pms-ink); color: var(--pms-panel); }
 
 .pmsBtn {
 	background: var(--pms-panel2);

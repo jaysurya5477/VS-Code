@@ -4,20 +4,70 @@ sap.ui.define([
 	"use strict";
 
 	/**
-	 * One hero KPI tile: label, big value, delta pill and an optional sparkline.
-	 * Adapted from the GRN Dashboard's KpiCard.js (../../GRN Dashboard/zmm_grn_dash) - the
-	 * movement-type chip and always-on UoM breakdown do not apply to this dashboard, so they
-	 * are replaced by a single free-text `note` line (used for the Yesterday/Month-End Sale
-	 * card's "as of <date> - N invoices" context, OD-1c).
+	 * One KPI tile, laid out exactly like the reviewed prototype's `.kpi` card
+	 * (../../../Final Template/sales-dashboard-india_claude V8.html, renderKpis()):
 	 *
-	 * Everything except the sparkline is plain markup; the sparkline is an EChart control
-	 * in the `spark` aggregation so it keeps its own chart lifecycle.
+	 *   +-------------------------------------------+  <- 3px accent bar (::before)
+	 *   | TOTAL NET VALUE                  /\__     |
+	 *   | Rs 2.34 Cr                      /    \_   |  <- value + sparkline, same row
+	 *   |                                           |
+	 *   | [ +12.4% ]            Rs 23,412,345       |  <- delta pill + sub, same row
+	 *   +-------------------------------------------+
+	 *
+	 * The sparkline is inline SVG drawn by this renderer, using the prototype's own
+	 * sparkline() geometry (74x26, 2px padding, min/max normalised). It replaces the
+	 * EChart instance the first cut used: four chart instances for four 26px-tall
+	 * decorations is a lot of lifecycle for no benefit, and inline SVG lets the line take
+	 * its colour from the card's accent via `currentColor`, so it re-themes with no redraw.
+	 *
+	 * `accent` names a variant (net|tax|gross|daily) rather than carrying a colour: the
+	 * gradient and the sparkline colour then live in css/style.css as --pms-* tokens and
+	 * follow light/dark automatically. See .pmsKpi--* there.
 	 */
+
+	// Sparkline box, matching the prototype's own constants.
+	var W = 74;
+	var H = 26;
+	var PAD = 2;
+
+	/**
+	 * Prototype sparkline() geometry: normalise against [min(0, ...), max(1, ...)] and
+	 * spread the points evenly across the box.
+	 * @param {number[]} aValues the series
+	 * @returns {object|null} {d, x, y} - path data and the last point, or null if undrawable
+	 */
+	function sparkGeometry(aValues) {
+		if (!aValues || aValues.length < 2) {
+			return null;
+		}
+		var fMax = Math.max.apply(null, aValues.concat([1]));
+		var fMin = Math.min.apply(null, aValues.concat([0]));
+		var fRange = (fMax - fMin) || 1;
+		var iSpan = Math.max(aValues.length - 1, 1);
+
+		var aPoints = aValues.map(function (v, i) {
+			var n = parseFloat(v);
+			return [
+				PAD + i * (W - 2 * PAD) / iSpan,
+				H - PAD - ((isFinite(n) ? n : 0) - fMin) / fRange * (H - 2 * PAD)
+			];
+		});
+
+		return {
+			d: aPoints.map(function (p, i) {
+				return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
+			}).join(" "),
+			x: aPoints[aPoints.length - 1][0].toFixed(1),
+			y: aPoints[aPoints.length - 1][1].toFixed(1)
+		};
+	}
+
 	return Control.extend("com.sap.zsdpmsdash.control.KpiCard", {
 
 		metadata: {
 			library: "com.sap.zsdpmsdash",
 			properties: {
+				/** Uppercase mono eyebrow, e.g. "Total net value". */
 				label: {
 					type: "string",
 					defaultValue: ""
@@ -26,6 +76,7 @@ sap.ui.define([
 					type: "string",
 					defaultValue: ""
 				},
+				/** Small suffix inside the value, e.g. a unit of measure. */
 				unit: {
 					type: "string",
 					defaultValue: ""
@@ -34,25 +85,25 @@ sap.ui.define([
 					type: "string",
 					defaultValue: ""
 				},
-				deltaNote: {
-					type: "string",
-					defaultValue: ""
-				},
-				/** accent | pos | neg | none - see the .pmsTone--* classes. */
+				/** up | down | flat - the prototype's own .delta modifiers. */
 				deltaTone: {
 					type: "string",
-					defaultValue: "none"
+					defaultValue: "flat"
 				},
-				/** Free-text context line under the delta, e.g. "as of 12 Aug 26 - 143 invoices". */
-				note: {
+				/** Mono context line on the right of the footer, e.g. the un-abbreviated amount. */
+				sub: {
 					type: "string",
 					defaultValue: ""
-				}
-			},
-			aggregations: {
+				},
+				/** net | tax | gross | daily - picks the accent bar and sparkline colour. */
+				accent: {
+					type: "string",
+					defaultValue: "net"
+				},
+				/** Sparkline series. Fewer than two points renders no sparkline. */
 				spark: {
-					type: "sap.ui.core.Control",
-					multiple: false
+					type: "object",
+					defaultValue: null
 				}
 			}
 		},
@@ -60,49 +111,80 @@ sap.ui.define([
 		renderer: {
 			apiVersion: 2,
 			render: function (oRm, oControl) {
-				var oSpark = oControl.getSpark();
+				var sTone = oControl.getDeltaTone() || "flat";
+				var oSpark = sparkGeometry(oControl.getSpark());
 
 				oRm.openStart("div", oControl);
 				oRm.class("pmsCard");
-				oRm.class("pmsKpiCard");
+				oRm.class("pmsKpi");
+				oRm.class("pmsKpi--" + (oControl.getAccent() || "net"));
 				oRm.openEnd();
 
+				/* --- value + sparkline ------------------------------------------- */
 				oRm.openStart("div").class("pmsKpiTop").openEnd();
-				oRm.openStart("div").class("pmsKpiLabel").openEnd().text(oControl.getLabel()).close("div");
-				oRm.close("div");
 
-				oRm.openStart("div").class("pmsKpiBody").openEnd();
+				oRm.openStart("div").class("pmsKpiHeadText").openEnd();
+				oRm.openStart("div").class("pmsEyebrow").openEnd()
+					.text(oControl.getLabel()).close("div");
 
-				oRm.openStart("div").class("pmsKpiFigures").openEnd();
-				oRm.openStart("div").class("pmsKpiValueRow").openEnd();
-				oRm.openStart("div").class("pmsKpiValue").openEnd().text(oControl.getValueText()).close("div");
+				oRm.openStart("div").class("pmsKpiValue").openEnd();
+				oRm.text(oControl.getValueText());
 				if (oControl.getUnit()) {
-					oRm.openStart("div").class("pmsKpiUnit").openEnd().text(oControl.getUnit()).close("div");
+					oRm.openStart("span").class("pmsKpiUnit").openEnd()
+						.text(oControl.getUnit()).close("span");
 				}
 				oRm.close("div");
-
-				if (oControl.getDeltaText()) {
-					oRm.openStart("div").class("pmsKpiDeltaRow").openEnd();
-					oRm.openStart("span")
-						.class("pmsKpiDelta")
-						.class("pmsTone--" + (oControl.getDeltaTone() || "none"))
-						.openEnd()
-						.text(oControl.getDeltaText())
-						.close("span");
-					oRm.openStart("span").class("pmsKpiDeltaNote").openEnd()
-						.text(oControl.getDeltaNote()).close("span");
-					oRm.close("div");
-				}
-				if (oControl.getNote()) {
-					oRm.openStart("div").class("pmsKpiSubNote").openEnd()
-						.text(oControl.getNote()).close("div");
-				}
 				oRm.close("div");
 
 				if (oSpark) {
-					oRm.openStart("div").class("pmsKpiSpark").openEnd();
-					oRm.renderControl(oSpark);
-					oRm.close("div");
+					oRm.openStart("svg").class("pmsSpark");
+					oRm.attr("viewBox", "0 0 " + W + " " + H);
+					oRm.attr("aria-hidden", "true");
+					oRm.attr("focusable", "false");
+					oRm.openEnd();
+
+					// Area under the line: a flat currentColor tint. The prototype fades it
+					// with a <linearGradient>; at 26px tall the two are indistinguishable and
+					// this needs no per-instance gradient id.
+					oRm.openStart("path").class("pmsSparkArea");
+					oRm.attr("d", oSpark.d + " L" + (W - PAD).toFixed(1) + " " + (H - PAD) +
+						" L" + PAD + " " + (H - PAD) + " Z");
+					oRm.openEnd();
+					oRm.close("path");
+
+					oRm.openStart("path").class("pmsSparkLine");
+					oRm.attr("d", oSpark.d);
+					oRm.openEnd();
+					oRm.close("path");
+
+					oRm.openStart("circle").class("pmsSparkHead");
+					oRm.attr("cx", oSpark.x);
+					oRm.attr("cy", oSpark.y);
+					oRm.attr("r", "2");
+					oRm.openEnd();
+					oRm.close("circle");
+
+					oRm.close("svg");
+				}
+
+				oRm.close("div");
+
+				/* --- delta pill + sub -------------------------------------------- */
+				oRm.openStart("div").class("pmsKpiFoot").openEnd();
+
+				oRm.openStart("span").class("pmsDelta").class("pmsDelta--" + sTone).openEnd();
+				if (sTone === "up" || sTone === "down") {
+					oRm.openStart("span").class("pmsDeltaArrow").openEnd()
+						.text(sTone === "up" ? "▲" : "▼").close("span");
+					oRm.text(oControl.getDeltaText());
+				} else {
+					oRm.text("–");
+				}
+				oRm.close("span");
+
+				if (oControl.getSub()) {
+					oRm.openStart("span").class("pmsKpiSub").openEnd()
+						.text(oControl.getSub()).close("span");
 				}
 
 				oRm.close("div");

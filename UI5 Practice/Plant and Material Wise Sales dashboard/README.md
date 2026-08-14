@@ -17,12 +17,30 @@ live `$metadata` export, which showed all 7 entity sets, the four reserved-word 
 
 The [`zsd_pms_dash/`](zsd_pms_dash/) UI5 app (generated via the Fiori Application Generator against
 the live service URL) now has a working first cut: filter bar (FY/Zone/State/Plant/Scheme/Material/
-Period), 4 KPI cards, an India choropleth + Unit map-dot panel, and Scheme/Plant/Material chart
-panels, following the GRN Dashboard's own control/model architecture (ECharts via a vendored
+Period), 4 KPI cards, an India choropleth + Unit map-dot panel, and Scheme/Plant/Material panels,
+following the GRN Dashboard's own control/model architecture (ECharts via a vendored
 `libs/echarts.min.js`, custom Box/Card/Head/KpiCard controls, a `dashboardService.js` read layer).
 `ui5 build` and a local `ui5 serve` smoke test both pass — see "Next action" below for what a real
 browser/backend test would still need to confirm, and what's simplified vs. the full V8 design.
 The HTML design template remains the design source of truth for anything not yet ported.
+
+**Panel fidelity (2026-08-14).** Three panels were rebuilt to match V8 exactly rather than
+approximate it in ECharts:
+
+- **KPI cards** — the template's own anatomy: gradient accent bar, mono eyebrow label, value and
+  inline SVG sparkline on one row, delta pill + mono sub-line on the next. The sub-line differs
+  per card as V8 has it (un-abbreviated amount / effective GST rate / snapshot date + invoices).
+- **India map** — quantile colour scale (not linear), zone granularity paints the zone unions
+  rather than recolouring states, V8's dot-radius formula, a hover card with share-of-India and
+  plants-billing, and a legend labelled with the real quantile breaks.
+- **Scheme performance** — no longer a bar chart. It is V8's ranked list (colour chip, value,
+  progress bar, share + invoice count, growth) plus the Top-states roll-up under a divider, with
+  every row click-to-filter.
+
+Sales trend, Sales by plant and Sales by material stay on ECharts, and the filter bar and theme
+switch are unchanged. Both light and dark palettes were re-tuned at the same time — see the
+`--pms-scale-*` / `--pms-dot` / `--pms-zonediv` tokens and the font-stack note in
+[`webapp/css/style.css`](zsd_pms_dash/webapp/css/style.css).
 
 ## Where things are
 
@@ -95,12 +113,18 @@ round-tripped through the live OData service or been eyeballed in a browser yet:
    Confirm the 7 `/Set` reads batch correctly, the KPI cards/map/charts populate, and the Zone/
    State/Plant/Scheme/Material dropdowns fill in as each load's catalog merges (they start empty —
    no value-help entities exist yet, see below).
-2. **Compare against `Final Template/sales-dashboard-india_claude V8.html`** for anything the basic
-   template deliberately simplified: no date-range picker (the FY filter always spans the full
-   fiscal year, Apr 1–Mar 31), no qty/value toggle on the material panel, no click-to-drill on
-   scheme/plant/material bars (only the map's state click filters, mirroring GRN's vendor-bar
-   precedent), and sparklines only on the Net KPI card (Trend only carries `NetValue`, not a
-   Tax/Gross breakdown).
+2. **Compare against `Final Template/sales-dashboard-india_claude V8.html`** for what is still
+   deliberately simplified. KPI cards, the map and the scheme panel now match V8 (see "Panel
+   fidelity" above); what remains different is:
+   - no date-range picker — the FY filter always spans the full fiscal year, Apr 1–Mar 31;
+   - no qty/value toggle on the material panel;
+   - no click-to-drill on the plant/material bars (the map, the scheme rows and the Top-states
+     rows all filter; the ECharts bars do not, mirroring GRN's vendor-bar precedent);
+   - every KPI sparkline plots the same monthly Trend series — V8 gives its daily card a
+     trailing-12-day series, which has no backend equivalent (Trend is FY-period grain);
+   - the Unit-dot overlay is a stock Fiori `Switch`, not V8's red custom pill;
+   - IBM Plex / Archivo cannot be fetched (CDNs are blocked here), so the stacks fall back to
+     SAP's own "72" — which has the side benefit of matching the Fiori filter bar exactly.
 3. **Known, deliberately-deferred gap:** no value-help entities exist yet for Plant/Material/Region
    type-ahead (the original Part B plan's `ZSD_PMS_VH_*` entities) — same call the GRN Dashboard
    made for its own equivalent filters. The dropdowns are built from each response's own codes

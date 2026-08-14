@@ -26,34 +26,42 @@ sap.ui.define([], function () {
 		/**
 		 * Indian short-scale abbreviation. 1e7 -> Cr, 1e5 -> L, 1e3 -> k.
 		 * @param {number|string} v raw number
+		 * @param {number} [iDecimals=2] decimals on the Cr/L steps - 0 gives the terse form
+		 *   the map legend's quantile breaks use
 		 * @returns {string} e.g. "2.34 Cr", "15.60 L", "8.2k", "-940"
 		 */
-		compact: function (v) {
+		compact: function (v, iDecimals) {
 			var n = parseFloat(v);
 			if (!isFinite(n)) {
 				return NO_VALUE;
 			}
+			var d = iDecimals === undefined ? 2 : iDecimals;
 			var a = Math.abs(n);
 			var s = n < 0 ? "-" : "";
 			if (a >= 1e7) {
-				return s + (a / 1e7).toFixed(2) + " Cr";
+				return s + (a / 1e7).toFixed(d) + " Cr";
 			}
 			if (a >= 1e5) {
-				return s + (a / 1e5).toFixed(2) + " L";
+				return s + (a / 1e5).toFixed(d) + " L";
 			}
 			if (a >= 1e3) {
-				return s + (a / 1e3).toFixed(1) + "k";
+				return s + (a / 1e3).toFixed(Math.min(d, 1)) + "k";
 			}
 			return s + Math.round(a).toLocaleString("en-IN");
 		},
 
-		/** Same as compact() but prefixed with the rupee sign. */
-		money: function (v) {
+		/**
+		 * Same as compact() but prefixed with the rupee sign.
+		 * @param {number|string} v raw number
+		 * @param {number} [iDecimals=2] decimals on the Cr/L steps
+		 * @returns {string} e.g. "Rs 2.34 Cr"
+		 */
+		money: function (v, iDecimals) {
 			var n = parseFloat(v);
 			if (!isFinite(n)) {
 				return NO_VALUE;
 			}
-			return (n < 0 ? "-" + RUPEE : RUPEE) + formatter.compact(Math.abs(n));
+			return (n < 0 ? "-" + RUPEE : RUPEE) + formatter.compact(Math.abs(n), iDecimals);
 		},
 
 		/** Full (non-abbreviated) rupee amount, for tooltips. */

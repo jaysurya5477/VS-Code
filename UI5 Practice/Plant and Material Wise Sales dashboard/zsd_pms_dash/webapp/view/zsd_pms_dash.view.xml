@@ -149,13 +149,10 @@
 					valueText="{dash>valueText}"
 					unit="{dash>unit}"
 					deltaText="{dash>deltaText}"
-					deltaNote="{i18n>vsPriorYear}"
 					deltaTone="{dash>deltaTone}"
-					note="{dash>note}">
-					<viz:spark>
-						<viz:EChart option="{dash>spark}" height="2.75rem"/>
-					</viz:spark>
-				</viz:KpiCard>
+					sub="{dash>sub}"
+					accent="{dash>accent}"
+					spark="{dash>spark}"/>
 			</viz:Box>
 
 			<!-- ============================= Trend ============================= -->
@@ -196,25 +193,33 @@
 						dotRows="{dash>/dotRows}"
 						granularity="{dash>/mapGranularity}"
 						showDots="{dash>/mapShowDots}"
-						selectedRegio="{dash>/selectedRegio}"
-						height="28rem"
-						statePress=".onMapStatePress"/>
-					<HBox class="pmsMapLegend">
-						<Text text="{i18n>mapScaleLow}"/>
-						<viz:Box class="pmsMapScale"/>
-						<Text text="{i18n>mapScaleHigh}"/>
-						<HBox class="pmsMapDotKey">
-							<core:Icon src="sap-icon://circle-task" visible="false"/>
-							<Text text="{i18n>mapDotKey}"/>
-						</HBox>
-					</HBox>
+						selectedRegios="{dash>/selectedRegios}"
+						selectedZones="{dash>/selectedZones}"
+						priorFyLabel="{dash>/priorFyLabel}"
+						texts="{dash>/mapTexts}"
+						height="35rem"
+						statePress=".onMapStatePress"
+						zonePress=".onMapZonePress"/>
 				</viz:Card>
 
 				<viz:Card
 					span="4"
 					title="{i18n>chartSchemeTitle}"
-					subtitle="{i18n>chartSchemeSub}">
-					<viz:EChart id="chartScheme" option="{dash>/charts/scheme}" height="28rem"/>
+					subtitle="{dash>/schemeSubtitle}">
+					<viz:SchemeList
+						id="schemeList"
+						schemeRows="{dash>/schemeRows}"
+						stateRows="{dash>/geoRows}"
+						selectedSchemes="{dash>/selectedSchemes}"
+						selectedStates="{dash>/selectedRegios}"
+						topStatesLabel="{i18n>schemeTopStates}"
+						shareLabel="{i18n>schemeShareOfIndia}"
+						invoicesLabel="{i18n>schemeInvoices}"
+						newLabel="{i18n>deltaNew}"
+						emptyText="{i18n>noDataScheme}"
+						emptyStatesText="{i18n>noDataStates}"
+						schemePress=".onSchemePress"
+						statePress=".onTopStatePress"/>
 				</viz:Card>
 
 			</viz:Box>

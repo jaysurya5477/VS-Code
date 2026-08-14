@@ -8,9 +8,10 @@ sap.ui.define([
 	"../model/chartOptions",
 	"../model/chartTheme",
 	"../model/appTheme",
-	"../model/echartsLoader"
+	"../model/echartsLoader",
+	"../model/indiaGeo"
 ], function (Controller, Core, JSONModel, Log, formatter, dashboardService, chartOptions, chartTheme,
-	appTheme, echartsLoader) {
+	appTheme, echartsLoader, INDIA) {
 	"use strict";
 
 	/** The four code filters harvested from the response and re-sent as CSV. */
@@ -59,6 +60,21 @@ sap.ui.define([
 	/** FY-period month labels, Apr=1..Mar=12 (OD-6/OD-7 real convention). */
 	var FY_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
+	/**
+	 * KPI Id -> KpiCard accent variant. The variants carry the prototype's own four card
+	 * gradients (see .pmsKpi--* in css/style.css) and the matching sparkline colour; the
+	 * ids are the ones ZCL_PMS_DASH_QUERY emits.
+	 */
+	var KPI_ACCENT = {
+		NET: "net",
+		TAX: "tax",
+		GROSS: "gross",
+		DAILY_SALE: "daily"
+	};
+
+	/** Total states the base map can draw - the denominator of the map's "N of M billed" hint. */
+	var STATE_COUNT = Object.keys(INDIA.paths).length;
+
 	return Controller.extend("com.sap.zsdpmsdash.controller.zsd_pms_dash", {
 
 		formatter: formatter,
@@ -86,6 +102,7 @@ sap.ui.define([
 				kpis: [],
 				geoRows: [],
 				dotRows: [],
+				schemeRows: [],
 				charts: {},
 				options: {
 					fy: this._fyOptions(),
@@ -115,7 +132,12 @@ sap.ui.define([
 				mapGranularity: "state",
 				mapShowDots: true,
 				mapSubtitle: "",
-				selectedRegio: "",
+				mapTexts: this._mapTexts(),
+				schemeSubtitle: "",
+				priorFyLabel: "",
+				selectedRegios: [],
+				selectedZones: [],
+				selectedSchemes: [],
 				scopeText: "",
 				lastRefreshedText: "",
 				errorText: ""
@@ -166,7 +188,6 @@ sap.ui.define([
 			this._dash().setProperty("/fy", String(this._currentFy()));
 			this._dash().setProperty("/mapGranularity", "state");
 			this._dash().setProperty("/mapShowDots", true);
-			this._dash().setProperty("/selectedRegio", "");
 			this._loadData();
 		},
 
@@ -178,6 +199,9 @@ sap.ui.define([
 		/** State/zone choropleth toggle - purely a local re-render, no round trip. */
 		onMapGranularityChange: function (oEvent) {
 			this._dash().setProperty("/mapGranularity", oEvent.getParameter("key"));
+			if (this._oRaw) {
+				this._dash().setProperty("/mapSubtitle", this._buildMapHint(this._oRaw.geo || []));
+			}
 		},
 
 		/** Unit-dot overlay switch - purely a local re-render, no round trip. */
@@ -185,18 +209,52 @@ sap.ui.define([
 			this._dash().setProperty("/mapShowDots", oEvent.getParameter("state"));
 		},
 
-		/** Clicking a state on the map filters the whole dashboard to that state. */
+		/**
+		 * Clicking a state on the map toggles it in the State filter, exactly as the
+		 * prototype's own choropleth click does - so a second click on a selected state
+		 * removes it rather than replacing the whole selection.
+		 * @param {sap.ui.base.Event} oEvent statePress
+		 */
 		onMapStatePress: function (oEvent) {
-			var sRegio = oEvent.getParameter("regio");
-			if (!sRegio) {
+			this._toggleFilter("state", oEvent.getParameter("regio"));
+		},
+
+		/** Clicking a zone (zone granularity) toggles it in the Zone filter. */
+		onMapZonePress: function (oEvent) {
+			this._toggleFilter("zone", oEvent.getParameter("zone"));
+		},
+
+		/** Clicking a scheme row toggles that scheme in the Scheme filter. */
+		onSchemePress: function (oEvent) {
+			this._toggleFilter("scheme", oEvent.getParameter("category"));
+		},
+
+		/** Clicking a Top-states row toggles that state in the State filter. */
+		onTopStatePress: function (oEvent) {
+			this._toggleFilter("state", oEvent.getParameter("regio"));
+		},
+
+		/**
+		 * Adds or removes one value in a MultiComboBox filter and reloads.
+		 * @param {string} sFilter key into FILTER_INPUTS
+		 * @param {string} sValue the code to toggle
+		 * @private
+		 */
+		_toggleFilter: function (sFilter, sValue) {
+			if (!sValue) {
 				return;
 			}
-			var oBox = this.byId("stateFilter");
-			var aSelected = oBox.getSelectedKeys();
-			var bAlreadyOnly = aSelected.length === 1 && aSelected[0] === sRegio;
+			var oBox = this.byId(FILTER_INPUTS[sFilter]);
+			var aKeys = oBox.getSelectedKeys().slice();
+			var iAt = aKeys.indexOf(sValue);
 
-			oBox.setSelectedKeys(bAlreadyOnly ? [] : [sRegio]);
-			this._dash().setProperty("/selectedRegio", bAlreadyOnly ? "" : sRegio);
+			if (iAt >= 0) {
+				aKeys.splice(iAt, 1);
+			} else {
+				aKeys.push(sValue);
+			}
+
+			oBox.setSelectedKeys(aKeys);
 			this._loadData();
 		},
 
@@ -352,61 +410,130 @@ sap.ui.define([
 		/* Render                                                               */
 		/* ==================================================================== */
 
-		/** Transforms the last response into the view model and redraws every chart. @private */
+		/** Transforms the last response into the view model and redraws every panel. @private */
 		_render: function () {
 			var oData = this._oRaw;
 			var oModel = this._dash();
 			var oCtx = this._ctx();
+			var iPriorFy = parseInt(this._oFilters.fy, 10) - 1;
 
 			oModel.setProperty("/kpis", this._buildKpiCards(oData));
 			oModel.setProperty("/geoRows", oData.geo || []);
 			oModel.setProperty("/dotRows", oData.unitDots || []);
+			oModel.setProperty("/schemeRows", oData.scheme || []);
 			oModel.setProperty("/scopeText", this._buildScopeText());
-			oModel.setProperty("/mapSubtitle", this._text("mapSubtitle", [this._oFilters.fy]));
+			oModel.setProperty("/mapSubtitle", this._buildMapHint(oData.geo || []));
+			oModel.setProperty("/schemeSubtitle", this._text("schemeVsFy", [String(iPriorFy)]));
+			oModel.setProperty("/priorFyLabel", this._text("fyShort", [String(iPriorFy)]));
 			oModel.setProperty("/lastRefreshedText",
 				this._text("lastRefreshed", [new Date().toLocaleTimeString()]));
 
+			this._syncSelections();
+
 			this._setChart("trend", chartOptions.trend(oData.trend, oCtx), "noDataTrend", oData.trend.length);
-			this._setChart("scheme", chartOptions.scheme(oData.scheme, oCtx), "noDataScheme", oData.scheme.length);
 			this._setChart("plant", chartOptions.plant(oData.plant, oCtx), "noDataPlant", oData.plant.length);
 			this._setChart("material", chartOptions.material(oData.material, oCtx), "noDataMaterial", oData.material.length);
 		},
 
 		/**
+		 * Mirrors the three filters the map and the scheme list highlight into the view
+		 * model. The controls read plain arrays rather than reaching into the comboboxes,
+		 * so their selection state stays a pure function of the model.
+		 * @private
+		 */
+		_syncSelections: function () {
+			var oModel = this._dash();
+			[
+				["/selectedRegios", "state"],
+				["/selectedZones", "zone"],
+				["/selectedSchemes", "scheme"]
+			].forEach(function (a) {
+				oModel.setProperty(a[0], this.byId(FILTER_INPUTS[a[1]]).getSelectedKeys().slice());
+			}, this);
+		},
+
+		/**
+		 * The prototype's map hint: how much of India actually billed, plus what a click
+		 * does at the current granularity.
+		 * @param {object[]} aGeo Geo entity rows
+		 * @returns {string} the hint line
+		 * @private
+		 */
+		_buildMapHint: function (aGeo) {
+			var iLive = aGeo.filter(function (r) {
+				return (parseFloat(r.NetValue) || 0) > 0;
+			}).length;
+			var bZone = this._dash().getProperty("/mapGranularity") === "zone";
+
+			return this._text(bZone ? "mapHintZone" : "mapHintState",
+				[String(iLive), String(STATE_COUNT)]);
+		},
+
+		/**
+		 * The four KPI tiles, in the prototype's own shape: an eyebrow label, the abbreviated
+		 * value, a sparkline, a delta pill and a mono sub-line.
+		 *
+		 * The sub-line differs per card exactly as the prototype's renderKpis() has it - the
+		 * un-abbreviated amount for net/gross, the average GST rate for tax, and the snapshot
+		 * date plus invoice count for the daily card (OD-1c).
+		 *
+		 * Every card gets the same sparkline series (net value by FY period), because Trend
+		 * is the only series the service exposes; the prototype gives its daily card a
+		 * trailing-12-day series, which has no backend equivalent yet.
+		 *
 		 * @param {object} oData the service response
 		 * @returns {object[]} one entry per KPI card
 		 * @private
 		 */
 		_buildKpiCards: function (oData) {
 			var that = this;
-			var aTrend = oData.trend || [];
-			var aSpark = aTrend.map(function (r) {
+			var aSpark = (oData.trend || []).map(function (r) {
 				return Math.round(parseFloat(r.NetValue) || 0);
 			});
+			var mById = dashboardService.byId(oData.kpi);
 
 			return (oData.kpi || []).map(function (oKpi) {
 				var fDelta = parseFloat(oKpi.DeltaPct);
-				var bMoney = oKpi.Id !== "DOC_COUNT";
-				var sNote = "";
-
-				if (oKpi.Id === "DAILY_SALE") {
-					sNote = oKpi.SnapshotDate ?
-						that._text("kpiDailyNote", [formatter.dateShort(oKpi.SnapshotDate), formatter.count(oKpi.DocCount)]) :
-						that._text("kpiDailyNoteEmpty");
-				}
 
 				return {
 					id: oKpi.Id,
 					label: oKpi.KpiLabel,
 					unit: "",
-					valueText: bMoney ? formatter.money(oKpi.CurrValue) : formatter.count(oKpi.CurrValue),
+					valueText: formatter.money(oKpi.CurrValue),
 					deltaText: formatter.signedPercent(oKpi.DeltaPct),
-					deltaTone: isFinite(fDelta) ? (fDelta >= 0 ? "pos" : "neg") : "none",
-					note: sNote,
-					spark: (oKpi.Id === "NET" && aSpark.length) ?
-						chartOptions.sparkline(aSpark, that._oPalette.accent, that._ctx()) : null
+					// The prototype treats anything under 0.05% as no movement at all.
+					deltaTone: !isFinite(fDelta) || Math.abs(fDelta) < 0.05 ? "flat" :
+						fDelta > 0 ? "up" : "down",
+					sub: that._kpiSub(oKpi, mById),
+					accent: KPI_ACCENT[oKpi.Id] || "net",
+					spark: aSpark
 				};
 			});
+		},
+
+		/**
+		 * @param {object} oKpi the KPI row
+		 * @param {object} mById every KPI row, keyed by Id
+		 * @returns {string} the card's mono sub-line
+		 * @private
+		 */
+		_kpiSub: function (oKpi, mById) {
+			if (oKpi.Id === "DAILY_SALE") {
+				return oKpi.SnapshotDate ?
+					this._text("kpiDailyNote",
+						[formatter.dateShort(oKpi.SnapshotDate), formatter.count(oKpi.DocCount)]) :
+					this._text("kpiDailyNoteEmpty");
+			}
+
+			if (oKpi.Id === "TAX") {
+				// Effective GST rate on the same selection - tax over net, both already filtered.
+				var fNet = parseFloat(mById.NET && mById.NET.CurrValue);
+				var fTax = parseFloat(oKpi.CurrValue);
+				return isFinite(fNet) && fNet && isFinite(fTax) ?
+					this._text("kpiAvgGst", [formatter.percent(fTax / fNet * 100, 1)]) : "";
+			}
+
+			return formatter.moneyFull(oKpi.CurrValue);
 		},
 
 		/**
@@ -458,7 +585,7 @@ sap.ui.define([
 		_clearPanels: function () {
 			var that = this;
 			var oCharts = {};
-			["trend", "scheme", "plant", "material"].forEach(function (sKey) {
+			["trend", "plant", "material"].forEach(function (sKey) {
 				oCharts[sKey] = chartOptions.empty(that._text("noData"), that._oPalette);
 			});
 
@@ -467,6 +594,7 @@ sap.ui.define([
 			oModel.setProperty("/kpis", []);
 			oModel.setProperty("/geoRows", []);
 			oModel.setProperty("/dotRows", []);
+			oModel.setProperty("/schemeRows", []);
 		},
 
 		/**
@@ -504,6 +632,24 @@ sap.ui.define([
 					text: that._text(sPrefix + sKey.charAt(0).toUpperCase() + sKey.slice(1))
 				};
 			});
+		},
+
+		/**
+		 * Every string the IndiaMap control paints into its legend and hover card. Resolved
+		 * once, since none of them depend on the data.
+		 * @returns {object} the control's `texts` payload
+		 * @private
+		 */
+		_mapTexts: function () {
+			var that = this;
+			var o = {};
+			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey", "netBilled", "growth",
+				"share", "plantsBilling", "invoices", "zoneStates", "unitPlants"
+			].forEach(function (sKey) {
+				o[sKey] = that._text("map" + sKey.charAt(0).toUpperCase() + sKey.slice(1));
+			});
+			o.newLabel = this._text("deltaNew");
+			return o;
 		},
 
 		/** @returns {sap.ui.model.json.JSONModel} the view model @private */
