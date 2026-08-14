@@ -1,0 +1,419 @@
+# CONTEXT LOG — Plant & Material Wise Sales Dashboard
+
+**Purpose:** compact context-recovery file. Read this first after a `/compact` or a new session
+instead of re-reading the 172 KB template. Every fact below was verified against the live SAP
+system or the template source on 2026-08-12.
+
+---
+
+## 1. What this project is
+
+A Fiori/SAPUI5 dashboard for **plant- and material-wise sales (billing) analysis** for
+**ALIMCO** (government aid/appliance schemes — ADIP etc.), Indian fiscal year (Apr–Mar).
+
+- **Design template (frozen):** `Final Template/sales-dashboard-india_claude V8.html` (172 KB,
+  self-contained, Chart.js + inline India SVG, mock data generated in-browser).
+- **Old iterations:** `Old Templates/` — V1–V7, superseded. Do not read.
+- **`echarts.min.js`** sits at project root but **V8 uses Chart.js, not ECharts.**
+- **Current phase:** ABAP backend design. No ABAP objects written yet.
+
+## 2. Reference projects in this workspace (proven patterns — reuse, don't reinvent)
+
+| Path | Why it matters |
+|---|---|
+| `../GRN Dashboard/ABAP NEW/` | **The architecture to copy.** RAP custom entities + `IF_RAP_QUERY_PROVIDER` query classes + one central compute class + OData V4 service definition. 10 entities, 13 classes. |
+| `../GRN Dashboard/README.md` | House documentation style; phase breakdown (P1 backend / P2 OData / P3 UI5). |
+| `../Sales Dashboard/ZSDD_CENTER_DASH_CDS.ddls.asddls` | Existing CDS that already joins the ALIMCO sales tables. Closest prior art. |
+| `../Sales Dashboard/zsd_zone_dash/` | Existing deployed UI5 app for the sibling zone dashboard. |
+| `D:\New\VSCODE_ABAP\Sales Register Optimize\ZFI_SR_NEW_OPT.abap` | **New (2026-08-12), user-supplied.** A different module's (FI Sales Register) report, but it contains the real, working material-level GST condition logic — the exact mechanism `ZSDD_PMS_ITEM_CDS` needs. See §3 `PRCD_ELEMENTS` and **OD-4**. |
+
+## 3. Live SAP data model
+
+> ### ⚠⚠ CLIENT CAVEAT — READ BEFORE TRUSTING ANY NUMBER BELOW ⚠⚠
+>
+> Everything in this section was read via the ADT MCP on **client 120** of
+> `vhafbmedap01.hec.erp.alimco.in` (the only endpoint configured in `~/.claude.json`).
+> **Client 120 is nearly empty and is NOT representative.** Per the user (2026-08-12):
+>
+> | Client | Reality |
+> |---|---|
+> | **120** | sandbox, very little data — **what was measured below** |
+> | **100** | client copy, data only up to May |
+> | **PRODUCTION** (separate host, URL not yet known) | **109 plants with invoices in `ZSD_SALE_ALL`** |
+>
+> **Split the findings accordingly:**
+> - ✅ **STRUCTURE IS STILL VALID** — DDIC is cross-client. Table/field lists, key definitions,
+>   data grains, and the `category` = scheme mapping hold everywhere. The two traps in §A4 of the
+>   plan (GL-grain double-count, YoY truncation) are unaffected.
+> - ❌ **ALL VOLUMES AND MASTER-DATA COVERAGE ARE WRONG** — plant counts, the 10-row zone table,
+>   the "5 plants missing a zone" gap, and every conclusion that depended on "only 10 plants"
+>   (see §6 OD-1 and AD-5) must be **re-measured on production**. This is Phase 0 task **P0-0**.
+
+### `ZSD_SALE_ALL` — "Sale Vs Target", the main fact table
+Grain: **GL/accounting-document line**, key = `MANDT, BELNR, GJAHR, HKONT`.
+
+Fields: `gl_desc, vbeln, fkart, vtext, category, cat_desc, type, month_num, zmonth, budat,
+netwr, mwsbk, gross, kunnr, kname, werks, vkbur`.
+
+- `category` / `cat_desc` = **the "scheme" dimension** (ADIP, ADIP SSA, …). This is the single
+  most important mapping discovery — the template's `SCHEMES` array is real, not invented.
+- `netwr` = net, `mwsbk` = tax (actual GST amount), `gross` = net+tax. **Real tax amounts exist**,
+  so the template's "derive tax from a per-material-group GST rate" hack is not needed.
+- ⚠ **NO `matnr`, NO quantity, NO UOM.** Material/qty must come from `VBRP` joined on `vbeln`.
+- ⚠ Grain is GL-account level → **multiple rows per `vbeln`**. Naively joining `VBRP` will
+  double-count. **Resolution path decided (2026-08-12):** the user will establish the exact
+  material ↔ GL link (via `PRCD_ELEMENTS.sakn1`, see below) rather than relying on an aggregate
+  cross-check — see **OD-4** in §6 and Phase 0 check P0-1.
+
+### `PRCD_ELEMENTS` — pricing conditions: the material-tax AND material-GL link (new, 2026-08-12)
+Discovered by reading the user-supplied reference program (see §2 table) — a Finance "Sales
+Register" report (`ZFI_SR_NEW_OPT.abap`) that already computes real, working material-level GST and
+already resolves the exact double-count problem this project has. Two distinct joins matter:
+
+1. **Material → tax, item grain.** `VBRP.knumv_ana` (the item's own pricing/condition document
+   number) joined to `PRCD_ELEMENTS` on `knumv = knumv_ana AND kposn = posnr`, filtered to specific
+   condition types (`kschl`), `kwert <> 0`, `kstat = ' '` (excludes statistical conditions). This
+   gives tax **per billing item** — no `BSEG`/GL involvement at all, so it cannot double-count.
+   Condition types seen in the reference program: `JOIG` = IGST, `JOSG` = SGST (CGST is **derived
+   as equal to SGST**, not read from a separate condition at item level — standard Indian
+   intrastate GST 50/50 split), `JTC1`/`JTC2`/`JTC4` = TCS. (Header/GL-level pull in the same
+   program additionally reads `JOCG` and `JOUB`, plus a special `ZS60`/`ZS40` percentage-derived
+   bucket — likely scheme-specific; not yet confirmed these apply to ALIMCO's own pricing
+   procedure, see P0-9.)
+2. **Material → GL, the double-count resolution.** `PRCD_ELEMENTS.sakn1` is the G/L account a
+   pricing condition **posts to**. The reference program matches `sakn1 = <posted hkont>` for the
+   same `knumv` to tie a specific accounting line back to the condition (and therefore the
+   material) that produced it. **This is the link the user will use to resolve Trap 1** — instead
+   of an aggregate net-value cross-check (P0-1's original framing), each GL line can be attributed
+   to its originating material line directly, so "join and don't double-count" becomes exact rather
+   than approximate.
+3. **⚠ Known edge case, explicitly handled in the reference program:** a SAP posting error can
+   create **two finance documents (`belnr`) for the same invoice line**, so the same
+   `vbeln`+`matnr`+`posnr` can legitimately reappear under a different `belnr`. The reference
+   program's fix: key the material/tax lookup by `vbeln+matnr+posnr` (never by `belnr`) and never
+   mutate that lookup table while processing — so every finance document that maps to the same
+   invoice line reads the same correct tax figures. Any `ZSDD_PMS_ITEM_CDS` design must do the same
+   (i.e. don't assume a 1:1 `belnr`↔`vbeln+matnr+posnr` relationship).
+
+### `ZSD_CAT_PLANT` — targets
+Key-ish: `category, gjahr, werks` → `target`. 120 rows = **8 categories × 15 plants**.
+Targets look like **Crores** (values 0.00–60.00). FY 2026 present.
+Plants: `2000, 3100, 3200, 3300, 3400, 3500, 3600, 4100, 4200, 4300, 4400, 4500, 4600, 4700, 4800`.
+
+### `ZSD_ZONE_PLANT` — zone + unit + city master
+Key `werks` → `alm_zone`, `unit`, `remarks` (= **city name**).
+
+- **`unit` (new, per user 2026-08-12):** groups multiple plants under one organizational **Unit**.
+  Production has **18 Units** total. Not yet re-read live (see caveat below) — the client-120
+  sample pulled for this log predates the `unit` field being flagged, so it isn't shown in the
+  table below. **Phase 0 check P0-7** confirms the column, the distinct-18 count, and that every
+  billing plant maps to a unit.
+- 18 Units is the right grain for **map dots** (see AD-5) — small enough to hand-geocode like the
+  original 10-plant approach, but far more granular than the 36-state fallback.
+- **Latitude/Longitude fields — decided 2026-08-12 (OD-5), supersedes hand-geocoding.** The user
+  will add **two new fields to `ZSD_ZONE_PLANT`** (per-plant, business-maintained via table
+  maintenance/user access) rather than shipping a frontend-hardcoded geocode table. See OD-5 in §6
+  for how this changes the map-dot design.
+
+⚠ **The 10 rows below are client 120 only.** Production has ~109 billing plants, so this table is
+expected to be far larger there (or to be incomplete — that is itself a P0-0 finding). Treat the
+list as a *sample proving the table's shape*, not as the plant population.
+
+| Plant | Zone | City |
+|---|---|---|
+| 2000 | CENTRAL | Kanpur |
+| 3100 | CENTRAL | Jabalpur |
+| 3200 | SOUTH | Bengaluru |
+| 3300 | WEST | Ujjain |
+| 3400 | EAST | Bhubaneswar |
+| 3500 | NORTH | Mohali |
+| 3600 | NORTH | Faridabad |
+| 4200 | EAST | Kolkata |
+| 4300 | SOUTH | Hyderabad |
+| 4500 | WEST | Mumbai |
+
+- Zones = `CENTRAL, EAST, NORTH, SOUTH, WEST` — **exactly** the template's `ZONE_ORDER`. ✅
+  *(This one holds — it is a domain value list, not a data volume.)*
+- ⚠ Plants `4100, 4400, 4600, 4700, 4800` exist in `ZSD_CAT_PLANT` but have no zone/city row **on
+  client 120**. `ZSDD_CENTER_DASH_CDS` left-outer-joins this table, so they return blank zone.
+  **Probably a client-120 artifact — re-check on production before raising it with the business.**
+  The left-outer-join risk is real regardless: any plant missing here yields a blank zone.
+
+### Other confirmed objects
+- `ZPMDK_PLANT` — `center_plant` → `pmdk_plant` mapping (used by the existing center dashboard).
+- `ZSDD_CENTER_DASH_CDS` — joins `zsd_cat_plant` + `zpmdk_plant` + `zsd_sale_all` + `vbrk` +
+  `zsd_zone_plant`. Has a commented-out `union all` branch for CENTER plant data.
+- `ZSDD_DASH_TARG.ddls.asddls` — target view, in `../Sales Dashboard/`.
+
+## 4. Template V8 inventory (what the backend must feed)
+
+**Filters:** FY **picker** (single-select, same visual pattern as Region/Plant/Material — decided
+2026-08-12, supersedes the original segmented-button row; defaults to whichever FY contains
+today's date, computed, not hard-coded) · Region (zone + state multi-select) · Plant (multi) ·
+Material (multi, searchable) · Month (12 FY periods) · Date range (from/to) · Scheme (by clicking
+scheme rows) · filter chips + "Reset all".
+*(Building the FY picker surfaced that the template's Month and Date-range picker buttons had no
+open/close handler at all — dead UI in the original file, fixed as part of the same change since
+it reuses the identical open/close mechanism.)*
+
+**Panels:**
+1. **4 KPI cards** — Total net value · Total tax (GST) · Total gross value · **Yesterday Sale**
+   (**OD-1c, supersedes OD-1b** — see §6). Each has a YoY delta and a 12-period sparkline (sparkline
+   for card 4 is TBD, see OD-1c).
+2. **India choropleth map** — value by state *or* zone (granularity toggle), 5-bin quantile color
+   scale, **Unit dots** at lat/lon (toggleable, **OD-3**, supersedes AD-5's plant-dot framing),
+   click a state to filter.
+3. **Scheme performance** — one row per scheme (value, % of India, invoice count, YoY %),
+   clickable to filter. Plus a **Top 8 states** list with zone color + YoY.
+4. **Sales by plant** — Top 20, horizontal **stacked Net + Tax = Gross** bars, scrollable, click
+   to filter.
+5. **Sales by material** — Top 20 vertical bars, **Value / Quantity toggle**, credit memos
+   excluded (`type==='F2'` only), click to filter.
+6. ~~**CSV export** — 21-column invoice-line dump.~~ **DROPPED** (OD-2, not required).
+7. Last-refresh stamp.
+
+**YoY logic (important, non-obvious):** the prior-FY comparison is *same-periods-to-date* — it
+truncates the prior year at the same period **and same day-of-month** as the latest current-year
+data (`recompute()`, template ~line 608). Replicate this, don't just compare full years.
+
+## 5. Architecture decisions taken
+
+- **AD-1** Copy the GRN Dashboard RAP pattern: core CDS fact views → one central ABAP compute
+  class → thin per-entity `IF_RAP_QUERY_PROVIDER` classes → OData V4 service.
+- **AD-2** Filters travel as **CDS entity parameters** (not `$filter`), exactly as GRN does,
+  because they scope the whole computation and most entities carry no such column.
+- **AD-3** All aggregation moves **server-side**. The template's "hold every row in the browser
+  and filter in JS" model cannot survive real volumes.
+- **AD-4** Naming prefix `ZSD_PMS_*` (entities) / `ZCL_PMS_*` (classes) / `ZSDD_PMS_*` (CDS
+  views), package `ZSD`.
+
+## 6. Decisions (settled 2026-08-12)
+
+- **OD-1 — map geography = PLANT state.** ✅ *Decided by user.* The choropleth is keyed on the
+  plant's own state (`T001W.regio` → `T005U` for the text). No customer-master join.
+  **This decision is now BETTER than when it was made.** It was taken on the belief that only ~9
+  states would ever colour; with **109 production plants** the plant-state choropleth will show
+  genuine national spread, so the "mostly grey map" objection is **withdrawn**.
+- **OD-1b — 4th KPI = "Geographic reach X/36 states"** (the template's original). ✅ *Decided by
+  user, 2026-08-12, morning.* ⚠ **SUPERSEDED same day by OD-1c below** — do not implement this one.
+  Kept here only for the paper trail: reinstated once because ~109 plants made it meaningful;
+  Source was `count distinct` state over `T001W.regio`, sub-line = plant count + invoice count.
+- **OD-1c — 4th KPI = "Yesterday Sale"** (replaces Geographic reach; supersedes OD-1b). ✅ *Decided
+  by user, 2026-08-12, afternoon.*
+  - **Default (selected period = current calendar month):** value = sum of net/gross for
+    `budat = today − 1`.
+  - **Selected period ≠ current calendar month (a past month picked via the Month/FY filter):**
+    value = sum of net/gross for `budat` = the **last calendar day of that selected month**.
+  - Card shows the value plus a YoY delta (same date, prior FY) — same-day comparison, not the
+    panel-wide same-periods-to-date truncation in §A4 Trap 2, since this KPI is a single-day
+    snapshot, not a period total.
+  - ⚠ **Open question, non-blocking:** if the target day has zero postings (holiday, month-end
+    cutoff timing), does the card show ₹0 or fall back to the nearest prior posting day? Assumption
+    for v1: show the literal day's total, ₹0 included — confirm with business if it looks wrong in
+    testing.
+  - `T001W`/`T005U`/state-count logic from OD-1b is **dropped from the KPI entity** — the map panel
+    (#2) still uses plant/state geography independently, unaffected by this change.
+  - `ZSD_CAT_PLANT` targets remain out of scope for v1 (unchanged from OD-1b's note).
+- **OD-2 — CSV export = DROPPED.** ✅ *Decided by user — not required.* The `ZSD_PMS_LINES`
+  line-level entity is therefore out of scope, taking the entity count from 11 to 10. If
+  row-level drill-down is ever wanted, that entity is the place to revive.
+- **AD-5 — Plant map dots: ⚠ SOLUTION INVALIDATED by the 109-plant correction, then SUPERSEDED by
+  OD-3 (Unit dots).** Original problem: [`plant_geo.js`](plant_geo.js) hard-codes **10** plants,
+  which does not scale to 109, and `INDIA.cityLL`'s 147 mock industrial cities don't cover real
+  ALIMCO plant cities. Three options were drafted (state-centroid / city-geocode / lat-lon column)
+  — see **OD-3** below for the option that was actually picked.
+  *(What remains verified regardless of granularity: `projLL()` reproduces `INDIA.cityXY` exactly,
+  the template embeds `INDIA.cityLL`/`cityXY`/`proj`/`projLL()` at ~line 451, and lookups must key
+  on a coded field — `werks` or now `unit` — never on `ZSD_ZONE_PLANT.remarks`, which is free text
+  where one spelling variant would silently drop a dot.)*
+- **OD-3 — Map dots keyed on `unit`, not `werks`.** ✅ *Decided by user, 2026-08-12.*
+  `ZSD_ZONE_PLANT` carries a **`unit`** field (18 distinct values in production, per the user —
+  pending live confirmation, **P0-7**); each Unit groups multiple plants. This lands squarely
+  between the two extremes AD-5 was choosing between: **finer than the 36-state centroid fallback,
+  coarse enough (18) to hand-geocode exactly like the original 10-plant approach did.**
+  - Aggregate sales to `unit` (not `werks`) before plotting; one dot per unit, radius `f(value)`.
+  - Coordinates: pick a representative city per unit (e.g. its largest/HQ plant's city from
+    `remarks`) and geocode those ≤18 cities once, the same way Jabalpur/Ujjain/Mumbai were added
+    to `cityLL` for the old 10-plant set. Ship as frontend config, same pattern as before.
+  - Any plant with no `unit` assigned (mirrors the old zone-less-plant gap) has no dot —
+    `unitDots()` should warn and omit, not crash, same as the old `plantDots()` contract.
+  - The **"Sales by plant" bar panel (#6 in the inventory)** is unaffected — it stays at plant
+    grain. Only the **map dots** move to Unit grain.
+  - `ZSD_PMS_GEO` (or a sibling entity) must expose `unit` + aggregated value instead of `werks` +
+    value for the dot layer specifically.
+- **OD-5 — Unit dot coordinates sourced from 2 new `ZSD_ZONE_PLANT` fields, not hand-geocoding.**
+  ✅ *Decided by user, 2026-08-12.* Supersedes OD-3's "hand-geocode ≤18 unit cities, ship as
+  frontend config" plan. The user will add **latitude/longitude fields directly to
+  `ZSD_ZONE_PLANT`** (per plant, business-maintained — end users can enter/correct coordinates via
+  table maintenance, no redeploy needed to fix a wrong dot). This is AD-5's original "option 3"
+  (business-maintained, transportable, correct long-term), now actually being built.
+  - Coordinates are **per plant** (the table's grain), but dots are **per unit** (OD-3) — so the
+    backend must still derive one representative point per unit from its member plants' lat/lon.
+    ⚠ **Not yet decided which derivation rule** — candidates: (a) value-weighted centroid of member
+    plants for the active filter context (dot visually tracks where the money is, mirrors what the
+    mock HTML template does today), (b) simple unweighted centroid (simplest, but can land on a
+    geographically meaningless point for a spread-out unit), (c) a single designated "anchor"
+    plant per unit (needs a business-assigned flag, most stable visually). Recommend (a) for v1;
+    confirm with user before building `ZSD_PMS_GEO`'s unit-dot query.
+  - Plants with no lat/lon populated: exclude from the centroid calculation (don't let a missing
+    value silently drag the average to 0,0). If **every** member plant of a unit is missing
+    coordinates, that unit's dot is omitted — same "warn and omit, don't crash" contract as OD-3.
+  - This removes the earlier plan to geocode a handful of unit-HQ cities and ship them as frontend
+    config — coordinates now flow from the backend like every other field, which also means they
+    can be corrected in production without a UI5 redeploy.
+- **OD-4 — Material & tax CDS view sourced from `PRCD_ELEMENTS` via `VBRP.knumv_ana`.** ✅ *Decided
+  by user, 2026-08-12*, based on the reference program `ZFI_SR_NEW_OPT.abap` (see §2, §3). Replaces
+  the plan's earlier fallback ("derive tax from `MARA.matkl`" in `ABAP_Backend_Plan.md` §A2) with
+  real, condition-based, per-material tax — see the full mechanism under §3 `PRCD_ELEMENTS` above.
+  Also supplies the resolution mechanism for the double-count trap (**Trap 1**, §A4 of the plan) via
+  `PRCD_ELEMENTS.sakn1` ↔ posted `hkont` — **this is now the user's own action item**, not an open
+  project risk: confirm condition types against ALIMCO's pricing procedure first (**P0-9**, since
+  the reference program is from a different module/company code and condition types are
+  configuration-specific), then build `ZSDD_PMS_ITEM_CDS` on top.
+- **OD-6 — Real `GJAHR` fiscal-year convention confirmed live: named by the STARTING calendar
+  year, not the ending one.** ✅ *Confirmed by user via live ADT debugger, 2026-08-13.* Apr
+  2026–Mar 2027 is **FY 2026** in the real system (period 05 = Aug 2026), not "FY 2027" as the
+  frozen HTML template displays it (`FYS=[2025,2026,2027]`, `currentPeriodInfo()` labels the same
+  period "2027"). The two conventions are opposite: template = ends-in year, real `GJAHR` =
+  starts-in year. `ZCL_PMS_DASH_QUERY` now uses the real convention throughout
+  (`current_period_info`, `period_end_date`, `get_gl_rows`, `get_gl_rows_prior`, `get_item_rows` —
+  fixed 2026-08-13) since it queries the real tables directly. **Open point, deferred to Phase
+  3:** the UI5 frontend's FY picker will need to either relabel to match the real value (simplest —
+  show "2026", not "2027", for the current year) or keep a friendly display label while translating
+  to the real `gjahr` value before calling the backend. Do not port the template's FY arithmetic
+  as-is into UI5 without applying this fix.
+- **OD-7 — `ZSD_SALE_ALL.month_num` is the plain calendar month, not an FY-shifted period.** ✅
+  *Confirmed by user against the Phase 1 test report's real output, 2026-08-13* — the trend showed
+  periods `04..08` with `08` (the smallest, most partial value) landing on August, the actual
+  current month; under the "Apr=1" assumption period 08 would be November, a future month that
+  can't have data yet. So `month_num` is `04=Apr .. 12=Dec, 01=Jan .. 03=Mar`, matching plain
+  calendar-month notation, while every other FY-period value in this class (`ty_period`,
+  `current_period_info`'s `ev_period`, `period_end_date`'s `iv_period`) is `Apr=1 .. Mar=12`. Left
+  unconverted, this breaks two things: `get_trend`'s `SORT ... BY period ASCENDING` would put a
+  future Jan/Feb/Mar (`01-03`) *before* the current FY's Apr-Dec (`04-12`) instead of after, and any
+  month-picker filter would be off by a 3-month shift. **Fixed 2026-08-13**: two new converters,
+  `ZCL_PMS_DASH_QUERY=>month_to_period`/`period_to_month`, with the single point of conversion in
+  `get_gl_rows` — the `WHERE month_num IN ...` predicate is translated to real calendar months
+  before hitting the CDS view, and every fetched row's `month_num` is re-expressed as an FY-period
+  immediately after, so `get_trend`, `compute_truncation`, and `get_gl_rows_prior` (which calls back
+  into `get_gl_rows`) all inherit correct FY-period values without needing their own changes.
+- **OD-8 — The real join from `ZSD_SALE_ALL` to `ZSD_ZONE_PLANT` is on `VKBUR` (sales office), not
+  `WERKS` (billing plant).** ✅ *Corrected by user directly in `ZSDD_PMS_GL_CDS.ddls.asddls`,
+  2026-08-13.* `ZSD_ZONE_PLANT.WERKS` (despite the name) holds one row per **Unit**, not per
+  billing plant — multiple billing plants share one `VKBUR`, and that's the real Unit-grouping key.
+  The Phase 1 draft had originally guessed `b.werks = a.werks` (plant-to-plant); the view now reads
+  `b.werks = a.vkbur`, and `A.VKBUR` is no longer exposed as its own output column (it was only ever
+  needed as the join key — `unit` already comes out as `b.werks`). This also retires the now-dead
+  `vkbur` field that had been sitting unused in `ZCL_PMS_DASH_QUERY`'s `ty_gl_row` (removed
+  2026-08-13 — it was never in `get_gl_rows`' SELECT list once the view stopped exposing it). Updates
+  **P0-7**'s wording too: the coverage check is "every billing `VKBUR` maps to a Unit," not `WERKS`.
+  - **Corollary, found via user review 2026-08-13: Plant↔Unit is many-to-many, not one-to-many.**
+    One billing plant (`WERKS`) can invoice under more than one sales office (`VKBUR`), so the same
+    plant can legitimately feed **more than one** Unit — Units don't cleanly partition the 109
+    plants into 18 disjoint groups. This had broken `get_unit_dots`' Step 1, which grouped
+    `it_curr` by `werks` alone: a plant's first-seen row pinned it to one unit, and every later row
+    from that same plant — even one carrying a genuinely different `unit` — silently added its value
+    into that same (wrong) bucket. **Fixed 2026-08-13**: the grouping key is now `werks + unit`
+    together, so a plant contributing to two units now correctly shows up (and is counted) in both.
+- **OD-9 — Trap 2's same-periods-to-date cutoff is TODAY's (period, day), not derived from the
+  fetched data.** ✅ *Found via user review, 2026-08-13.* `compute_truncation` previously scanned
+  `it_curr` for its own latest (`month_num`, day) row and used that as the truncation cutoff for
+  the prior-year comparison. That's fragile: if recent postings lag (**P0-8**, already an observed
+  risk), the newest row present sits before today, and both years get silently truncated earlier
+  than intended; a stray future-dated correction could push it the other way. Since FY-periods are
+  already numbered identically in both years (Apr=1), comparing "today's period/day" against "the
+  same period/day last year" is correct on its own, with no data lookup needed — the only wrinkle,
+  Feb 29 in a non-leap prior year, is harmless for a `<=` day cutoff (a 28-day February is never
+  excluded by `day <= 29`; contrast the OD-1c daily KPI's *exact*-date lookup, which genuinely needs
+  `shift_calendar_year`'s Feb-29 fallback). **Fixed 2026-08-13**: `compute_truncation` now derives
+  the cutoff from `current_period_info` when the selected FY is the current one, and applies no
+  truncation at all (full FY vs. full prior FY) when a past, already-closed FY is selected — the
+  previous data-scan approach truncated even closed-year comparisons, which was never intended.
+  This also dropped the now-unused `it_curr` parameter from `compute_truncation` and
+  `get_gl_rows_prior`.
+  - **Follow-up, same day: push the cutoff into the SQL `date_to`, don't post-filter in ABAP.**
+    Since the cutoff is now a deterministic `(period, day)` known *before* fetching, `get_gl_rows_
+    prior` no longer fetches the full prior FY and loops over it to drop rows past the cutoff — it
+    computes the exact prior-year cutoff *date* and passes it as `date_to`, so `get_gl_rows`' own
+    `WHERE budat BETWEEN ...` does the truncation directly. Needed one new primitive,
+    `period_day_date( iv_fy, iv_period, iv_day )` — `period_end_date` generalized to an arbitrary
+    day-of-month (clamped to the real last day, so it doubles as `period_end_date` with
+    `iv_day = 31`), since the existing helper only ever computed a month's *last* day.
+
+## 7. How to point the ADT MCP at another client / system
+
+Config lives in `~/.claude.json` under `mcpServers → mcp-abap-adt → env`:
+
+```
+SAP_URL      https://vhafbmedap01.hec.erp.alimco.in:443
+SAP_CLIENT   100          <-- CHANGED from 120 on 2026-08-12 (user decision)
+SAP_LANGUAGE en
+```
+
+**Status:** `SAP_CLIENT` was changed **120 → 100** on 2026-08-12. Client 120 is a near-empty
+sandbox and produced the wrong volumes; client 100 is a client copy with data up to May and is far
+more representative. **This takes effect only after Claude Code is restarted** — MCP servers
+receive `env` at launch, so a mid-session edit does nothing.
+
+✅ **Resolved, 2026-08-13: client-100 access now works.** The user live-debugged
+`ZCL_PMS_DASH_QUERY` directly in ADT (screenshot confirmed) and ran `ZSD_PMS_DASH_TEST` against
+real data — see §6 OD-6 through OD-9. The `mcp-abap-adt` tools are also now listed as available in
+this session. The `unit`/`VKBUR` facts in §3 and §6 (OD-3, OD-8) are therefore now **live-confirmed**,
+not just the user's word.
+
+⚠ *(Historical, kept for context.)* Re-tried `GetTable`/`GetTableContents` on `ZSD_ZONE_PLANT` on
+2026-08-12 afternoon — both failed with `401 Nicht autorisiert` / missing CSRF token. Originally
+logged as "probably just needs a restart," but the user confirmed (2026-08-12) **client 100 uses
+different credentials than client 120** — so this is a genuine auth gap, not only a stale env var.
+**Correction to the line below:** a different *client on the same host* can require its own auth
+after all; do not assume otherwise for any future client switch. (Now resolved — see the ✅ note
+above.)
+
+If production itself is needed later, change `SAP_URL` too. Credentials are not in this repo's
+config — they come from the `mcp-abap-adt` package's own store/auth flow, set up per client.
+
+## 8. Status / next step
+
+Planning complete → see `ABAP_Backend_Plan.md`. **P0-0 (re-measure on production) now gates
+everything else**, because the client-120 volumes drove three separate design conclusions.
+
+**2026-08-12 additions (same day, later):** four more decisions layered on top, none of which
+change P0-0's gating role: FY filter UI reworked to a picker defaulting to the computed current FY
+(frontend-only, already implemented in the HTML template); material/tax CDS now has a concrete
+reference design (**OD-4**, `PRCD_ELEMENTS` via `ZFI_SR_NEW_OPT.abap`) and the double-count Trap 1
+now has a resolution mechanism the **user owns** (`sakn1`↔`hkont`); map-dot coordinates move from
+hand-geocoded frontend config to two new backend-maintained fields on `ZSD_ZONE_PLANT` (**OD-5**),
+leaving open only how a unit's representative point is derived from its member plants' coordinates.
+
+**2026-08-13: Phase 1 backend drafted** (`../ABAP/` — `ZSDD_PMS_GL_CDS`, `ZSDD_PMS_ITEM_CDS`,
+`ZCL_PMS_DASH_QUERY`, `ZSD_PMS_DASH_TEST`), same "written without live access" situation as the rest
+of this plan — see that class's own header comment for the full caveat list. Two things worth
+recording here specifically:
+- OD-4's material↔GL bridge (`resolve_material_gl_keys`) and the OD-5 unit-dot centroid (value-
+  weighted, per that decision's recommendation) are now real, complete implementations, not just
+  designs — both still gated on the same P0 checks (P0-9, P0-10) as before.
+- **New gap found while writing the code:** the Scheme filter doesn't restrict the material panel —
+  `category` lives only on the GL-grain fact, not on `VBRP`/`VBRK`. Closing it needs the mirror image
+  of the material↔GL bridge (GL→item instead of item→GL), deliberately not attempted in the same
+  pass as the first unverified cross-grain join. Tracked in `ABAP_Backend_Plan.md` alongside OD-4.
+
+**2026-08-13, later: Phase 1 imported, activated, and live-tested — confirmed working.** Testing
+surfaced five real fixes, all made and re-verified the same day: **OD-6** (real `GJAHR` convention
+is starts-in-year, opposite of the frozen template's), **OD-7** (`month_num` is a plain calendar
+month, not FY-shifted), **OD-8** (the Unit join key is `VKBUR`, not `WERKS`, plus its many-to-many
+corollary), **OD-9** (Trap 2's cutoff is derived from today's date, not scanned from fetched rows —
+and pushed into `get_gl_rows`' own `date_to` rather than post-filtered in ABAP), and a fix to
+`get_unit_dots` itself (it grouped by `werks` alone, silently misattributing a multi-unit plant's
+later rows to whichever unit its first row happened to carry). This also means client-100 access is
+confirmed working end-to-end now, superseding the credentials blocker in §7.
+
+**2026-08-13, later still: Phase 2 (OData V4) drafted**, built against the now-tested Phase 1
+engine — 7 custom entities, 7 query provider classes, 1 service definition, all under `../ABAP/`,
+not yet imported. See `ABAP_Backend_Plan.md` Part C's Phase 2 section for the full design, including
+two deliberate deviations from the original 10-entity sketch: Unit dots are their own entity
+(`ZSD_PMS_UNIT_DOTS`), not a `Granularity` slice of `ZSD_PMS_GEO`, since Phase 1 returns them as two
+structurally different sub-tables; and the 3 value-help entities are deferred (same call the GRN
+Dashboard made for its own equivalent filters) since they're new, untested query logic, not a
+wrapper over `get_dashboard_data`. Two new DDIC data elements (`ZSD_PMS_DATE`, `ZSD_PMS_FLT`) must
+be created before the entities import — see that section for why, and note `ZSD_PMS_FLT` is
+`CHAR(1000)`, not the Part B sketch's original 255 guess.

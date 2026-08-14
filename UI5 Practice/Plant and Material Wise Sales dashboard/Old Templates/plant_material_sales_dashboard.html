@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plant &amp; Material Sales — Analytical Dashboard</title>
+
+<!-- ============================================================
+     Apache ECharts 5 (Apache-2.0 licence — free for commercial use)
+     Loaded from the local echarts.min.js sitting next to this file, so the
+     prototype works offline / behind the corporate proxy. The CDN is only a
+     fallback for when this file is opened without its sibling library.
+
+     In the real Fiori app, do NOT use a CDN. Copy echarts.min.js into
+     your UI5 app under  webapp/thirdparty/echarts.min.js  and register it:
+        "sap.ui.loader.config({ paths: { 'echarts': 'your/app/thirdparty' } })"
+     then  sap.ui.require(['echarts/echarts.min'], function(){ ... })
+     inside onAfterRendering of the view controller.
+     ============================================================ -->
+<script src="echarts.min.js"></script>
+<script>
+if (typeof echarts === "undefined"){
+  document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.1/echarts.min.js"><\/script>');
+}
+</script>
+
+<style>
+:root{
+  /* SAP Horizon (Morning) flavoured tokens */
+  --bg:#f5f6f7;
+  --card:#ffffff;
+  --line:#e5e5e5;
+  --line-strong:#d9d9d9;
+  --ink:#1d2d3e;
+  --ink-2:#556b82;
+  --ink-3:#8396a8;
+  --brand:#0064d9;
+  --brand-ink:#0040b0;
+  --brand-bg:#ebf5ff;
+  --good:#256f3a;
+  --warn:#e76500;
+  --bad:#aa0808;
+  --shadow:0 0 .125rem 0 rgba(34,54,74,.16), 0 .125rem .5rem 0 rgba(34,54,74,.16);
+  --shadow-lg:0 0 .25rem 0 rgba(34,54,74,.2), 0 .5rem 1rem 0 rgba(34,54,74,.2);
+  --r:.75rem;
+  --font:"72","72full",-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--ink);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit}
+
+/* ---------------- shell bar ---------------- */
+.shell{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;gap:16px;
+  height:52px;padding:0 16px;
+  background:#fff;border-bottom:1px solid var(--line-strong);
+}
+.shell .mark{
+  width:26px;height:26px;border-radius:6px;flex:0 0 auto;
+  background:linear-gradient(135deg,#0064d9,#1b90ff);
+}
+.shell h1{font-size:16px;font-weight:700;margin:0;letter-spacing:-.1px}
+.shell .sub{color:var(--ink-2);font-size:12px;margin-left:-8px}
+.shell .spacer{flex:1}
+.shell .who{font-size:12px;color:var(--ink-2)}
+
+/* ---------------- buttons ---------------- */
+.btn{
+  height:32px;padding:0 12px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--brand);background:transparent;color:var(--brand);
+  font-weight:600;white-space:nowrap;
+}
+.btn:hover{background:var(--brand-bg)}
+.btn.primary{background:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-ink)}
+.btn.ghost{border-color:transparent;color:var(--brand)}
+.btn.ghost:hover{background:var(--brand-bg)}
+.btn:focus-visible{outline:2px solid #0064d9;outline-offset:2px}
+
+/* ---------------- layout ---------------- */
+.page{padding:12px 16px 48px;max-width:1720px;margin:0 auto}
+.card{
+  background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:14px 16px;margin-bottom:12px;
+}
+.card h2{
+  font-size:14px;font-weight:700;margin:0 0 2px;letter-spacing:-.1px;
+  display:flex;align-items:center;gap:8px;
+}
+.card .cap{font-size:12px;color:var(--ink-2);margin:0 0 10px}
+.grid{display:grid;gap:12px;margin-bottom:12px}
+.g-8-4{grid-template-columns:2fr 1fr}
+.g-6-6{grid-template-columns:1fr 1fr}
+.g-7-5{grid-template-columns:1.4fr 1fr}
+@media(max-width:1180px){.g-8-4,.g-6-6,.g-7-5{grid-template-columns:1fr}}
+
+/* ---------------- filter bar ---------------- */
+.fbar{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:150px}
+.field label{font-size:12px;color:var(--ink-2);font-weight:600}
+.ctl{
+  height:32px;border:1px solid var(--line-strong);border-bottom:2px solid #89919a;
+  border-radius:6px;background:#fff;padding:0 8px;font:inherit;color:var(--ink);
+  min-width:150px;cursor:pointer;
+}
+.ctl:hover{border-bottom-color:var(--brand)}
+.ctl:focus,.ctl:focus-visible{outline:none;border-color:var(--brand);border-bottom-width:2px;box-shadow:0 0 0 1px var(--brand)}
+select.ctl{cursor:pointer}
+
+/* multi-select */
+.ms{position:relative;min-width:190px}
+.ms-trigger{
+  height:32px;width:100%;text-align:left;border:1px solid var(--line-strong);
+  border-bottom:2px solid #89919a;border-radius:6px;background:#fff;padding:0 26px 0 8px;
+  color:var(--ink);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ms-trigger:hover{border-bottom-color:var(--brand)}
+.ms-trigger::after{content:"";position:absolute;right:10px;top:14px;border:4px solid transparent;border-top-color:var(--ink-2)}
+.ms-panel{
+  display:none;position:absolute;z-index:80;top:36px;left:0;width:280px;max-height:320px;
+  background:#fff;border:1px solid var(--line-strong);border-radius:8px;box-shadow:var(--shadow-lg);
+  flex-direction:column;overflow:hidden;
+}
+.ms.open .ms-panel{display:flex}
+.ms-search{margin:8px;height:30px;border:1px solid var(--line-strong);border-radius:6px;padding:0 8px;font:inherit}
+.ms-list{overflow:auto;padding:0 4px 4px;flex:1}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+.ms-item:hover{background:var(--brand-bg)}
+.ms-item input{accent-color:var(--brand);margin:0}
+.ms-item .sm{color:var(--ink-3);font-size:11px;margin-left:auto}
+.ms-foot{display:flex;gap:8px;padding:8px;border-top:1px solid var(--line);background:#fafafa}
+
+/* ---------------- KPI tiles ---------------- */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:680px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:12px 14px}
+.kpi .k-label{font-size:12px;color:var(--ink-2);font-weight:600;margin-bottom:6px}
+.kpi .k-val{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.kpi .k-sub{font-size:12px;color:var(--ink-2);margin-top:4px;display:flex;align-items:center;gap:5px}
+.delta{font-weight:700}
+.delta.up{color:var(--good)}
+.delta.down{color:var(--bad)}
+.spark{height:26px;margin-top:6px}
+
+/* ---------------- chart hosts ---------------- */
+.chart{width:100%}
+.h260{height:260px}.h300{height:300px}.h320{height:320px}.h360{height:360px}.h420{height:420px}
+
+/* ---------------- breadcrumb / chips ---------------- */
+.crumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;min-height:26px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 6px 0 10px;
+  border-radius:12px;background:var(--brand-bg);color:var(--brand-ink);
+  font-size:12px;font-weight:600;border:1px solid #b3d4ff;
+}
+.chip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;border-radius:50%}
+.chip button:hover{background:#d4e8ff}
+.crumbs .hint{font-size:12px;color:var(--ink-3)}
+
+/* ---------------- table ---------------- */
+.tbl-wrap{max-height:400px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th{
+  position:sticky;top:0;z-index:2;background:#f5f6f7;text-align:left;font-weight:700;color:var(--ink-2);
+  padding:8px 10px;border-bottom:1px solid var(--line-strong);white-space:nowrap;cursor:pointer;user-select:none;
+}
+th:hover{color:var(--brand)}
+th.num,td.num{text-align:right}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+tbody tr:hover{background:#f7fbff}
+.mono{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+
+/* ---------------- query inspector (signature element) ---------------- */
+.qi-tab{
+  position:fixed;right:16px;bottom:0;z-index:70;
+  background:#1d2d3e;color:#fff;border:0;border-radius:8px 8px 0 0;
+  height:34px;padding:0 14px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-lg);
+  display:flex;align-items:center;gap:8px;
+}
+.qi-tab .dot{width:7px;height:7px;border-radius:50%;background:#4ade80}
+.qi{
+  position:fixed;left:0;right:0;bottom:0;z-index:75;transform:translateY(100%);
+  transition:transform .22s ease;background:#12212f;color:#cfe0ee;
+  border-top:1px solid #2b4055;max-height:56vh;display:flex;flex-direction:column;
+}
+.qi.open{transform:translateY(0)}
+.qi-head{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #2b4055}
+.qi-head strong{color:#fff;font-size:13px}
+.qi-body{overflow:auto;padding:12px 16px 20px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.65}
+.qi-body .q{margin-bottom:14px;border-left:2px solid #3d6b99;padding-left:12px;white-space:pre-wrap;word-break:break-all}
+.qi-body .q .lbl{color:#6ee7b7;display:block;margin-bottom:2px;font-weight:700}
+.qi-body .kw{color:#8ab4f8}
+.qi-body .str{color:#f0b37e}
+.qi-close{margin-left:auto;background:transparent;border:0;color:#8fa9bf;cursor:pointer;font-size:18px}
+
+/* ---------------- misc ---------------- */
+.notice{
+  background:var(--brand-bg);border:1px solid #b3d4ff;border-radius:8px;padding:10px 12px;
+  font-size:12.5px;color:var(--brand-ink);margin-bottom:12px;
+}
+.busy{position:fixed;inset:0;background:rgba(245,246,247,.86);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.busy.hidden{display:none}
+.ring{width:34px;height:34px;border:3px solid #cdd8e3;border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.busy p{color:var(--ink-2);font-size:13px;margin:0}
+details.notes{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:0 16px}
+details.notes summary{cursor:pointer;padding:14px 0;font-weight:700;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+details.notes summary::-webkit-details-marker{display:none}
+details.notes summary::before{content:"▸";color:var(--brand);transition:transform .15s}
+details.notes[open] summary::before{transform:rotate(90deg)}
+details.notes pre{
+  background:#12212f;color:#cfe0ee;padding:12px 14px;border-radius:8px;overflow:auto;
+  font-size:12px;line-height:1.6;
+}
+details.notes code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+details.notes h3{font-size:13px;margin:18px 0 6px}
+details.notes p,details.notes li{font-size:13px;color:var(--ink-2);line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="busy" id="busy">
+  <div class="ring"></div>
+  <p id="busyText">Generating 336,000 sales records…</p>
+</div>
+
+<header class="shell">
+  <div class="mark"></div>
+  <h1>Plant &amp; Material Sales</h1>
+  <span class="sub">Sales Analytics</span>
+  <div class="spacer"></div>
+  <span class="who" id="dsBadge">Mock data</span>
+  <button class="btn ghost" id="btnExport">Export view</button>
+</header>
+
+<main class="page">
+
+  <!-- ================= FILTER BAR ================= -->
+  <section class="card" aria-label="Filters">
+    <div class="fbar">
+      <div class="field">
+        <label for="fPeriod">Period</label>
+        <select class="ctl" id="fPeriod">
+          <option value="12">Last 12 months</option>
+          <option value="6">Last 6 months</option>
+          <option value="3">Last quarter</option>
+          <option value="24">Last 24 months</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="msPlant_t">Plant</label>
+        <div class="ms" id="msPlant"></div>
+      </div>
+
+      <div class="field">
+        <label for="msRegion_t">Sales region</label>
+        <div class="ms" id="msRegion"></div>
+      </div>
+
+      <div class="field">
+        <label for="msGroup_t">Material group</label>
+        <div class="ms" id="msGroup"></div>
+      </div>
+
+      <div class="field">
+        <label for="fMeasure">Measure</label>
+        <select class="ctl" id="fMeasure">
+          <option value="rev">Net sales value</option>
+          <option value="qty">Billed quantity</option>
+          <option value="margin">Contribution margin</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fTopN">Show top</label>
+        <select class="ctl" id="fTopN">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fCurr">Currency</label>
+        <select class="ctl" id="fCurr">
+          <option value="INR">INR</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+        </select>
+      </div>
+
+      <div style="flex:1"></div>
+      <button class="btn ghost" id="btnClear">Clear filters</button>
+      <button class="btn primary" id="btnGo">Go</button>
+    </div>
+  </section>
+
+  <div class="crumbs" id="crumbs"></div>
+
+  <!-- ================= KPI TILES ================= -->
+  <section class="kpis" id="kpis"></section>
+
+  <!-- ================= ROW A ================= -->
+  <div class="grid g-8-4">
+    <section class="card">
+      <h2>Sales trend by plant</h2>
+      <p class="cap">Monthly totals for the five largest plants in the current selection, plus all other plants combined. Drag inside the chart to zoom a period.</p>
+      <div class="chart h320" id="chTrend"></div>
+    </section>
+    <section class="card">
+      <h2>Top plants</h2>
+      <p class="cap">Select a bar to drill into that plant.</p>
+      <div class="chart h320" id="chPlants"></div>
+    </section>
+  </div>
+
+  <!-- ================= ROW B ================= -->
+  <div class="grid g-6-6">
+    <section class="card">
+      <h2>Material concentration</h2>
+      <p class="cap">Ranked materials with cumulative share. The 80% line shows how few materials carry the revenue.</p>
+      <div class="chart h320" id="chPareto"></div>
+    </section>
+    <section class="card">
+      <h2>Plant × material group</h2>
+      <p class="cap">Every plant in the selection against every material group. Select a cell to filter both dimensions at once.</p>
+      <div class="chart h320" id="chHeat"></div>
+    </section>
+  </div>
+
+  <!-- ================= ROW C ================= -->
+  <div class="grid g-7-5">
+    <section class="card">
+      <h2>Quantity vs. value <span class="muted" style="font-weight:400;font-size:12px" id="scatterCount"></span></h2>
+      <p class="cap">One point per plant–material combination. Points far below the trend are selling volume at a low realised price.</p>
+      <div class="chart h360" id="chScatter"></div>
+    </section>
+    <section class="card">
+      <h2>Mix by material group</h2>
+      <p class="cap">Share of the selected measure.</p>
+      <div class="chart h360" id="chMix"></div>
+    </section>
+  </div>
+
+  <!-- ================= DETAIL TABLE ================= -->
+  <section class="card">
+    <h2>Plant–material detail</h2>
+    <p class="cap" id="tblCap"></p>
+    <div class="tbl-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th data-sort="plant">Plant</th>
+            <th data-sort="plantName">Plant name</th>
+            <th data-sort="material">Material</th>
+            <th data-sort="matName">Description</th>
+            <th data-sort="group">Material group</th>
+            <th class="num" data-sort="qty">Quantity</th>
+            <th>UoM</th>
+            <th class="num" data-sort="rev">Net sales</th>
+            <th class="num" data-sort="price">Avg. price</th>
+            <th class="num" data-sort="margin">Margin %</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= INTEGRATION NOTES ================= -->
+  <details class="notes">
+    <summary>How to wire this to ABAP CDS + OData V4 and Fiori</summary>
+
+    <h3>1. Never send rows to the browser — aggregate in HANA</h3>
+    <p>With 100+ plants and thousands of materials, the client must only ever receive the aggregate it is about to draw. Every chart on this page maps to exactly one <code>$apply</code> request. Open the <strong>Query inspector</strong> (bottom right) to see the URL each chart would fire.</p>
+
+    <h3>2. CDS analytical stack</h3>
+<pre><code>@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Plant &amp; Material Sales — Cube'
+@Analytics.dataCategory: #CUBE
+@Analytics.internalName: #LOCAL
+define view entity ZI_PlantMaterialSalesCube
+  as select from I_BillingDocumentItemCube as bi
+  association [0..1] to I_Plant     as _Plant    on  _Plant.Plant = bi.Plant
+  association [0..1] to I_Product   as _Product  on  _Product.Product = bi.Material
+{
+      @ObjectModel.foreignKey.association: '_Plant'
+  key bi.Plant,
+  key bi.Material,
+  key bi.FiscalYearPeriod,
+      _Plant.PlantName,
+      _Product.ProductGroup            as MaterialGroup,
+      bi.SalesOrganization,
+      bi.BaseUnit,
+
+      @Semantics.amount.currencyCode: 'TransactionCurrency'
+      @Aggregation.default: #SUM
+      bi.NetAmount,
+
+      @Semantics.quantity.unitOfMeasure: 'BaseUnit'
+      @Aggregation.default: #SUM
+      bi.BilledQuantity,
+
+      @Semantics.amount.currencyCode: 'TransactionCurrency'
+      @Aggregation.default: #SUM
+      bi.CostAmount,
+
+      bi.TransactionCurrency,
+      _Plant,
+      _Product
+}</code></pre>
+
+    <p>On top of the cube, expose a query view. <code>@Analytics.query: true</code> is what makes the OData V4 service accept <code>$apply</code>:</p>
+<pre><code>@Analytics.query: true
+@OData.hints.groupingOnBaseLevel: true
+define transient view entity ZC_PlantMaterialSalesQry
+  provider contract analytical_query
+  as projection on ZI_PlantMaterialSalesCube
+{
+  @AnalyticsDetails.query.axis: #ROWS
+  Plant,
+  PlantName,
+  Material,
+  MaterialGroup,
+  FiscalYearPeriod,
+  @AnalyticsDetails.query.axis: #FREE
+  SalesOrganization,
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  NetAmount,
+  @DefaultAggregation: #SUM
+  BilledQuantity,
+  @DefaultAggregation: #SUM
+  CostAmount,
+  BaseUnit,
+  TransactionCurrency
+}</code></pre>
+
+    <p>Then a service definition + V4 service binding (<code>ODataV4 · UI</code>). Publish and note the resulting URL — that is what goes into <code>CONFIG.serviceUrl</code> at the top of the script in this file.</p>
+
+    <h3>3. The request each chart fires</h3>
+<pre><code>-- Top plants bar chart
+GET {service}/ZC_PlantMaterialSalesQry
+    ?$apply=filter(FiscalYearPeriod ge '2025008' and FiscalYearPeriod le '2026007')
+           /groupby((Plant,PlantName),
+                    aggregate(NetAmount with sum as NetAmount,
+                              BilledQuantity with sum as BilledQuantity))
+    &amp;$orderby=NetAmount desc
+    &amp;$top=20
+    &amp;$count=true
+
+-- Trend line (period × plant), only the plants already known to be top 5
+GET {service}/ZC_PlantMaterialSalesQry
+    ?$apply=filter(Plant in ('1000','1010','1020','1030','1040'))
+           /groupby((FiscalYearPeriod,Plant),aggregate(NetAmount with sum as NetAmount))
+    &amp;$orderby=FiscalYearPeriod asc
+
+-- Heatmap (plant × material group)
+GET {service}/ZC_PlantMaterialSalesQry
+    ?$apply=groupby((Plant,MaterialGroup),aggregate(NetAmount with sum as NetAmount))
+
+-- Scatter / detail list — always paged, never unbounded
+GET {service}/ZC_PlantMaterialSalesQry
+    ?$apply=groupby((Plant,Material),
+                    aggregate(NetAmount with sum as NetAmount,
+                              BilledQuantity with sum as BilledQuantity))
+    &amp;$orderby=NetAmount desc&amp;$top=5000&amp;$skip=0</code></pre>
+
+    <h3>4. Volume rules that actually matter here</h3>
+    <ul>
+      <li><strong>Cap the cardinality before it reaches the chart.</strong> A scatter of every plant–material pair is ~10<sup>5</sup> points. Always request <code>$orderby=NetAmount desc&amp;$top=5000</code> and label the chart as "top 5,000 by value" — nobody can read the tail anyway.</li>
+      <li><strong>Charts get aggregates, the table gets pages.</strong> The detail table below uses server-side paging (<code>$top</code>/<code>$skip</code> or the UI5 <code>growing</code> feature), never a full load.</li>
+      <li><strong>Filter before group.</strong> In <code>$apply</code> the <code>filter(...)</code> transformation must come first in the pipeline so HANA prunes partitions before aggregating.</li>
+      <li><strong>Push the "top N" into the query.</strong> <code>groupby(...)/topcount(20,NetAmount)</code> is supported by the analytical runtime and keeps the payload tiny.</li>
+      <li><strong>Cache dimension lists.</strong> The 128 plants and 12 material groups feeding the value helps come from separate small entity sets, loaded once, not from the fact query.</li>
+      <li><strong>Turn animation off</strong> on any ECharts series above ~2,000 points, and set <code>large:true</code> plus <code>progressive</code> — already done in this file.</li>
+    </ul>
+
+    <h3>5. Embedding in Fiori Elements / freestyle UI5</h3>
+    <ul>
+      <li>Freestyle is the simplest host: an <code>sap.m.Page</code> with an <code>sap.ui.comp.smartfilterbar.SmartFilterBar</code> bound to the same entity set, and one <code>sap.ui.core.HTML</code> control per chart. Call <code>echarts.init()</code> in <code>onAfterRendering</code>, dispose in <code>onExit</code>.</li>
+      <li>In Fiori Elements, add the charts through a custom section (<code>manifest.json → controlConfiguration → …/@com.sap.vocabularies.UI.v1.Facets → custom fragment</code>). The FE filter bar's <code>search</code> event gives you the filter array — convert it to the <code>$apply</code> filter string.</li>
+      <li>Re-render on resize: <code>sap.ui.Device.resize.attachHandler(() =&gt; chart.resize())</code>.</li>
+      <li>Fiori theming: read <code>sap.ui.core.theming.Parameters.get()</code> for <code>sapChart_OrderedColor_1…11</code> and feed them into the ECharts <code>color</code> array so charts follow the user's theme, including high-contrast.</li>
+      <li>Accessibility: ECharts canvas is opaque to screen readers. Keep the detail table on the page as the accessible equivalent, and set <code>aria: {enabled:true, decal:{show:true}}</code> so series are distinguishable without colour.</li>
+    </ul>
+
+    <h3>6. Licensing</h3>
+    <p>Apache ECharts is Apache-2.0 — safe for commercial SAP delivery. Bundle the minified file with the app; do not reference a public CDN from a customer system.</p>
+  </details>
+</main>
+
+<button class="qi-tab" id="qiTab"><span class="dot"></span>Query inspector</button>
+<aside class="qi" id="qi" aria-label="Query inspector">
+  <div class="qi-head">
+    <strong>OData V4 requests for the current selection</strong>
+    <span class="muted" style="color:#8fa9bf;font-size:12px">These are the exact calls the app issues against the analytical service. Switch <code>CONFIG.dataSource</code> to <code>'odata'</code> to run them for real.</span>
+    <button class="qi-close" id="qiClose" aria-label="Close">✕</button>
+  </div>
+  <div class="qi-body" id="qiBody"></div>
+</aside>
+
+<script>
+"use strict";
+
+/* ============================================================
+   0 · CONFIG — the only block you edit when moving to real data
+   ============================================================ */
+const CONFIG = {
+  dataSource : "mock",                       // "mock" | "odata"
+  serviceUrl : "/sap/opu/odata4/sap/zsd_plant_mat_sales/srvd/sap/zsd_plant_mat_sales/0001",
+  entitySet  : "ZC_PlantMaterialSalesQry",
+  maxScatterPoints : 8000,                   // hard cap sent to the scatter chart
+  detailPageSize   : 200                     // rows per page in the detail table
+};
+
+/* Horizon-flavoured qualitative palette (mirrors sapChart_OrderedColor_1…11) */
+const PALETTE = ["#1b90ff","#049f9a","#f58b00","#fa4f55","#7858ff","#188918",
+                 "#e76500","#0057d2","#a100c2","#5b738b","#c87200"];
+
+/* ============================================================
+   1 · Formatting
+   ============================================================ */
+let CUR = "INR";
+const CUR_SYM = {INR:"₹", USD:"$", EUR:"€"};
+
+function fmtMoney(v, compact = true){
+  const s = CUR_SYM[CUR];
+  if (v == null || isNaN(v)) return "–";
+  const a = Math.abs(v), sign = v < 0 ? "-" : "";
+  if (!compact) return sign + s + Math.round(a).toLocaleString(CUR === "INR" ? "en-IN" : "en-US");
+  if (CUR === "INR"){
+    if (a >= 1e9) return sign + s + Math.round(a/1e7).toLocaleString("en-IN") + " Cr";
+    if (a >= 1e7) return sign + s + (a/1e7).toFixed(2) + " Cr";
+    if (a >= 1e5) return sign + s + (a/1e5).toFixed(2) + " L";
+    return sign + s + Math.round(a).toLocaleString("en-IN");
+  }
+  if (a >= 1e9) return sign + s + (a/1e9).toFixed(2) + "B";
+  if (a >= 1e6) return sign + s + (a/1e6).toFixed(2) + "M";
+  if (a >= 1e3) return sign + s + (a/1e3).toFixed(1) + "K";
+  return sign + s + a.toFixed(0);
+}
+function fmtQty(v){
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v/1e6).toFixed(2) + "M";
+  if (a >= 1e3) return (v/1e3).toFixed(1) + "K";
+  return v.toFixed(0);
+}
+function fmtNum(v){ return Math.round(v).toLocaleString(CUR === "INR" ? "en-IN" : "en-US"); }
+function fmtPct(v){ return (v*100).toFixed(1) + "%"; }
+/* Currency is display-only in the mock; a real service returns one currency per row. */
+const FX = {INR:1, USD:1/83.2, EUR:1/90.1};
+function cvt(v){ return v * FX[CUR]; }
+
+/* ============================================================
+   2 · Mock dataset — columnar typed arrays
+   ------------------------------------------------------------
+   Object-per-row would be ~300 MB and seconds of GC for this
+   volume. Columnar typed arrays keep the whole fact set at a few
+   MB and let a full re-aggregation run in single-digit ms, which
+   is what makes the filter bar feel instant.
+   ============================================================ */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+const N_PLANTS = 128, N_MATS = 4000, N_MONTHS = 24;
+
+const REGIONS = ["North","West","South","East","Central","Exports"];
+const CITIES = ["Pune","Nashik","Surat","Bhopal","Raipur","Hosur","Vizag","Kochi","Indore","Jaipur",
+  "Ludhiana","Rourkela","Trichy","Guwahati","Kanpur","Vapi","Hubli","Mysuru","Rudrapur","Silvassa",
+  "Bhiwadi","Sanand","Halol","Panipat","Jamshedpur","Angul","Bellary","Nagpur","Aurangabad","Kolhapur",
+  "Dahej","Paradip","Mundra","Tuticorin","Kandla","Haldia"];
+const PLANT_KIND = ["Works","Unit","Terminal","Depot","Yard","Plant"];
+
+const GROUPS = [
+  {code:"CEM", name:"Cement & binders",     uom:"MT",  price:5200,  margin:.14},
+  {code:"AGG", name:"Aggregates & sand",    uom:"CUM", price:1450,  margin:.19},
+  {code:"BIT", name:"Bitumen & emulsions",  uom:"MT",  price:47000, margin:.09},
+  {code:"TMT", name:"Reinforcement steel",  uom:"MT",  price:62000, margin:.07},
+  {code:"STR", name:"Structural steel",     uom:"MT",  price:71000, margin:.08},
+  {code:"RMC", name:"Ready-mix concrete",   uom:"CUM", price:4800,  margin:.16},
+  {code:"PIP", name:"Pipes & fittings",     uom:"NOS", price:2300,  margin:.22},
+  {code:"ELE", name:"Electrical & cabling", uom:"M",   price:410,   margin:.27},
+  {code:"SPR", name:"Plant spares",         uom:"NOS", price:8600,  margin:.31},
+  {code:"FUE", name:"Fuel & lubricants",    uom:"KL",  price:92000, margin:.05},
+  {code:"FRM", name:"Formwork & shuttering",uom:"SQM", price:1750,  margin:.24},
+  {code:"CON", name:"Consumables",          uom:"NOS", price:640,   margin:.29}
+];
+
+const MAT_NAMES = {
+  CEM:["OPC 53 Grade","PPC Blended","PSC Slag","White Cement","Rapid Hardening","Sulphate Resistant"],
+  AGG:["20 mm Metal","10 mm Metal","Crusher Dust","River Sand","M-Sand","GSB Mix"],
+  BIT:["VG-30 Bitumen","VG-40 Bitumen","CRMB 55","Emulsion SS-1","Emulsion RS-1","PMB 40"],
+  TMT:["TMT Fe500D 8 mm","TMT Fe500D 12 mm","TMT Fe500D 16 mm","TMT Fe550 20 mm","TMT Fe550 25 mm","TMT Fe500 32 mm"],
+  STR:["ISMB 200","ISMC 150","MS Angle 50x50","MS Plate 12 mm","Hollow Section 100x100","Purlin Z-150"],
+  RMC:["M20 Grade","M25 Grade","M30 Grade","M40 Grade","Self-Compacting","Pumpable M35"],
+  PIP:["DI Pipe K9 200 mm","HDPE PN10 110 mm","GI Pipe 50 mm","MS Bend 90°","CI Sluice Valve","PVC Coupler 63 mm"],
+  ELE:["LT Cable 3.5Cx185","HT Cable 11kV","Earthing Strip","Cable Tray 300 mm","Flexible Wire 4 sq","Armoured 4Cx16"],
+  SPR:["Crusher Jaw Plate","Conveyor Idler","Hydraulic Seal Kit","Gearbox Bearing","Screen Mesh","Vibrator Motor"],
+  FUE:["HSD Bulk","Furnace Oil","Hydraulic Oil 68","Gear Oil EP90","Grease MP3","Engine Oil 15W40"],
+  FRM:["Steel Plate Panel","Aluminium Panel","Prop Adjustable","Beam H20","Plywood 12 mm","Tie Rod 17 mm"],
+  CON:["Welding Rod 3.15","Cutting Wheel","Binding Wire","Curing Compound","Safety Helmet","Shuttering Oil"]
+};
+const SUFFIX = ["","Type A","Type B","Grade I","Grade II","OEM","Bulk","Bagged","Site Pack","Premium"];
+
+const DS = {};   // the dataset
+
+function buildMonths(){
+  const out = [], now = new Date();
+  let y = now.getFullYear(), m = now.getMonth(); // 0-based, current month excluded
+  for (let i = N_MONTHS; i >= 1; i--){
+    const d = new Date(y, m - i, 1);
+    out.push({
+      label : d.toLocaleString("en-GB",{month:"short"}) + " " + String(d.getFullYear()).slice(2),
+      key   : d.getFullYear() + String(d.getMonth()+1).padStart(2,"0"),
+      // SAP fiscal year period, variant K4 (calendar year), e.g. 2026003
+      fisc  : d.getFullYear() + "0" + String(d.getMonth()+1).padStart(2,"0")
+    });
+  }
+  return out;
+}
+
+function generate(){
+  const rnd = mulberry32(20260810);
+  DS.months = buildMonths();
+
+  /* ---- plants ---- */
+  DS.plants = [];
+  for (let i = 0; i < N_PLANTS; i++){
+    const city = CITIES[i % CITIES.length];
+    const kind = PLANT_KIND[Math.floor(rnd()*PLANT_KIND.length)];
+    DS.plants.push({
+      idx    : i,
+      code   : String(1000 + i*10),
+      name   : city + " " + kind + (i >= CITIES.length ? " " + (Math.floor(i/CITIES.length)+1) : ""),
+      region : REGIONS[Math.floor(rnd()*REGIONS.length)],
+      /* a few flagship plants carry disproportionate volume — realistic Pareto */
+      weight : Math.pow(rnd(), 2.2) * (i < 8 ? 6 : 1) + .05
+    });
+  }
+
+  /* ---- materials ---- */
+  DS.materials = [];
+  for (let i = 0; i < N_MATS; i++){
+    const g = Math.floor(rnd()*GROUPS.length), G = GROUPS[g];
+    const base = MAT_NAMES[G.code][Math.floor(rnd()*6)];
+    const sfx  = SUFFIX[Math.floor(rnd()*SUFFIX.length)];
+    DS.materials.push({
+      idx   : i,
+      code  : "1" + String(100000 + i),
+      name  : (base + " " + sfx).trim(),
+      group : g,
+      price : G.price * (.72 + rnd()*.66),
+      marg  : G.margin * (.55 + rnd()*.95),
+      weight: Math.pow(rnd(), 2.6) + .02
+    });
+  }
+
+  /* ---- plant × material pairs ---- */
+  const pairMat = [], pairPlant = [];
+  for (let m = 0; m < N_MATS; m++){
+    const k = 2 + Math.floor(rnd()*4);                       // 2–5 plants per material
+    const used = new Set();
+    for (let j = 0; j < k; j++){
+      let p = Math.floor(Math.pow(rnd(), 1.6) * N_PLANTS);    // bias to flagship plants
+      if (used.has(p)) continue;
+      used.add(p); pairMat.push(m); pairPlant.push(p);
+    }
+  }
+  const NP = pairMat.length;
+  DS.pairMat   = Int16Array.from(pairMat);
+  DS.pairPlant = Int16Array.from(pairPlant);
+  DS.nPairs    = NP;
+
+  /* ---- fact table, columnar ---- */
+  const N = NP * N_MONTHS;
+  DS.n      = N;
+  DS.fPair  = new Int32Array(N);
+  DS.fPlant = new Int16Array(N);
+  DS.fMat   = new Int16Array(N);
+  DS.fGroup = new Int8Array(N);
+  DS.fMonth = new Int8Array(N);
+  DS.fQty   = new Float32Array(N);
+  DS.fRev   = new Float32Array(N);
+  DS.fCost  = new Float32Array(N);
+
+  let w = 0;
+  for (let p = 0; p < NP; p++){
+    const mi = DS.pairMat[p], pi = DS.pairPlant[p];
+    const M = DS.materials[mi], P = DS.plants[pi];
+    const scale = M.weight * P.weight * 140;
+    for (let t = 0; t < N_MONTHS; t++){
+      DS.fPair[w] = p; DS.fPlant[w] = pi; DS.fMat[w] = mi;
+      DS.fGroup[w] = M.group; DS.fMonth[w] = t;
+      if (rnd() < .14){ w++; continue; }                     // sparse months
+      const season = 1 + .28*Math.sin((t % 12) / 12 * Math.PI * 2 - 1.1);
+      const trend  = 1 + t * .009;
+      const qty    = Math.max(0, scale * season * trend * (.45 + rnd()*1.15));
+      const price  = M.price * (.93 + rnd()*.16);
+      DS.fQty[w]  = qty;
+      DS.fRev[w]  = qty * price;
+      DS.fCost[w] = qty * price * (1 - M.marg * (.8 + rnd()*.45));
+      w++;
+    }
+  }
+}
+
+/* ============================================================
+   3 · Filter state
+   ============================================================ */
+const F = {
+  months  : 12,
+  plants  : new Set(),   // empty = all
+  regions : new Set(),
+  groups  : new Set(),
+  measure : "rev",
+  topN    : 20
+};
+
+function activeMonthRange(){
+  return {from: N_MONTHS - F.months, to: N_MONTHS - 1};
+}
+function priorMonthRange(){
+  const f = N_MONTHS - F.months*2;
+  return {from: Math.max(0, f), to: N_MONTHS - F.months - 1};
+}
+function plantAllowed(){
+  const allow = new Uint8Array(N_PLANTS);
+  const byPlant = F.plants.size > 0, byRegion = F.regions.size > 0;
+  for (let i = 0; i < N_PLANTS; i++){
+    const P = DS.plants[i];
+    allow[i] = (!byPlant || F.plants.has(i)) && (!byRegion || F.regions.has(P.region)) ? 1 : 0;
+  }
+  return allow;
+}
+function groupAllowed(){
+  const allow = new Uint8Array(GROUPS.length);
+  for (let g = 0; g < GROUPS.length; g++) allow[g] = (F.groups.size === 0 || F.groups.has(g)) ? 1 : 0;
+  return allow;
+}
+function measureLabel(){
+  return F.measure === "rev" ? "Net sales value"
+       : F.measure === "qty" ? "Billed quantity"
+       : "Contribution margin";
+}
+function fmtMeasure(v){ return F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v)); }
+
+/* ============================================================
+   4 · Aggregation
+   ------------------------------------------------------------
+   One pass over the fact columns fills every result set the page
+   needs. In "odata" mode each of these becomes its own $apply
+   request — see buildQueries() for the exact URLs.
+   ============================================================ */
+function aggregate(range){
+  const {from, to} = range;
+  const pOK = plantAllowed(), gOK = groupAllowed();
+  const NG = GROUPS.length;
+
+  const res = {
+    byMonth  : new Float64Array(N_MONTHS),
+    qtyMonth : new Float64Array(N_MONTHS),
+    byPlant  : new Float64Array(N_PLANTS),
+    qtyPlant : new Float64Array(N_PLANTS),
+    byMat    : new Float64Array(N_MATS),
+    qtyMat   : new Float64Array(N_MATS),
+    byGroup  : new Float64Array(NG),
+    byRegion : new Float64Array(REGIONS.length),
+    byCell   : new Float64Array(N_PLANTS * NG),
+    pairRev  : new Float64Array(DS.nPairs),
+    pairQty  : new Float64Array(DS.nPairs),
+    pairCost : new Float64Array(DS.nPairs),
+    rev:0, qty:0, cost:0, rows:0
+  };
+  const regionIdx = new Int8Array(N_PLANTS);
+  for (let i = 0; i < N_PLANTS; i++) regionIdx[i] = REGIONS.indexOf(DS.plants[i].region);
+
+  const n = DS.n, fMonth = DS.fMonth, fPlant = DS.fPlant, fGroup = DS.fGroup,
+        fMat = DS.fMat, fPair = DS.fPair, fQty = DS.fQty, fRev = DS.fRev, fCost = DS.fCost;
+  const useQty = F.measure === "qty", useMargin = F.measure === "margin";
+
+  for (let i = 0; i < n; i++){
+    const t = fMonth[i];
+    if (t < from || t > to) continue;
+    const p = fPlant[i]; if (!pOK[p]) continue;
+    const g = fGroup[i]; if (!gOK[g]) continue;
+    const rev = fRev[i]; if (rev === 0) continue;
+    const qty = fQty[i], cost = fCost[i];
+    const v = useQty ? qty : useMargin ? (rev - cost) : rev;
+
+    res.rev += rev; res.qty += qty; res.cost += cost; res.rows++;
+    res.byMonth[t] += v;  res.qtyMonth[t] += qty;
+    res.byPlant[p] += v;  res.qtyPlant[p] += qty;
+    const m = fMat[i];
+    res.byMat[m]  += v;   res.qtyMat[m]  += qty;
+    res.byGroup[g] += v;
+    res.byRegion[regionIdx[p]] += v;
+    res.byCell[p * NG + g] += v;
+    const pr = fPair[i];
+    res.pairRev[pr] += rev; res.pairQty[pr] += qty; res.pairCost[pr] += cost;
+  }
+  return res;
+}
+
+/* per-month split for a given set of plants (second, narrow pass) */
+function trendForPlants(range, plantIdxs){
+  const {from, to} = range;
+  const gOK = groupAllowed();
+  const slot = new Int8Array(N_PLANTS).fill(-1);
+  plantIdxs.forEach((p, i) => slot[p] = i);
+  const K = plantIdxs.length;
+  const series = new Float64Array((K + 1) * N_MONTHS);   // last row = "all other plants"
+  const pOK = plantAllowed();
+  const useQty = F.measure === "qty", useMargin = F.measure === "margin";
+
+  for (let i = 0; i < DS.n; i++){
+    const t = DS.fMonth[i]; if (t < from || t > to) continue;
+    const p = DS.fPlant[i]; if (!pOK[p]) continue;
+    const g = DS.fGroup[i]; if (!gOK[g]) continue;
+    const rev = DS.fRev[i]; if (rev === 0) continue;
+    const v = useQty ? DS.fQty[i] : useMargin ? (rev - DS.fCost[i]) : rev;
+    const s = slot[p] >= 0 ? slot[p] : K;
+    series[s * N_MONTHS + t] += v;
+  }
+  return {series, K};
+}
+
+function topIndexes(arr, n){
+  const idx = [];
+  for (let i = 0; i < arr.length; i++) if (arr[i] > 0) idx.push(i);
+  idx.sort((a,b) => arr[b] - arr[a]);
+  return idx.slice(0, n);
+}
+
+/* ============================================================
+   5 · OData V4 adapter
+   ------------------------------------------------------------
+   Same shape in, same shape out as the mock path, so switching
+   CONFIG.dataSource is the only change needed.
+   ============================================================ */
+const OData = {
+  filterString(){
+    const r = activeMonthRange();
+    const parts = [
+      `FiscalYearPeriod ge '${DS.months[r.from].fisc}'`,
+      `FiscalYearPeriod le '${DS.months[r.to].fisc}'`
+    ];
+    if (F.plants.size)  parts.push(`Plant in (${[...F.plants].map(i => `'${DS.plants[i].code}'`).join(",")})`);
+    if (F.regions.size) parts.push(`SalesRegion in (${[...F.regions].map(r => `'${r}'`).join(",")})`);
+    if (F.groups.size)  parts.push(`MaterialGroup in (${[...F.groups].map(g => `'${GROUPS[g].code}'`).join(",")})`);
+    return parts.join(" and ");
+  },
+  measureAgg(){
+    return F.measure === "qty"
+      ? "BilledQuantity with sum as Value"
+      : F.measure === "margin"
+        ? "NetAmount with sum as Rev,CostAmount with sum as Cost"
+        : "NetAmount with sum as Value";
+  },
+  url(applyPipeline, extra = ""){
+    return `${CONFIG.serviceUrl}/${CONFIG.entitySet}?$apply=${applyPipeline}${extra}`;
+  },
+  async run(applyPipeline, extra){
+    const res = await fetch(this.url(applyPipeline, extra), {headers:{Accept:"application/json"}});
+    if (!res.ok) throw new Error(`OData ${res.status} ${res.statusText}`);
+    return (await res.json()).value;
+  }
+};
+
+function buildQueries(){
+  const f = OData.filterString(), a = OData.measureAgg();
+  return [
+    ["Top plants — bar chart",
+     `filter(${f})/groupby((Plant,PlantName),aggregate(${a}))&$orderby=Value desc&$top=${F.topN}&$count=true`],
+    ["Sales trend — line chart (top 5 plants resolved from the query above)",
+     `filter(${f})/groupby((FiscalYearPeriod,Plant),aggregate(${a}))&$orderby=FiscalYearPeriod asc`],
+    ["Material concentration — Pareto",
+     `filter(${f})/groupby((Material,MaterialGroup),aggregate(${a}))&$orderby=Value desc&$top=${Math.max(F.topN,50)}`],
+    ["Plant × material group — heatmap",
+     `filter(${f})/groupby((Plant,MaterialGroup),aggregate(${a}))`],
+    ["Quantity vs. value — scatter (capped, never unbounded)",
+     `filter(${f})/groupby((Plant,Material),aggregate(NetAmount with sum as NetAmount,BilledQuantity with sum as BilledQuantity))&$orderby=NetAmount desc&$top=${CONFIG.maxScatterPoints}`],
+    ["Mix by material group — donut",
+     `filter(${f})/groupby((MaterialGroup),aggregate(${a}))`],
+    ["Detail table — server-side paged",
+     `filter(${f})/groupby((Plant,PlantName,Material,MaterialGroup,BaseUnit),aggregate(NetAmount with sum as NetAmount,BilledQuantity with sum as BilledQuantity,CostAmount with sum as CostAmount))&$orderby=NetAmount desc&$top=${CONFIG.detailPageSize}&$skip=0`],
+    ["Year-over-year comparison — same pipeline, shifted period",
+     `filter(FiscalYearPeriod ge '${DS.months[priorMonthRange().from].fisc}' and FiscalYearPeriod le '${DS.months[priorMonthRange().to].fisc}')/aggregate(${a})`]
+  ];
+}
+
+function renderQueryInspector(){
+  const body = document.getElementById("qiBody");
+  body.innerHTML = buildQueries().map(([label, pipe]) => {
+    const url = `GET ${CONFIG.serviceUrl}/${CONFIG.entitySet}\n    ?$apply=${pipe.replace(/&\$/g, "\n    &$")}`;
+    const html = url
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/\b(filter|groupby|aggregate|with sum as|topcount|GET)\b/g,'<span class="kw">$1</span>')
+      .replace(/'([^']*)'/g,'<span class="str">\'$1\'</span>');
+    return `<div class="q"><span class="lbl">${label}</span>${html}</div>`;
+  }).join("");
+}
+
+/* ============================================================
+   6 · Chart set-up
+   ============================================================ */
+const CHARTS = {};
+const BASE_TEXT = {fontFamily:'"72","72full",-apple-system,"Segoe UI",Arial,sans-serif', color:"#1d2d3e"};
+
+function initCharts(){
+  ["chTrend","chPlants","chPareto","chHeat","chScatter","chMix"].forEach(id => {
+    CHARTS[id] = echarts.init(document.getElementById(id), null, {renderer:"canvas"});
+  });
+  window.addEventListener("resize", () => Object.values(CHARTS).forEach(c => c.resize()));
+
+  CHARTS.chPlants.on("click", p => {
+    if (p.componentType !== "series") return;
+    const idx = p.data && p.data.plantIdx;
+    if (idx == null) return;
+    F.plants.clear(); F.plants.add(idx);
+    syncMultis(); refresh();
+  });
+  CHARTS.chHeat.on("click", p => {
+    if (!p.data) return;
+    F.plants.clear(); F.plants.add(p.data[3]);
+    F.groups.clear(); F.groups.add(p.data[0]);
+    syncMultis(); refresh();
+  });
+  CHARTS.chMix.on("click", p => {
+    if (p.data && p.data.groupIdx != null){ F.groups.clear(); F.groups.add(p.data.groupIdx); syncMultis(); refresh(); }
+  });
+}
+
+const gridBase = {left:8, right:16, top:28, bottom:8, containLabel:true};
+const axisLabel = {color:"#556b82", fontSize:11};
+const splitLine = {lineStyle:{color:"#eceff2"}};
+
+function drawTrend(agg, range){
+  const top = topIndexes(agg.byPlant, 5);
+  const {series, K} = trendForPlants(range, top);
+  const labels = [];
+  for (let t = range.from; t <= range.to; t++) labels.push(DS.months[t].label);
+
+  const mk = (name, row, color, area) => {
+    const d = [];
+    for (let t = range.from; t <= range.to; t++) d.push(+series[row * N_MONTHS + t].toFixed(0));
+    return {
+      name, type:"line", smooth:.25, symbol:"circle", symbolSize:5, showSymbol:labels.length <= 14,
+      sampling:"lttb", lineStyle:{width:2.2, color}, itemStyle:{color},
+      areaStyle: area ? {opacity:.06, color} : null, data:d
+    };
+  };
+  const s = top.map((p,i) => mk(DS.plants[p].code + " " + DS.plants[p].name, i, PALETTE[i], false));
+  s.push(mk("All other plants", K, "#b8c4ce", true));
+
+  CHARTS.chTrend.setOption({
+    color:PALETTE, textStyle:BASE_TEXT, animationDuration:400,
+    tooltip:{trigger:"axis", axisPointer:{type:"line"},
+      valueFormatter:v => F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v))},
+    legend:{type:"scroll", top:0, icon:"roundRect", itemWidth:10, itemHeight:10,
+      textStyle:{fontSize:11, color:"#556b82"}},
+    grid:{...gridBase, top:36, bottom:36},
+    xAxis:{type:"category", data:labels, axisLabel, axisTick:{show:false},
+      axisLine:{lineStyle:{color:"#d9d9d9"}}},
+    yAxis:{type:"value", axisLabel:{...axisLabel,
+      formatter:v => F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v))}, splitLine},
+    dataZoom:[{type:"inside"},{type:"slider", height:16, bottom:6, borderColor:"transparent",
+      fillerColor:"rgba(0,100,217,.10)", handleStyle:{color:"#0064d9"}, moveHandleSize:3, showDetail:false}],
+    series:s
+  }, true);
+}
+
+function drawPlants(agg){
+  const top = topIndexes(agg.byPlant, F.topN).reverse();
+  const data = top.map(p => ({value:+agg.byPlant[p].toFixed(0), plantIdx:p}));
+  const names = top.map(p => DS.plants[p].code);
+  const full  = top.map(p => DS.plants[p].name);
+
+  CHARTS.chPlants.setOption({
+    textStyle:BASE_TEXT, animationDuration:400,
+    tooltip:{trigger:"item", formatter:p =>
+      `<b>${names[p.dataIndex]} · ${full[p.dataIndex]}</b><br/>${measureLabel()}: ${fmtMeasure(p.value)}`},
+    grid:{...gridBase, left:6, right:56, top:8, bottom:6},
+    xAxis:{type:"value", axisLabel:{...axisLabel,
+      formatter:v => F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v))}, splitLine},
+    yAxis:{type:"category", data:names, axisLabel:{...axisLabel, fontSize:10},
+      axisTick:{show:false}, axisLine:{show:false}},
+    series:[{
+      type:"bar", data, barMaxWidth:16,
+      itemStyle:{color:"#1b90ff", borderRadius:[0,4,4,0]},
+      emphasis:{itemStyle:{color:"#0064d9"}},
+      label:{show:true, position:"right", fontSize:10, color:"#556b82",
+        formatter:p => F.measure === "qty" ? fmtQty(p.value) : fmtMoney(cvt(p.value))}
+    }]
+  }, true);
+}
+
+function drawPareto(agg){
+  const n = Math.max(F.topN, 30);
+  const top = topIndexes(agg.byMat, n);
+  const total = agg.byMat.reduce((a,b) => a+b, 0) || 1;
+  let cum = 0;
+  const bars = [], line = [], names = [];
+  top.forEach(m => {
+    const v = agg.byMat[m]; cum += v;
+    bars.push(+v.toFixed(0)); line.push(+(cum/total*100).toFixed(1));
+    names.push(DS.materials[m].code);
+  });
+  const desc = top.map(m => DS.materials[m].name);
+  const grps = top.map(m => GROUPS[DS.materials[m].group].name);
+
+  CHARTS.chPareto.setOption({
+    textStyle:BASE_TEXT, animationDuration:400,
+    tooltip:{trigger:"axis", axisPointer:{type:"shadow"}, formatter:ps => {
+      const i = ps[0].dataIndex;
+      return `<b>${names[i]}</b><br/>${desc[i]}<br/><span style="color:#8396a8">${grps[i]}</span><br/>`+
+             `${measureLabel()}: ${fmtMeasure(bars[i])}<br/>Cumulative share: ${line[i]}%`;
+    }},
+    grid:{...gridBase, top:14, right:44, bottom:24},
+    xAxis:{type:"category", data:names, axisLabel:{...axisLabel, rotate:45, fontSize:9, interval:Math.floor(n/18)},
+      axisTick:{show:false}, axisLine:{lineStyle:{color:"#d9d9d9"}}},
+    yAxis:[
+      {type:"value", axisLabel:{...axisLabel, formatter:v => F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v))}, splitLine},
+      {type:"value", max:100, axisLabel:{...axisLabel, formatter:"{value}%"}, splitLine:{show:false}}
+    ],
+    series:[
+      {type:"bar", data:bars, barMaxWidth:18, itemStyle:{color:"#049f9a", borderRadius:[3,3,0,0]}},
+      {type:"line", yAxisIndex:1, data:line, smooth:true, symbol:"none",
+       lineStyle:{width:2, color:"#e76500"},
+       markLine:{silent:true, symbol:"none", data:[{yAxis:80}],
+         lineStyle:{color:"#e76500", type:"dashed", width:1},
+         label:{formatter:"80%", color:"#e76500", fontSize:10}}}
+    ]
+  }, true);
+}
+
+function drawHeat(agg){
+  const NG = GROUPS.length;
+  const top = topIndexes(agg.byPlant, Math.min(F.topN, 40));
+  const data = [];
+  let max = 0;
+  top.forEach((p, yi) => {
+    for (let g = 0; g < NG; g++){
+      const v = agg.byCell[p * NG + g];
+      if (v > 0){ data.push([g, yi, +v.toFixed(0), p]); if (v > max) max = v; }
+    }
+  });
+
+  CHARTS.chHeat.setOption({
+    textStyle:BASE_TEXT, animationDuration:400,
+    tooltip:{position:"top", formatter:p =>
+      `<b>${DS.plants[p.data[3]].code} · ${DS.plants[p.data[3]].name}</b><br/>`+
+      `${GROUPS[p.data[0]].name}<br/>${measureLabel()}: ${fmtMeasure(p.data[2])}`},
+    grid:{left:60, right:12, top:8, bottom:66},
+    xAxis:{type:"category", data:GROUPS.map(g => g.code), splitArea:{show:true},
+      axisLabel:{...axisLabel, fontSize:10}, axisTick:{show:false}, axisLine:{show:false}},
+    yAxis:{type:"category", data:top.map(p => DS.plants[p].code), splitArea:{show:true},
+      axisLabel:{...axisLabel, fontSize:9}, axisTick:{show:false}, axisLine:{show:false}},
+    visualMap:{min:0, max:max || 1, calculable:true, orient:"horizontal", left:"center", bottom:6,
+      itemHeight:80, itemWidth:12, textStyle:{fontSize:10, color:"#556b82"},
+      formatter:v => F.measure === "qty" ? fmtQty(v) : fmtMoney(cvt(v)),
+      inRange:{color:["#eaf4ff","#89c4ff","#1b90ff","#0057d2","#00317f"]}},
+    series:[{type:"heatmap", data, progressive:2000, animation:false,
+      itemStyle:{borderColor:"#fff", borderWidth:1},
+      emphasis:{itemStyle:{borderColor:"#1d2d3e", borderWidth:2}}}]
+  }, true);
+}
+
+function drawScatter(agg){
+  /* one point per plant–material pair; capped and drawn in "large" mode */
+  const idx = [];
+  for (let p = 0; p < DS.nPairs; p++) if (agg.pairRev[p] > 0) idx.push(p);
+  idx.sort((a,b) => agg.pairRev[b] - agg.pairRev[a]);
+  const capped = idx.length > CONFIG.maxScatterPoints;
+  const use = capped ? idx.slice(0, CONFIG.maxScatterPoints) : idx;
+
+  const byGroup = GROUPS.map(() => []);
+  use.forEach(p => {
+    const mi = DS.pairMat[p];
+    byGroup[DS.materials[mi].group].push([+Math.max(agg.pairQty[p], .1).toFixed(1), +Math.max(cvt(agg.pairRev[p]), 1).toFixed(0), p]);
+  });
+
+  document.getElementById("scatterCount").textContent =
+    `· ${fmtNum(use.length)} points${capped ? ` of ${fmtNum(idx.length)}, top by value` : ""}`;
+
+  CHARTS.chScatter.setOption({
+    color:PALETTE, textStyle:BASE_TEXT, animation:false,
+    tooltip:{trigger:"item", formatter:p => {
+      const pr = p.data[2], mi = DS.pairMat[pr], pi = DS.pairPlant[pr], M = DS.materials[mi];
+      return `<b>${M.code} · ${M.name}</b><br/>${DS.plants[pi].code} · ${DS.plants[pi].name}<br/>`+
+             `Quantity: ${fmtQty(p.data[0])} ${GROUPS[M.group].uom}<br/>`+
+             `Net sales: ${fmtMoney(p.data[1])}<br/>`+
+             `Realised price: ${fmtMoney(p.data[1]/Math.max(p.data[0],1), false)}/${GROUPS[M.group].uom}`;
+    }},
+    legend:{type:"scroll", top:0, icon:"circle", itemWidth:8, itemHeight:8,
+      textStyle:{fontSize:10, color:"#556b82"}, data:GROUPS.map(g => g.name)},
+    grid:{...gridBase, top:34, bottom:40, right:20},
+    xAxis:{type:"log", name:"Quantity", nameLocation:"middle", nameGap:26,
+      nameTextStyle:{fontSize:11, color:"#556b82"},
+      axisLabel:{...axisLabel, formatter:v => fmtQty(v)}, splitLine},
+    yAxis:{type:"log", name:"Net sales", nameLocation:"middle", nameGap:52,
+      nameTextStyle:{fontSize:11, color:"#556b82"},
+      axisLabel:{...axisLabel, formatter:v => fmtMoney(v)}, splitLine},
+    dataZoom:[{type:"inside", xAxisIndex:0}, {type:"inside", yAxisIndex:0}],
+    series:GROUPS.map((g,i) => ({
+      name:g.name, type:"scatter", data:byGroup[i],
+      symbolSize:4, large:true, largeThreshold:1500,
+      progressive:4000, progressiveThreshold:3000,
+      itemStyle:{opacity:.62, color:PALETTE[i % PALETTE.length]}
+    }))
+  }, true);
+}
+
+function drawMix(agg){
+  const data = GROUPS.map((g,i) => ({name:g.name, value:+agg.byGroup[i].toFixed(0), groupIdx:i}))
+                     .filter(d => d.value > 0).sort((a,b) => b.value - a.value);
+  CHARTS.chMix.setOption({
+    color:PALETTE, textStyle:BASE_TEXT, animationDuration:400,
+    tooltip:{trigger:"item", formatter:p => `<b>${p.name}</b><br/>${measureLabel()}: ${fmtMeasure(p.value)}<br/>Share: ${p.percent}%`},
+    legend:{type:"scroll", orient:"horizontal", bottom:0, icon:"circle",
+      itemWidth:8, itemHeight:8, textStyle:{fontSize:10, color:"#556b82"}},
+    series:[{
+      type:"pie", radius:["45%","72%"], center:["50%","44%"], avoidLabelOverlap:true,
+      itemStyle:{borderColor:"#fff", borderWidth:2, borderRadius:4},
+      label:{show:true, formatter:"{d}%", fontSize:10, color:"#556b82"},
+      labelLine:{length:6, length2:6},
+      emphasis:{label:{show:true, fontSize:13, fontWeight:700, formatter:"{b}\n{d}%"}},
+      data
+    }]
+  }, true);
+}
+
+/* ============================================================
+   7 · KPI tiles
+   ============================================================ */
+function drawKpis(agg, prev){
+  const activePlants = agg.byPlant.reduce((a,v) => a + (v > 0 ? 1 : 0), 0);
+  const activeMats   = agg.byMat.reduce((a,v) => a + (v > 0 ? 1 : 0), 0);
+  const margin = agg.rev ? (agg.rev - agg.cost) / agg.rev : 0;
+  const prevMargin = prev.rev ? (prev.rev - prev.cost) / prev.rev : 0;
+  const dRev = prev.rev ? (agg.rev - prev.rev) / prev.rev : null;
+  const dQty = prev.qty ? (agg.qty - prev.qty) / prev.qty : null;
+
+  const delta = d => d == null ? '<span class="muted">no prior period</span>'
+    : `<span class="delta ${d >= 0 ? "up" : "down"}">${d >= 0 ? "▲" : "▼"} ${Math.abs(d*100).toFixed(1)}%</span>
+       <span class="muted">vs. prior ${F.months} months</span>`;
+
+  const spark = [];
+  for (let t = activeMonthRange().from; t <= activeMonthRange().to; t++) spark.push(agg.byMonth[t]);
+
+  const tiles = [
+    {l:"Net sales value", v:fmtMoney(cvt(agg.rev)), s:delta(dRev), spark:true},
+    {l:"Billed quantity", v:fmtQty(agg.qty), s:delta(dQty)},
+    {l:"Contribution margin", v:fmtPct(margin), s:(() => {
+       const pp = (margin - prevMargin) * 100;
+       if (!prev.rev) return '<span class="muted">no prior period</span>';
+       if (Math.abs(pp) < .05) return '<span class="muted">flat vs. prior period</span>';
+       return `<span class="delta ${pp >= 0 ? "up":"down"}">${pp >= 0 ? "▲":"▼"} ${Math.abs(pp).toFixed(1)} pp</span> <span class="muted">vs. prior</span>`;
+     })()},
+    {l:"Plants with sales", v:fmtNum(activePlants), s:`<span class="muted">of ${N_PLANTS} in scope</span>`},
+    {l:"Materials sold", v:fmtNum(activeMats), s:`<span class="muted">of ${fmtNum(N_MATS)} in the catalogue</span>`},
+    {l:"Aggregated records", v:fmtNum(agg.rows), s:`<span class="muted">rolled up in ${LAST_MS} ms</span>`}
+  ];
+
+  document.getElementById("kpis").innerHTML = tiles.map((t,i) => `
+    <div class="kpi">
+      <div class="k-label">${t.l}</div>
+      <div class="k-val">${t.v}</div>
+      <div class="k-sub">${t.s}</div>
+      ${t.spark ? '<div class="spark" id="spark0"></div>' : ""}
+    </div>`).join("");
+
+  const el = document.getElementById("spark0");
+  if (el){
+    const c = echarts.init(el, null, {renderer:"canvas"});
+    c.setOption({
+      grid:{left:0,right:0,top:2,bottom:0}, xAxis:{type:"category", boundaryGap:false, show:false},
+      yAxis:{type:"value", show:false, min:v => v.min*.85},
+      series:[{type:"line", data:spark.map(v => +v.toFixed(0)), smooth:true, symbol:"none",
+        lineStyle:{width:1.6, color:"#0064d9"},
+        areaStyle:{color:"rgba(0,100,217,.12)"}}],
+      animation:false, tooltip:{show:false}
+    });
+  }
+}
+
+/* ============================================================
+   8 · Detail table
+   ============================================================ */
+let TABLE_ROWS = [], SORT = {key:"rev", dir:-1};
+
+function buildTable(agg){
+  const idx = [];
+  for (let p = 0; p < DS.nPairs; p++) if (agg.pairRev[p] > 0) idx.push(p);
+  idx.sort((a,b) => agg.pairRev[b] - agg.pairRev[a]);
+  const page = idx.slice(0, CONFIG.detailPageSize);
+
+  TABLE_ROWS = page.map(p => {
+    const mi = DS.pairMat[p], pi = DS.pairPlant[p], M = DS.materials[mi], P = DS.plants[pi];
+    const rev = agg.pairRev[p], qty = agg.pairQty[p], cost = agg.pairCost[p];
+    return {
+      plant:P.code, plantName:P.name, material:M.code, matName:M.name,
+      group:GROUPS[M.group].name, uom:GROUPS[M.group].uom,
+      qty, rev, price:rev/Math.max(qty,1e-6), margin:rev ? (rev-cost)/rev : 0
+    };
+  });
+  document.getElementById("tblCap").textContent =
+    `Top ${fmtNum(page.length)} plant–material combinations by value, out of ${fmtNum(idx.length)} in the current selection. In production this list is paged by the service (${CONFIG.detailPageSize} rows per request), not loaded in full.`;
+  renderTable();
+}
+
+function renderTable(){
+  const {key, dir} = SORT;
+  const rows = [...TABLE_ROWS].sort((a,b) =>
+    typeof a[key] === "string" ? dir * a[key].localeCompare(b[key]) : dir * (a[key] - b[key]));
+  document.getElementById("tbody").innerHTML = rows.map(r => `
+    <tr>
+      <td class="mono">${r.plant}</td>
+      <td>${r.plantName}</td>
+      <td class="mono">${r.material}</td>
+      <td>${r.matName}</td>
+      <td class="muted">${r.group}</td>
+      <td class="num mono">${fmtNum(r.qty)}</td>
+      <td class="muted">${r.uom}</td>
+      <td class="num mono">${fmtMoney(cvt(r.rev))}</td>
+      <td class="num mono">${fmtMoney(cvt(r.price), false)}</td>
+      <td class="num mono" style="color:${r.margin < .08 ? "var(--bad)" : r.margin < .15 ? "var(--warn)" : "var(--good)"}">${fmtPct(r.margin)}</td>
+    </tr>`).join("");
+}
+
+document.querySelectorAll("th[data-sort]").forEach(th => {
+  th.addEventListener("click", () => {
+    const k = th.dataset.sort;
+    SORT = {key:k, dir: SORT.key === k ? -SORT.dir : -1};
+    renderTable();
+  });
+});
+
+/* ============================================================
+   9 · Multi-select control
+   ============================================================ */
+function createMultiSelect(host, items, selected, label, onChange){
+  host.innerHTML = `
+    <button class="ms-trigger" id="${host.id}_t" aria-haspopup="listbox" aria-expanded="false"></button>
+    <div class="ms-panel" role="listbox">
+      <input class="ms-search" type="search" placeholder="Search ${label.toLowerCase()}" aria-label="Search ${label}">
+      <div class="ms-list"></div>
+      <div class="ms-foot">
+        <button class="btn ghost sel-all" style="height:26px">Select all</button>
+        <button class="btn ghost sel-none" style="height:26px">Clear</button>
+      </div>
+    </div>`;
+  const trigger = host.querySelector(".ms-trigger");
+  const list    = host.querySelector(".ms-list");
+  const search  = host.querySelector(".ms-search");
+
+  function label_(){
+    if (selected.size === 0) return `All (${items.length})`;
+    if (selected.size === 1) return items.find(i => i.key === [...selected][0])?.text ?? "1 selected";
+    return `${selected.size} selected`;
+  }
+  function paint(){
+    const q = search.value.trim().toLowerCase();
+    const shown = q ? items.filter(i => i.text.toLowerCase().includes(q) || String(i.key).toLowerCase().includes(q)) : items;
+    list.innerHTML = shown.slice(0, 400).map(i => `
+      <label class="ms-item">
+        <input type="checkbox" data-key="${i.key}" ${selected.has(i.key) ? "checked" : ""}>
+        <span>${i.text}</span>${i.sub ? `<span class="sm">${i.sub}</span>` : ""}
+      </label>`).join("");
+    trigger.textContent = label_();
+  }
+  list.addEventListener("change", e => {
+    const cb = e.target; if (cb.type !== "checkbox") return;
+    let k = cb.dataset.key; if (!isNaN(k) && items[0] && typeof items[0].key === "number") k = +k;
+    cb.checked ? selected.add(k) : selected.delete(k);
+    trigger.textContent = label_(); onChange();
+  });
+  search.addEventListener("input", paint);
+  host.querySelector(".sel-all").addEventListener("click", () => { items.forEach(i => selected.add(i.key)); paint(); onChange(); });
+  host.querySelector(".sel-none").addEventListener("click", () => { selected.clear(); paint(); onChange(); });
+  trigger.addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".ms.open").forEach(m => m !== host && m.classList.remove("open"));
+    host.classList.toggle("open");
+    trigger.setAttribute("aria-expanded", host.classList.contains("open"));
+    if (host.classList.contains("open")) search.focus();
+  });
+  host.querySelector(".ms-panel").addEventListener("click", e => e.stopPropagation());
+  paint();
+  return {paint};
+}
+document.addEventListener("click", () => document.querySelectorAll(".ms.open").forEach(m => m.classList.remove("open")));
+
+let MS = {};
+function buildFilters(){
+  MS.plant = createMultiSelect(document.getElementById("msPlant"),
+    DS.plants.map(p => ({key:p.idx, text:`${p.code} · ${p.name}`, sub:p.region})),
+    F.plants, "Plant", () => {});
+  MS.region = createMultiSelect(document.getElementById("msRegion"),
+    REGIONS.map(r => ({key:r, text:r})), F.regions, "Region", () => {});
+  MS.group = createMultiSelect(document.getElementById("msGroup"),
+    GROUPS.map((g,i) => ({key:i, text:g.name, sub:g.code})), F.groups, "Material group", () => {});
+}
+function syncMultis(){ Object.values(MS).forEach(m => m.paint()); }
+
+function drawCrumbs(){
+  const parts = [];
+  if (F.plants.size) parts.push({t:`Plant: ${[...F.plants].slice(0,3).map(i => DS.plants[i].code).join(", ")}${F.plants.size>3?` +${F.plants.size-3}`:""}`, c:() => F.plants.clear()});
+  if (F.regions.size) parts.push({t:`Region: ${[...F.regions].join(", ")}`, c:() => F.regions.clear()});
+  if (F.groups.size) parts.push({t:`Group: ${[...F.groups].map(g => GROUPS[g].code).join(", ")}`, c:() => F.groups.clear()});
+  const box = document.getElementById("crumbs");
+  if (!parts.length){
+    box.innerHTML = `<span class="hint">All ${N_PLANTS} plants and ${fmtNum(N_MATS)} materials, last ${F.months} months. Select a bar or heatmap cell to drill in.</span>`;
+    return;
+  }
+  box.innerHTML = parts.map((p,i) => `<span class="chip">${p.t}<button data-i="${i}" aria-label="Remove ${p.t}">✕</button></span>`).join("")
+    + `<button class="btn ghost" id="crumbReset" style="height:24px">Reset all</button>`;
+  box.querySelectorAll(".chip button").forEach(b =>
+    b.addEventListener("click", () => { parts[+b.dataset.i].c(); syncMultis(); refresh(); }));
+  document.getElementById("crumbReset").addEventListener("click", clearAll);
+}
+
+function clearAll(){
+  F.plants.clear(); F.regions.clear(); F.groups.clear();
+  syncMultis(); refresh();
+}
+
+/* ============================================================
+   10 · Refresh pipeline
+   ============================================================ */
+let LAST_MS = 0;
+
+function refresh(){
+  const t0 = performance.now();
+  const range = activeMonthRange();
+  const agg   = aggregate(range);
+  const prev  = aggregate(priorMonthRange());
+  LAST_MS = Math.round(performance.now() - t0);
+
+  drawKpis(agg, prev);
+  drawTrend(agg, range);
+  drawPlants(agg);
+  drawPareto(agg);
+  drawHeat(agg);
+  drawScatter(agg);
+  drawMix(agg);
+  buildTable(agg);
+  drawCrumbs();
+  renderQueryInspector();
+}
+
+/* ============================================================
+   11 · Wiring
+   ============================================================ */
+document.getElementById("fPeriod").addEventListener("change", e => { F.months = +e.target.value; refresh(); });
+document.getElementById("fMeasure").addEventListener("change", e => { F.measure = e.target.value; refresh(); });
+document.getElementById("fTopN").addEventListener("change", e => { F.topN = +e.target.value; refresh(); });
+document.getElementById("fCurr").addEventListener("change", e => { CUR = e.target.value; refresh(); });
+document.getElementById("btnGo").addEventListener("click", refresh);
+document.getElementById("btnClear").addEventListener("click", clearAll);
+
+document.getElementById("qiTab").addEventListener("click", () => document.getElementById("qi").classList.add("open"));
+document.getElementById("qiClose").addEventListener("click", () => document.getElementById("qi").classList.remove("open"));
+
+document.getElementById("btnExport").addEventListener("click", () => {
+  const head = ["Plant","PlantName","Material","Description","MaterialGroup","Quantity","UoM","NetSales","AvgPrice","MarginPct"];
+  const csv = [head.join(",")].concat(TABLE_ROWS.map(r =>
+    [r.plant, `"${r.plantName}"`, r.material, `"${r.matName}"`, `"${r.group}"`,
+     r.qty.toFixed(2), r.uom, r.rev.toFixed(2), r.price.toFixed(2), (r.margin*100).toFixed(2)].join(","))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "plant_material_sales.csv"; a.click();
+});
+
+/* ============================================================
+   12 · Boot
+   ============================================================ */
+function boot(){
+  if (typeof echarts === "undefined"){
+    document.getElementById("busyText").innerHTML =
+      "ECharts could not be loaded.<br>Place <code>echarts.min.js</code> in the same folder as this HTML file.";
+    document.querySelector(".ring").style.display = "none";
+    return;
+  }
+  generate();
+  document.getElementById("busyText").textContent =
+    `Aggregating ${fmtNum(DS.n)} records across ${N_PLANTS} plants and ${fmtNum(N_MATS)} materials…`;
+  buildFilters();
+  initCharts();
+  refresh();
+  document.getElementById("dsBadge").textContent =
+    `${fmtNum(DS.n)} mock records · ${N_PLANTS} plants · ${fmtNum(N_MATS)} materials`;
+  document.getElementById("busy").classList.add("hidden");
+}
+requestAnimationFrame(() => setTimeout(boot, 30));
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<mvc:View
+	controllerName="com.sap.zsdpmsdash.controller.zsd_pms_dash"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:core="sap.ui.core"
+	xmlns:viz="com.sap.zsdpmsdash.control"
+	displayBlock="true"
+	height="100%">
+
+	<!--
+		Only the filter bar is built from Fiori controls. Everything below it - KPI cards,
+		map and chart panels - is the HTML prototype's own markup, rendered by the custom
+		controls in webapp/control and styled by webapp/css/style.css. Same split as the
+		GRN Dashboard's own view (../../GRN Dashboard/zmm_grn_dash/webapp/view).
+	-->
+	<Page id="page" showHeader="false" class="pmsDashPage" backgroundDesign="Transparent">
+		<content>
+
+			<!-- ====================== Header + filter bar ====================== -->
+			<viz:Box class="pmsTopBar">
+
+				<viz:Head
+					id="head"
+					title="{i18n>title}"
+					badge="{i18n>headBadge}"
+					subtitle="{i18n>headSub}"
+					scopeLabel="{i18n>scopeLabel}"
+					scope="{dash>/scopeText}">
+					<viz:actions>
+						<viz:Toggle
+							id="themeToggle"
+							items="{dash>/themeOptions}"
+							selectedKey="{dash>/themeMode}"
+							select=".onThemeSelect"/>
+					</viz:actions>
+				</viz:Head>
+
+				<viz:Box class="pmsFilterRow">
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterFy}" labelFor="fySelect" class="pmsFieldLabel"/>
+						<Select
+							id="fySelect"
+							width="100%"
+							items="{dash>/options/fy}"
+							selectedKey="{dash>/fy}"
+							change=".onGo">
+							<core:Item key="{dash>key}" text="{dash>text}"/>
+						</Select>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterZone}" labelFor="zoneFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="zoneFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							items="{dash>/options/zone}">
+							<core:ListItem key="{dash>key}" text="{dash>text}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterState}" labelFor="stateFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="stateFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							items="{dash>/options/state}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterPlant}" labelFor="plantFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="plantFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							items="{dash>/options/plant}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterScheme}" labelFor="schemeFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="schemeFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							items="{dash>/options/scheme}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterMaterial}" labelFor="materialFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="materialFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							showSecondaryValues="true"
+							items="{dash>/options/material}">
+							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField">
+						<Label text="{i18n>filterPeriod}" labelFor="periodFilter" class="pmsFieldLabel"/>
+						<MultiComboBox
+							id="periodFilter"
+							width="100%"
+							placeholder="{i18n>filterAllPlaceholder}"
+							items="{dash>/options/period}">
+							<core:ListItem key="{dash>key}" text="{dash>text}"/>
+						</MultiComboBox>
+					</VBox>
+
+					<VBox class="pmsField pmsField--actions">
+						<HBox class="pmsFilterActions">
+							<Button id="goBtn" text="{i18n>go}" type="Emphasized" press=".onGo"/>
+							<Button id="resetBtn" text="{i18n>reset}" icon="sap-icon://clear-filter" press=".onReset"/>
+							<Button id="refreshBtn" icon="sap-icon://refresh" tooltip="{dash>/lastRefreshedText}" press=".onGo"/>
+						</HBox>
+					</VBox>
+
+				</viz:Box>
+
+				<Text text="{i18n>filterHint}" class="pmsFilterHint"/>
+
+			</viz:Box>
+
+			<MessageStrip
+				id="errorStrip"
+				visible="{= !!${dash>/errorText} }"
+				text="{dash>/errorText}"
+				type="Error"
+				showIcon="true"
+				showCloseButton="true"
+				class="pmsMessageStrip"/>
+
+			<!-- ============================ KPI cards ============================ -->
+			<viz:Box id="kpiGrid" layout="hero" items="{dash>/kpis}">
+				<viz:KpiCard
+					label="{dash>label}"
+					valueText="{dash>valueText}"
+					unit="{dash>unit}"
+					deltaText="{dash>deltaText}"
+					deltaNote="{i18n>vsPriorYear}"
+					deltaTone="{dash>deltaTone}"
+					note="{dash>note}">
+					<viz:spark>
+						<viz:EChart option="{dash>spark}" height="2.75rem"/>
+					</viz:spark>
+				</viz:KpiCard>
+			</viz:Box>
+
+			<!-- ============================= Trend ============================= -->
+			<viz:Box layout="full">
+				<viz:Card
+					span="12"
+					title="{i18n>chartTrendTitle}"
+					subtitle="{i18n>chartTrendSub}">
+					<viz:EChart id="chartTrend" option="{dash>/charts/trend}" height="16rem"/>
+				</viz:Card>
+			</viz:Box>
+
+			<!-- ====================== Map + scheme roll-up ====================== -->
+			<viz:Box layout="charts">
+
+				<viz:Card
+					span="8"
+					title="{i18n>mapTitle}"
+					subtitle="{dash>/mapSubtitle}">
+					<viz:actions>
+						<HBox class="pmsMapActions">
+							<viz:Toggle
+								id="mapGranularity"
+								items="{dash>/granularityOptions}"
+								selectedKey="{dash>/mapGranularity}"
+								select=".onMapGranularityChange"/>
+							<Switch
+								id="mapDotsSwitch"
+								state="{dash>/mapShowDots}"
+								customTextOn="{i18n>dotsOn}"
+								customTextOff="{i18n>dotsOff}"
+								change=".onMapDotsChange"/>
+						</HBox>
+					</viz:actions>
+					<viz:IndiaMap
+						id="indiaMap"
+						geoRows="{dash>/geoRows}"
+						dotRows="{dash>/dotRows}"
+						granularity="{dash>/mapGranularity}"
+						showDots="{dash>/mapShowDots}"
+						selectedRegio="{dash>/selectedRegio}"
+						height="28rem"
+						statePress=".onMapStatePress"/>
+					<HBox class="pmsMapLegend">
+						<Text text="{i18n>mapScaleLow}"/>
+						<viz:Box class="pmsMapScale"/>
+						<Text text="{i18n>mapScaleHigh}"/>
+						<HBox class="pmsMapDotKey">
+							<core:Icon src="sap-icon://circle-task" visible="false"/>
+							<Text text="{i18n>mapDotKey}"/>
+						</HBox>
+					</HBox>
+				</viz:Card>
+
+				<viz:Card
+					span="4"
+					title="{i18n>chartSchemeTitle}"
+					subtitle="{i18n>chartSchemeSub}">
+					<viz:EChart id="chartScheme" option="{dash>/charts/scheme}" height="28rem"/>
+				</viz:Card>
+
+			</viz:Box>
+
+			<!-- ====================== Plant + material panels ====================== -->
+			<viz:Box layout="charts">
+
+				<viz:Card
+					span="6"
+					title="{i18n>chartPlantTitle}"
+					subtitle="{i18n>chartPlantSub}"
+					badge="{i18n>badgeTop20}">
+					<viz:EChart id="chartPlant" option="{dash>/charts/plant}" height="34rem"/>
+				</viz:Card>
+
+				<viz:Card
+					span="6"
+					title="{i18n>chartMaterialTitle}"
+					subtitle="{i18n>chartMaterialSub}"
+					badge="{i18n>badgeTop20}">
+					<viz:EChart id="chartMaterial" option="{dash>/charts/material}" height="34rem"/>
+				</viz:Card>
+
+			</viz:Box>
+
+		</content>
+	</Page>
+</mvc:View>

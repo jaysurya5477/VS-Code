@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR>=415 && NR<=600 {print NR\": \"substr\\($0,1,220\\)}' \"sales-dashboard-india_claude V8.html\")",
+      "Bash(awk 'NR>=600 && NR<=760 {print NR\": \"substr\\($0,1,200\\)}' \"sales-dashboard-india_claude V8.html\")",
+      "Bash(awk 'NR>=852 && NR<=900 {print NR\": \"substr\\($0,1,200\\)}' \"sales-dashboard-india_claude V8.html\")",
+      "Bash(awk 'NR>=983 && NR<=1050 {print NR\": \"substr\\($0,1,200\\)}' \"sales-dashboard-india_claude V8.html\")"
+    ]
+  }
+}

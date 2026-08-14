@@ -1,0 +1,23 @@
+{
+  "generationParameters": {
+    "generationDate": "Thu Aug 13 2026 18:38:03 GMT+0530 (India Standard Time)",
+    "generatorPlatform": "Visual Studio Code",
+    "serviceType": "SAP System (ABAP On-Premise)",
+    "metadataFilename": "",
+    "serviceUrl": "https://vhafbmedap01.hec.erp.alimco.in/sap/opu/odata4/sap/zsd_pms_dash_o4/srvd_a2x/sap/zsd_pms_dash_o4/0001/",
+    "appName": "zsd_pms_dash",
+    "appTitle": "Plant & Material Wise Sales Dashboard",
+    "appDescription": "Plant & Material Wise Sales Dashboard",
+    "appNamespace": "com.sap",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.102.8",
+    "enableEslint": false,
+    "enableTypeScript": false,
+    "showMockDataInfo": true,
+    "generatorVersion": "1.21.0",
+    "template": "Basic V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [],
+    "launchText": "To launch the generated application, run the following from the generated application root folder:\n\n```\n    npm start\n```"
+  }
+}

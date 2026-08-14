@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant &amp; Material Sales — Control Deck</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 28,9 28,23 16,30 4,23 4,9' fill='%230B111C' stroke='%23F0A23B' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23F0A23B'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+/* ============================================================
+   TEMPLATE NOTES
+   This file is self-contained: mock data is generated in-browser
+   (see the "DATA GENERATION" block in the script). To wire up a
+   real backend, replace the generateDataset() call with a fetch()
+   to your API and keep the same shape for ALL_PLANTS / ALL_MATERIALS.
+   ============================================================ */
+
+:root{
+  --bg:#0B111C;
+  --panel:#131B29;
+  --panel-raised:#1B2536;
+  --grid:#232E42;
+  --hairline:#2C3850;
+  --text:#EDF1F7;
+  --text-dim:#8A98B3;
+  --text-faint:#586582;
+  --amber:#F0A23B;
+  --amber-dim:rgba(240,162,59,.35);
+  --teal:#3FC7B8;
+  --rose:#E2574C;
+  --violet:#7C8CF8;
+  --font-display:'Big Shoulders',sans-serif;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:34px 34px;
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
+
+a{color:inherit;}
+button, select, input{font-family:var(--font-body);}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  display:flex; align-items:center; gap:20px;
+  padding:14px 22px;
+  border-bottom:1px solid var(--hairline);
+  background:rgba(11,17,28,.85);
+  backdrop-filter:blur(6px);
+  position:sticky; top:0; z-index:50;
+  flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:10px; margin-right:auto;}
+.brand svg{width:30px;height:30px;flex:none;}
+.brand .word{
+  font-family:var(--font-display); font-weight:800; letter-spacing:.02em;
+  font-size:20px; line-height:1; text-transform:uppercase;
+}
+.brand .word em{font-style:normal; color:var(--amber);}
+.brand .sub{
+  font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+  letter-spacing:.12em; text-transform:uppercase; margin-top:2px;
+}
+
+.status{
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:11px; color:var(--text-dim);
+  letter-spacing:.06em; text-transform:uppercase;
+  padding:6px 10px; border:1px solid var(--hairline); border-radius:3px;
+  background:var(--panel);
+}
+.status .dot{
+  width:7px;height:7px;border-radius:50%; background:var(--teal);
+  box-shadow:0 0 0 0 rgba(63,199,184,.6);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(63,199,184,.55);}
+  70%{box-shadow:0 0 0 6px rgba(63,199,184,0);}
+  100%{box-shadow:0 0 0 0 rgba(63,199,184,0);}
+}
+
+.filters{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.filters select, .filters button{
+  background:var(--panel); color:var(--text);
+  border:1px solid var(--hairline); border-radius:3px;
+  padding:7px 10px; font-size:12px; letter-spacing:.02em;
+  cursor:pointer;
+}
+.filters select:hover, .filters button:hover{border-color:var(--amber);}
+.filters button.primary{
+  background:var(--amber); color:#1a1002; border-color:var(--amber); font-weight:600;
+}
+.filters button.primary:hover{background:#f5b25c;}
+.filters label{
+  font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+  text-transform:uppercase; letter-spacing:.08em; margin-right:-3px;
+}
+
+/* ---------- Tabs ---------- */
+.tabnav{
+  display:flex; gap:4px; padding:10px 22px 0; border-bottom:1px solid var(--hairline);
+}
+.tabnav button{
+  background:transparent; border:none; color:var(--text-dim);
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+  padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tabnav button:hover{color:var(--text);}
+.tabnav button.active{color:var(--amber); border-bottom-color:var(--amber);}
+.tabnav .scale{
+  margin-left:auto; align-self:center; font-family:var(--font-mono); font-size:11px;
+  color:var(--text-faint); padding-bottom:8px;
+}
+
+main{padding:20px 22px 60px; max-width:1520px; margin:0 auto;}
+section.tab{display:none;}
+section.tab.active{display:block; animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+
+/* ---------- KPI row ---------- */
+.kpi-row{
+  display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:18px;
+}
+.kpi{
+  background:var(--panel); border:1px solid var(--hairline); border-radius:4px;
+  padding:14px 14px 10px; position:relative; overflow:hidden;
+}
+.kpi::before, .kpi::after{
+  content:""; position:absolute; width:9px; height:9px; pointer-events:none;
+}
+.kpi::before{top:-1px; left:-1px; border-top:2px solid var(--amber-dim); border-left:2px solid var(--amber-dim);}
+.kpi::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--amber-dim); border-right:2px solid var(--amber-dim);}
+.kpi .eyebrow{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-faint); display:flex; justify-content:space-between;
+}
+.kpi .value{
+  font-family:var(--font-display); font-weight:700; font-size:28px; line-height:1.15; margin-top:6px;
+}
+.kpi .meta{
+  display:flex; align-items:center; justify-content:space-between; margin-top:4px; min-height:16px;
+}
+.kpi .delta{font-family:var(--font-mono); font-size:11px;}
+.kpi .delta.up{color:var(--teal);}
+.kpi .delta.down{color:var(--rose);}
+.kpi .sub{font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);}
+.kpi svg.spark{display:block; width:100%; height:26px; margin-top:6px;}
+
+.stat-strip{
+  display:flex; gap:22px; flex-wrap:wrap; align-items:center;
+  background:var(--panel); border:1px solid var(--hairline); border-radius:4px;
+  padding:12px 16px; margin-bottom:18px; font-family:var(--font-mono); font-size:12px; color:var(--text-dim);
+}
+.stat-strip b{color:var(--amber); font-size:15px; margin-right:6px; font-family:var(--font-display); font-weight:700;}
+
+/* ---------- Panel grid ---------- */
+.grid{display:grid; grid-template-columns:repeat(12,1fr); gap:14px;}
+.col-4{grid-column:span 4;}
+.col-5{grid-column:span 5;}
+.col-6{grid-column:span 6;}
+.col-7{grid-column:span 7;}
+.col-8{grid-column:span 8;}
+.col-12{grid-column:span 12;}
+
+.panel{
+  background:var(--panel); border:1px solid var(--hairline); border-radius:4px;
+  position:relative; padding:14px 16px 16px;
+}
+.panel::before, .panel::after{content:""; position:absolute; width:10px; height:10px; pointer-events:none;}
+.panel::before{top:-1px; left:-1px; border-top:2px solid var(--amber-dim); border-left:2px solid var(--amber-dim);}
+.panel::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--amber-dim); border-right:2px solid var(--amber-dim);}
+.panel-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; gap:10px; flex-wrap:wrap;}
+.panel-head h3{margin:0; font-family:var(--font-body); font-weight:600; font-size:14px; letter-spacing:.01em;}
+.panel-tag{
+  font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+  border:1px solid var(--hairline); padding:1px 6px; border-radius:2px; margin-right:8px;
+}
+.panel-sub{font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
+.chart{width:100%;}
+
+.legend-list{display:flex; flex-direction:column; gap:7px; justify-content:center;}
+.legend-row{
+  display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim);
+  cursor:pointer; padding:3px 4px; border-radius:3px;
+}
+.legend-row:hover{background:var(--panel-raised);}
+.legend-row.active{color:var(--text); background:var(--panel-raised);}
+.legend-row .sw{width:9px; height:9px; border-radius:2px; flex:none;}
+.legend-row .lbl{flex:1;}
+.legend-row .val{font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
+.donut-wrap{display:flex; align-items:center; gap:10px;}
+.donut-wrap .chart{flex:1.3;}
+.donut-wrap .legend-list{flex:1;}
+
+.scatter-legend{display:flex; gap:10px 16px; flex-wrap:wrap; margin-top:8px; padding-top:10px; border-top:1px solid var(--hairline);}
+
+/* ---------- Virtual table ---------- */
+.vt{border:1px solid var(--hairline); border-radius:3px; overflow:hidden;}
+.vt-toolbar{display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--panel-raised); border-bottom:1px solid var(--hairline);}
+.vt-search{
+  flex:1; max-width:280px; background:var(--bg); border:1px solid var(--hairline); color:var(--text);
+  padding:6px 9px; border-radius:3px; font-size:12px;
+}
+.vt-search:focus{outline:none; border-color:var(--amber);}
+.vt-count{font-family:var(--font-mono); font-size:11px; color:var(--text-faint); margin-left:auto;}
+.vt-export{
+  background:transparent; border:1px solid var(--hairline); color:var(--text-dim);
+  font-family:var(--font-mono); font-size:11px; padding:5px 9px; border-radius:3px; cursor:pointer;
+}
+.vt-export:hover{color:var(--amber); border-color:var(--amber);}
+.vt-head{
+  display:grid; background:var(--panel-raised); border-bottom:1px solid var(--hairline);
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint);
+}
+.vt-th{padding:8px 10px; cursor:pointer; user-select:none; display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden;}
+.vt-th:hover{color:var(--text-dim);}
+.vt-th.active{color:var(--amber);}
+.vt-sort-ind{font-size:9px;}
+.vt-body{position:relative; overflow-y:auto; background:var(--bg);}
+.vt-sizer{width:1px;}
+.vt-rows{position:absolute; top:0; left:0; right:0;}
+.vt-tr{display:grid; align-items:center; border-bottom:1px solid var(--grid);}
+.vt-tr:hover{background:var(--panel-raised);}
+.vt-td{padding:0 10px; font-size:12.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.vt-td.num{font-family:var(--font-mono); color:var(--text); text-align:right;}
+.vt-td.tag{color:var(--text);}
+
+.footer-note{
+  margin-top:26px; padding-top:14px; border-top:1px solid var(--hairline);
+  font-family:var(--font-mono); font-size:11px; color:var(--text-faint); text-align:center;
+}
+
+@media (max-width:1180px){
+  .kpi-row{grid-template-columns:repeat(3,1fr);}
+  .col-4,.col-5,.col-6,.col-7,.col-8{grid-column:span 12;}
+}
+@media (max-width:640px){
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .topbar{gap:10px;}
+  .filters{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="none" stroke="#F0A23B" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="#F0A23B"/></svg>
+    <div>
+      <div class="word">Plant <em>&amp;</em> Material Sales</div>
+      <div class="sub">Network Control Deck</div>
+    </div>
+  </div>
+  <div class="status"><span class="dot"></span>Live Feed <span id="updatedAt" style="color:var(--text-faint); text-transform:none; margin-left:4px;"></span></div>
+  <div class="filters">
+    <label for="fltRegion">Region</label>
+    <select id="fltRegion"></select>
+    <label for="fltCategory">Class</label>
+    <select id="fltCategory"></select>
+    <label for="fltRange">Window</label>
+    <select id="fltRange">
+      <option value="26">6 Months</option>
+      <option value="52">12 Months</option>
+      <option value="156" selected>3 Years</option>
+    </select>
+    <button id="btnReset">Reset</button>
+    <button id="btnExport" class="primary">⤓ Export CSV</button>
+  </div>
+</header>
+
+<nav class="tabnav">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="plants">Plants</button>
+  <button data-tab="materials">Materials</button>
+  <span class="scale" id="scaleNote"></span>
+</nav>
+
+<main>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="tab active" id="tab-overview">
+    <div class="kpi-row" id="kpiRow"><!-- populated by JS --></div>
+
+    <div class="grid">
+      <div class="panel col-8">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-01</span>Revenue Trend — Weekly Output</h3>
+          <span class="panel-sub" id="trendRangeLabel"></span>
+        </div>
+        <div class="chart" id="chartRevenueTrend" style="height:360px;"></div>
+      </div>
+      <div class="panel col-4">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-02</span>Mix by Material Class</h3>
+        </div>
+        <div class="donut-wrap">
+          <div class="chart" id="chartCategoryDonut" style="height:300px;"></div>
+          <div class="legend-list" id="donutLegend"></div>
+        </div>
+      </div>
+      <div class="panel col-12">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-03</span>Plant Output Ranking — Top 15</h3>
+          <span class="panel-sub">Full 128-plant network on the Plants tab →</span>
+        </div>
+        <div class="chart" id="chartPlantBarTop" style="height:380px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PLANTS ===================== -->
+  <section class="tab" id="tab-plants">
+    <div class="stat-strip" id="statStripPlants"></div>
+    <div class="grid">
+      <div class="panel col-7">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-05</span>Plant Output Ranking — Full Network</h3>
+          <span class="panel-sub">Scroll / drag the side rail to page through all plants</span>
+        </div>
+        <div class="chart" id="chartPlantBarFull" style="height:620px;"></div>
+      </div>
+      <div class="panel col-5">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-06</span>Regional Load Matrix</h3>
+          <span class="panel-sub">Region × Class</span>
+        </div>
+        <div class="chart" id="chartRegionHeat" style="height:620px;"></div>
+      </div>
+      <div class="panel col-12">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-07</span>Plant Ledger</h3>
+          <span class="panel-sub" id="plantsLedgerSub"></span>
+        </div>
+        <div class="vt" id="tablePlants"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MATERIALS ===================== -->
+  <section class="tab" id="tab-materials">
+    <div class="stat-strip" id="statStripMaterials"></div>
+    <div class="grid">
+      <div class="panel col-12">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-08</span>Material Catalog — By Class</h3>
+          <span class="panel-sub">Click a tile to zoom in · click the breadcrumb to zoom out</span>
+        </div>
+        <div class="chart" id="chartTreemap" style="height:520px;"></div>
+      </div>
+      <div class="panel col-12">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-09</span>Unit Price vs. Throughput</h3>
+          <span class="panel-sub" id="scatterCountLabel"></span>
+        </div>
+        <div class="chart" id="chartScatter" style="height:440px;"></div>
+        <div class="scatter-legend" id="scatterLegend"></div>
+      </div>
+      <div class="panel col-12">
+        <div class="panel-head">
+          <h3><span class="panel-tag">PNL-10</span>Material Ledger</h3>
+          <span class="panel-sub" id="materialsLedgerSub"></span>
+        </div>
+        <div class="vt" id="tableMaterials"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-note">PLANT &amp; MATERIAL SALES · CONTROL DECK TEMPLATE · Charts rendered with Apache ECharts (open source) · Data below is synthetic and deterministic for demonstration</div>
+</main>
+
+<script>
+/* ======================================================================
+   0. CONSTANTS, RNG, HELPERS
+   ====================================================================== */
+const COLORS = {
+  bg:'#0B111C', panel:'#131B29', panelRaised:'#1B2536', grid:'#232E42', hairline:'#2C3850',
+  text:'#EDF1F7', textDim:'#8A98B3', textFaint:'#586582',
+  amber:'#F0A23B', teal:'#3FC7B8', rose:'#E2574C', violet:'#7C8CF8'
+};
+const CATEGORY_COLORS = ['#F0A23B','#3FC7B8','#7C8CF8','#4E8FE0','#E2574C','#C98BD9','#5FBF6E','#D9B44A','#69AFC9','#B98358'];
+
+const CATEGORIES = ['Steel & Alloys','Aluminum','Polymers','Resins & Adhesives','Cement & Aggregates','Timber & Composites','Glass & Ceramics','Electronics-Grade','Textiles','Specialty Chemicals'];
+const CATEGORY_PREFIX = {'Steel & Alloys':'STL','Aluminum':'ALU','Polymers':'PLY','Resins & Adhesives':'RES','Cement & Aggregates':'CEM','Timber & Composites':'TMB','Glass & Ceramics':'GLS','Electronics-Grade':'ELC','Textiles':'TEX','Specialty Chemicals':'CHM'};
+const CATEGORY_WEIGHT = {'Steel & Alloys':16,'Aluminum':9,'Polymers':13,'Resins & Adhesives':8,'Cement & Aggregates':14,'Timber & Composites':9,'Glass & Ceramics':6,'Electronics-Grade':7,'Textiles':8,'Specialty Chemicals':10};
+const CATEGORY_PRICE_RANGE = {'Steel & Alloys':[380,2200],'Aluminum':[900,3200],'Polymers':[50,650],'Resins & Adhesives':[30,480],'Cement & Aggregates':[18,190],'Timber & Composites':[150,950],'Glass & Ceramics':[80,720],'Electronics-Grade':[1800,18000],'Textiles':[15,230],'Specialty Chemicals':[300,4600]};
+const CATEGORY_MARGIN_BASE = {'Steel & Alloys':14,'Aluminum':16,'Polymers':19,'Resins & Adhesives':24,'Cement & Aggregates':9,'Timber & Composites':17,'Glass & Ceramics':21,'Electronics-Grade':29,'Textiles':15,'Specialty Chemicals':23};
+const CATEGORY_DESCRIPTORS = {
+  'Steel & Alloys':['Cold-Rolled Coil','Hot-Rolled Plate','Rebar Stock','Alloy Billet','Galvanized Sheet','Structural Beam'],
+  'Aluminum':['6061 Billet','Extrusion Profile','Sheet Stock','Foil Roll','Casting Ingot'],
+  'Polymers':['HDPE Pellet','LDPE Film Stock','ABS Granulate','Nylon Compound','PVC Compound'],
+  'Resins & Adhesives':['Epoxy Resin Batch','Polyurethane Adhesive','Acrylic Sealant','Structural Bonding Agent','Hot-Melt Adhesive'],
+  'Cement & Aggregates':['Portland Cement','Crushed Aggregate','Ready-Mix Batch','Fly Ash Blend','Mortar Mix'],
+  'Timber & Composites':['Engineered Beam','Plywood Sheet','MDF Board','Laminated Panel','Composite Decking'],
+  'Glass & Ceramics':['Tempered Sheet','Float Glass Panel','Technical Ceramic Tile','Insulator Component','Fiberglass Roll'],
+  'Electronics-Grade':['Copper-Clad Laminate','Silicon Wafer Stock','Ferrite Core','Conductive Paste','Encapsulation Resin'],
+  'Textiles':['Woven Roll','Nonwoven Fabric','Technical Yarn Spool','Coated Fabric','Geotextile Roll'],
+  'Specialty Chemicals':['Catalyst Batch','Surfactant Blend','Process Solvent','Corrosion Inhibitor','Polymer Additive']
+};
+const REGIONS = ['North America','EMEA','APAC','LATAM'];
+const REGION_WEIGHT = {'North America':32,'EMEA':28,'APAC':27,'LATAM':13};
+const REGION_CITIES = {
+  'North America':['Houston, US','Detroit, US','Pittsburgh, US','Charlotte, US','Calgary, CA','Cleveland, US','Baton Rouge, US','Tulsa, US'],
+  'EMEA':['Rotterdam, NL','Essen, DE','Katowice, PL','Lyon, FR','Sheffield, UK','Linz, AT','Bilbao, ES','Gothenburg, SE'],
+  'APAC':['Ulsan, KR','Osaka, JP','Chonburi, TH','Surabaya, ID','Chennai, IN','Wuxi, CN','Kaohsiung, TW','Newcastle, AU'],
+  'LATAM':['Monterrey, MX','Belo Horizonte, BR','Córdoba, AR','Antofagasta, CL','Barranquilla, CO','Guadalajara, MX']
+};
+
+const PLANT_COUNT = 128;
+const MATERIAL_COUNT = 5200;
+const WEEKS = 156; // 3 years
+
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed>>>15, 1 | seed);
+    t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(20240611);
+
+function weightedPick(list, weightFn){
+  const weights = list.map(weightFn);
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = rng()*total;
+  for(let i=0;i<list.length;i++){ r -= weights[i]; if(r<=0) return list[i]; }
+  return list[list.length-1];
+}
+function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function skewed(pow){ return Math.pow(rng(), pow); }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function sum(arr){ let s=0; for(let i=0;i<arr.length;i++) s+=arr[i]; return s; }
+function groupSumByKey(rows, key, valKey){
+  const map = new Map();
+  for(const r of rows){ map.set(r[key], (map.get(r[key])||0) + r[valKey]); }
+  return map;
+}
+
+function fmtUSD(v){
+  const sign = v<0? '-':''; v=Math.abs(v);
+  if(v>=1e9) return sign+'$'+(v/1e9).toFixed(2)+'B';
+  if(v>=1e6) return sign+'$'+(v/1e6).toFixed(2)+'M';
+  if(v>=1e3) return sign+'$'+(v/1e3).toFixed(1)+'K';
+  return sign+'$'+v.toFixed(0);
+}
+function fmtUSDFull(v){ return '$'+Math.round(v).toLocaleString('en-US'); }
+function fmtNum(v){ return Math.round(v).toLocaleString('en-US'); }
+function fmtPct(v,digits){ digits = digits==null?1:digits; return (v>=0?'+':'')+v.toFixed(digits)+'%'; }
+function debounce(fn, ms){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a), ms); }; }
+
+const tooltipBase = {
+  backgroundColor: COLORS.panelRaised, borderColor: COLORS.hairline, borderWidth:1,
+  textStyle:{color:COLORS.text, fontFamily:'IBM Plex Sans', fontSize:12}, padding:10
+};
+
+/* ======================================================================
+   1. DATA GENERATION  (swap this block for a real API call)
+   ====================================================================== */
+function makeWeeklyShape(){
+  const phase = rng()*Math.PI*2;
+  const noiseAmp = 0.10 + rng()*0.10;
+  const growth = 0.0004 + rng()*0.0009;
+  const arr = new Array(WEEKS);
+  let acc = 0;
+  for(let w=0; w<WEEKS; w++){
+    const season = 1 + 0.20*Math.sin((w/52)*2*Math.PI + phase);
+    const drift = 1 + growth*w;
+    const noise = 1 + (rng()-0.5)*noiseAmp;
+    const v = Math.max(0.04, season*drift*noise);
+    arr[w] = v; acc += v;
+  }
+  for(let w=0; w<WEEKS; w++) arr[w] /= acc;
+  return arr;
+}
+
+function generateDataset(){
+  // --- Plants ---
+  const rankOrder = shuffle(Array.from({length:PLANT_COUNT}, (_,i)=>i));
+  const plants = [];
+  const plantsByRegionCounter = {};
+  for(let i=0; i<PLANT_COUNT; i++){
+    const region = weightedPick(REGIONS, r=>REGION_WEIGHT[r]);
+    plantsByRegionCounter[region] = (plantsByRegionCounter[region]||0)+1;
+    const city = pick(REGION_CITIES[region]);
+    const rank = rankOrder[i];
+    const sizeFactor = 1 / Math.pow(rank+2, 0.55);
+    const focus = shuffle(CATEGORIES).slice(0, 2 + Math.floor(rng()*2)); // 2-3 focus categories
+    plants.push({
+      id:'P'+String(i+1).padStart(4,'0'),
+      code:'PLT-'+String(i+1).padStart(3,'0'),
+      name: city.split(',')[0] + ' Plant',
+      region, city,
+      sizeFactor,
+      focus,
+      weeklyShape: makeWeeklyShape(),
+      revenue:0, units:0, materialsCount:0
+    });
+  }
+  const plantsById = new Map(plants.map(p=>[p.id,p]));
+
+  // plants weighted pool per category (favor focus + size)
+  const poolByCategory = {};
+  CATEGORIES.forEach(cat=>{
+    poolByCategory[cat] = plants.filter(p=>p.focus.includes(cat));
+    if(poolByCategory[cat].length === 0) poolByCategory[cat] = plants; // safety net
+  });
+
+  // --- Materials ---
+  const materials = [];
+  const skuCounters = {};
+  for(let i=0; i<MATERIAL_COUNT; i++){
+    const category = weightedPick(CATEGORIES, c=>CATEGORY_WEIGHT[c]);
+    const plant = weightedPick(poolByCategory[category], p=>p.sizeFactor);
+    const [pmin,pmax] = CATEGORY_PRICE_RANGE[category];
+    const price = pmin + Math.pow(rng(),1.7) * (pmax-pmin);
+    const baseVol = 22000 / Math.sqrt(price);
+    const volume = Math.max(6, Math.round(baseVol * (0.3+rng()*1.6) * (0.35+skewed(2.2)*2.4)));
+    const revenue = price*volume;
+    const margin = clamp(CATEGORY_MARGIN_BASE[category] + (rng()-0.5)*12, 3, 55);
+    skuCounters[category] = (skuCounters[category]||0)+1;
+    const descriptor = pick(CATEGORY_DESCRIPTORS[category]);
+    materials.push({
+      id:'M'+String(i+1).padStart(5,'0'),
+      sku: CATEGORY_PREFIX[category]+'-'+String(skuCounters[category]).padStart(5,'0'),
+      name: descriptor,
+      category,
+      plantId: plant.id,
+      plantName: plant.name,
+      plantCode: plant.code,
+      region: plant.region,
+      unitPrice: Math.round(price*100)/100,
+      volume,
+      revenue,
+      margin: Math.round(margin*10)/10
+    });
+    plant.revenue += revenue; plant.units += volume; plant.materialsCount += 1;
+  }
+
+  return { plants, plantsById, materials, plantsByRegionCounter };
+}
+
+const DATA = generateDataset();
+const ALL_PLANTS = DATA.plants;
+const ALL_MATERIALS = DATA.materials;
+const PLANTS_BY_ID = DATA.plantsById;
+const TOTAL_REVENUE_ALL = sum(ALL_MATERIALS.map(m=>m.revenue));
+
+/* ======================================================================
+   2. STATE + FILTERING
+   ====================================================================== */
+const state = {
+  filters: { region:'all', category:'all', rangeWeeks:156 },
+  filteredPlants: [], filteredMaterials: [],
+  totalRevenue:0, totalUnits:0, materialsCount:0, activePlantsCount:0,
+  categoryTotals:[], weeklySeries:[], movingAvg:[], weekLabels:[]
+};
+
+function weekLabel(idx){
+  const start = new Date(2023, 0, 2); // arbitrary anchor Monday
+  const d = new Date(start.getTime() + idx*7*86400000);
+  return d.toLocaleDateString('en-US',{month:'short', day:'2-digit', year:'2-digit'});
+}
+const WEEK_LABELS = Array.from({length:WEEKS}, (_,i)=>weekLabel(i));
+
+function recomputeFilteredData(){
+  const {region, category} = state.filters;
+  state.filteredMaterials = ALL_MATERIALS.filter(m=>{
+    return (region==='all' || m.region===region) && (category==='all' || m.category===category);
+  });
+
+  const basePlants = region==='all' ? ALL_PLANTS : ALL_PLANTS.filter(p=>p.region===region);
+  const metrics = new Map();
+  for(const m of state.filteredMaterials){
+    let e = metrics.get(m.plantId);
+    if(!e){ e = {revenue:0, units:0, materialsCount:0}; metrics.set(m.plantId, e); }
+    e.revenue += m.revenue; e.units += m.volume; e.materialsCount += 1;
+  }
+  state.filteredPlants = basePlants.map(p=>{
+    const e = metrics.get(p.id) || {revenue:0, units:0, materialsCount:0};
+    return Object.assign({}, p, {revenue:e.revenue, units:e.units, materialsCount:e.materialsCount});
+  });
+
+  state.totalRevenue = sum(state.filteredMaterials.map(m=>m.revenue));
+  state.totalUnits = sum(state.filteredMaterials.map(m=>m.volume));
+  state.materialsCount = state.filteredMaterials.length;
+  state.activePlantsCount = state.filteredPlants.filter(p=>p.materialsCount>0).length;
+
+  const catMap = groupSumByKey(state.filteredMaterials, 'category', 'revenue');
+  state.categoryTotals = CATEGORIES
+    .map((c,i)=>({name:c, value: catMap.get(c)||0, color: CATEGORY_COLORS[i%CATEGORY_COLORS.length]}))
+    .filter(c=>c.value>0)
+    .sort((a,b)=>b.value-a.value);
+
+  // region x category matrix (rows=REGIONS, cols=CATEGORIES)
+  const matrixMap = new Map();
+  for(const m of state.filteredMaterials){
+    const key = m.region+'|'+m.category;
+    matrixMap.set(key, (matrixMap.get(key)||0)+m.revenue);
+  }
+  state.regionCategoryMatrix = [];
+  REGIONS.forEach((r,ri)=> CATEGORIES.forEach((c,ci)=>{
+    const v = matrixMap.get(r+'|'+c) || 0;
+    state.regionCategoryMatrix.push([ci, ri, Math.round(v)]);
+  }));
+
+  // weekly series from filtered plants (region filter already applied to basePlants;
+  // category filter changes the .revenue used to scale each plant's fixed seasonal shape)
+  const weekly = new Array(WEEKS).fill(0);
+  for(const p of state.filteredPlants){
+    const shape = p.weeklyShape; const rev = p.revenue;
+    for(let w=0; w<WEEKS; w++) weekly[w] += shape[w]*rev;
+  }
+  state.weeklySeries = weekly;
+  const win = 8;
+  state.movingAvg = weekly.map((_,i)=>{
+    const s = Math.max(0,i-win+1);
+    const slice = weekly.slice(s,i+1);
+    return sum(slice)/slice.length;
+  });
+}
+
+function computeDelta(series, span){
+  if(series.length < span*2) return {pct:0, positive:true};
+  const recent = sum(series.slice(series.length-span));
+  const prior = sum(series.slice(series.length-span*2, series.length-span));
+  if(prior<=0) return {pct:0, positive:true};
+  const pct = ((recent-prior)/prior)*100;
+  return {pct, positive: pct>=0};
+}
+
+/* ======================================================================
+   3. VIRTUAL TABLE COMPONENT
+   ====================================================================== */
+class VirtualTable{
+  constructor(root, opts){
+    this.root = root;
+    this.columns = opts.columns;
+    this.rowHeight = opts.rowHeight || 36;
+    this.viewportHeight = opts.viewportHeight || 440;
+    this.placeholder = opts.placeholder || 'Search…';
+    this.defaultSortKey = opts.defaultSortKey || null;
+    this.defaultSortDir = opts.defaultSortDir || -1;
+    this.sortKey = this.defaultSortKey;
+    this.sortDir = this.defaultSortDir;
+    this.allRows = []; this.viewRows = [];
+    this._build();
+  }
+  _build(){
+    const gridTemplate = this.columns.map(c=>c.width||'1fr').join(' ');
+    this.gridTemplate = gridTemplate;
+    this.root.innerHTML =
+      '<div class="vt-toolbar">' +
+        '<input type="search" class="vt-search" placeholder="'+this.placeholder+'">' +
+        '<button class="vt-export" type="button">⤓ CSV</button>' +
+        '<span class="vt-count"></span>' +
+      '</div>' +
+      '<div class="vt-head" style="grid-template-columns:'+gridTemplate+'"></div>' +
+      '<div class="vt-body"><div class="vt-sizer"></div><div class="vt-rows"></div></div>';
+
+    this.head = this.root.querySelector('.vt-head');
+    this.body = this.root.querySelector('.vt-body');
+    this.sizer = this.root.querySelector('.vt-sizer');
+    this.rowsEl = this.root.querySelector('.vt-rows');
+    this.countEl = this.root.querySelector('.vt-count');
+    this.searchEl = this.root.querySelector('.vt-search');
+    this.exportBtn = this.root.querySelector('.vt-export');
+    this.body.style.height = this.viewportHeight+'px';
+
+    this.head.innerHTML = this.columns.map(c=>
+      '<div class="vt-th" data-key="'+c.key+'">'+c.label+'<span class="vt-sort-ind"></span></div>'
+    ).join('');
+
+    this.head.addEventListener('click', (e)=>{
+      const th = e.target.closest('.vt-th'); if(!th) return;
+      const key = th.dataset.key;
+      if(this.sortKey===key){ this.sortDir *= -1; } else { this.sortKey = key; this.sortDir = 1; }
+      this._applySort(); this._updateSortIndicators(); this._render(true);
+    });
+    this.searchEl.addEventListener('input', debounce(()=>{ this._applyFilterSort(); this._render(true); }, 120));
+    this.body.addEventListener('scroll', ()=> this._render(false));
+    this.exportBtn.addEventListener('click', ()=> this._exportCSV());
+    this._updateSortIndicators();
+  }
+  setData(rows){
+    this.allRows = rows;
+    this._applyFilterSort();
+    this._render(true);
+  }
+  _applyFilterSort(){
+    const q = (this.searchEl.value||'').trim().toLowerCase();
+    let rows = this.allRows;
+    if(q){
+      const keys = this.columns.filter(c=>c.searchable).map(c=>c.key);
+      rows = rows.filter(r=> keys.some(k=> String(r[k]).toLowerCase().indexOf(q) !== -1));
+    }
+    this.viewRows = rows;
+    this._applySort();
+  }
+  _applySort(){
+    if(!this.sortKey) return;
+    const key = this.sortKey, dir = this.sortDir;
+    const col = this.columns.find(c=>c.key===key);
+    const isNum = col && col.type === 'number';
+    this.viewRows = this.viewRows.slice().sort((a,b)=>{
+      if(isNum) return (a[key]-b[key])*dir;
+      return String(a[key]).localeCompare(String(b[key]))*dir;
+    });
+  }
+  _updateSortIndicators(){
+    this.head.querySelectorAll('.vt-th').forEach(th=>{
+      const ind = th.querySelector('.vt-sort-ind');
+      if(th.dataset.key===this.sortKey){ ind.textContent = this.sortDir===1 ? '▲' : '▼'; th.classList.add('active'); }
+      else { ind.textContent=''; th.classList.remove('active'); }
+    });
+  }
+  _render(reset){
+    const total = this.viewRows.length;
+    this.sizer.style.height = (total*this.rowHeight)+'px';
+    this.countEl.textContent = total.toLocaleString('en-US')+' rows';
+    if(reset) this.body.scrollTop = 0;
+    const scrollTop = this.body.scrollTop;
+    const start = Math.max(0, Math.floor(scrollTop/this.rowHeight) - 4);
+    const visibleCount = Math.ceil(this.viewportHeight/this.rowHeight) + 8;
+    const end = Math.min(total, start+visibleCount);
+    const slice = this.viewRows.slice(start, end);
+    this.rowsEl.style.transform = 'translateY('+(start*this.rowHeight)+'px)';
+    this.rowsEl.innerHTML = slice.map(r=>{
+      const cells = this.columns.map(c=>{
+        let val = r[c.key];
+        if(c.format) val = c.format(val, r);
+        const cls = 'vt-td'+(c.type==='number'?' num':'')+(c.tag?' tag':'');
+        return '<div class="'+cls+'">'+val+'</div>';
+      }).join('');
+      return '<div class="vt-tr" style="grid-template-columns:'+this.gridTemplate+'; height:'+this.rowHeight+'px;">'+cells+'</div>';
+    }).join('');
+  }
+  _exportCSV(){
+    const cols = this.columns;
+    const header = cols.map(c=>c.label).join(',');
+    const lines = this.viewRows.map(r=> cols.map(c=>{
+      let v = r[c.key];
+      if(typeof v === 'string' && v.indexOf(',')!==-1) v = '"'+v+'"';
+      return v;
+    }).join(','));
+    const csv = [header].concat(lines).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'export.csv'; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+}
+
+/* ======================================================================
+   4. CHART BUILDERS (Apache ECharts)
+   ====================================================================== */
+function axisLabelStyle(extra){
+  return Object.assign({color:COLORS.textDim, fontFamily:'IBM Plex Mono', fontSize:11}, extra||{});
+}
+
+function buildRevenueTrendOption(){
+  const rangeWeeks = state.filters.rangeWeeks;
+  const startIdx = Math.max(0, WEEKS-rangeWeeks);
+  const labels = WEEK_LABELS.slice(startIdx);
+  const rev = state.weeklySeries.slice(startIdx);
+  const avg = state.movingAvg.slice(startIdx);
+  return {
+    grid:{left:58, right:20, top:26, bottom:70},
+    tooltip:Object.assign({trigger:'axis'}, tooltipBase),
+    legend:{data:['Weekly Revenue','12-wk Avg'], top:0, right:0, textStyle:{color:COLORS.textDim, fontFamily:'IBM Plex Sans', fontSize:11}, itemWidth:14, itemHeight:8},
+    xAxis:{type:'category', data:labels, boundaryGap:false, axisLine:{lineStyle:{color:COLORS.hairline}}, axisTick:{show:false}, axisLabel:axisLabelStyle()},
+    yAxis:{type:'value', axisLabel:axisLabelStyle({formatter:v=>fmtUSD(v)}), splitLine:{lineStyle:{color:COLORS.grid, type:'dashed'}}},
+    dataZoom:[
+      {type:'inside', start:60, end:100},
+      {type:'slider', start:60, end:100, height:16, bottom:14, borderColor:COLORS.hairline, fillerColor:'rgba(240,162,59,0.14)', handleStyle:{color:COLORS.amber}, textStyle:{color:COLORS.textFaint, fontFamily:'IBM Plex Mono', fontSize:10}}
+    ],
+    series:[
+      {name:'Weekly Revenue', type:'line', data:rev, symbol:'none', sampling:'lttb',
+        lineStyle:{color:COLORS.amber, width:1.6},
+        areaStyle:{color:{type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'rgba(240,162,59,0.30)'},{offset:1,color:'rgba(240,162,59,0)'}]}}},
+      {name:'12-wk Avg', type:'line', data:avg, symbol:'none', lineStyle:{color:COLORS.teal, width:1.4, type:'dashed'}}
+    ]
+  };
+}
+
+function buildCategoryDonutOption(){
+  const data = state.categoryTotals.map(c=>({name:c.name, value:Math.round(c.value), itemStyle:{color:c.color}}));
+  return {
+    tooltip:Object.assign({trigger:'item', formatter:p=> p.name+'<br/>'+fmtUSDFull(p.value)+' ('+p.percent+'%)'}, tooltipBase),
+    series:[{
+      type:'pie', radius:['48%','82%'], center:['50%','50%'], avoidLabelOverlap:true,
+      itemStyle:{borderColor:COLORS.panel, borderWidth:2},
+      label:{show:false}, labelLine:{show:false},
+      data
+    }]
+  };
+}
+
+function buildPlantBarOption(full){
+  const sorted = state.filteredPlants.slice().sort((a,b)=>b.revenue-a.revenue);
+  const shown = full ? sorted : sorted.slice(0,15);
+  const names = shown.map(p=>p.code+' · '+p.name).reverse();
+  const values = shown.map(p=>p.revenue).reverse();
+  const windowPct = shown.length ? clamp((15/shown.length)*100, 8, 100) : 100;
+  return {
+    grid:{left:190, right:36, top:6, bottom:6},
+    tooltip:Object.assign({trigger:'axis', axisPointer:{type:'shadow'}, formatter:p=>{const d=p[0]; return d.name+'<br/>'+fmtUSDFull(d.value);}}, tooltipBase),
+    xAxis:{type:'value', axisLabel:axisLabelStyle({formatter:v=>fmtUSD(v)}), splitLine:{lineStyle:{color:COLORS.grid, type:'dashed'}}},
+    yAxis:{type:'category', data:names, axisLabel:axisLabelStyle({fontFamily:'IBM Plex Sans', fontSize:11}), axisLine:{lineStyle:{color:COLORS.hairline}}, axisTick:{show:false}},
+    dataZoom: full ? [
+      {type:'inside', yAxisIndex:0, start:0, end:windowPct, zoomOnMouseWheel:true},
+      {type:'slider', yAxisIndex:0, width:10, right:8, start:0, end:windowPct, borderColor:COLORS.hairline, fillerColor:'rgba(240,162,59,0.16)', handleStyle:{color:COLORS.amber}, showDataShadow:false}
+    ] : [],
+    series:[{
+      type:'bar', data:values, large:true, largeThreshold:50, barMaxWidth:16, barMinHeight:2,
+      itemStyle:{color:COLORS.amber, borderRadius:[0,3,3,0]},
+      emphasis:{itemStyle:{color:COLORS.teal}}
+    }]
+  };
+}
+
+function buildRegionHeatOption(){
+  const matrix = state.regionCategoryMatrix;
+  const maxVal = Math.max.apply(null, matrix.map(m=>m[2]).concat([1]));
+  return {
+    grid:{left:110, right:20, top:20, bottom:110},
+    tooltip:Object.assign({position:'top', formatter:p=> REGIONS[p.data[1]]+' × '+CATEGORIES[p.data[0]]+'<br/>'+fmtUSDFull(p.data[2])}, tooltipBase),
+    xAxis:{type:'category', data:CATEGORIES, splitArea:{show:true}, axisLabel:axisLabelStyle({fontFamily:'IBM Plex Sans', fontSize:10, rotate:38}), axisLine:{lineStyle:{color:COLORS.hairline}}},
+    yAxis:{type:'category', data:REGIONS, splitArea:{show:true}, axisLabel:axisLabelStyle({fontFamily:'IBM Plex Sans', fontSize:11}), axisLine:{lineStyle:{color:COLORS.hairline}}},
+    visualMap:{min:0, max:maxVal, calculable:false, orient:'horizontal', left:'center', bottom:60, textStyle:{color:COLORS.textDim, fontFamily:'IBM Plex Mono', fontSize:10}, inRange:{color:[COLORS.panelRaised, COLORS.amber]}},
+    series:[{type:'heatmap', data:matrix, itemStyle:{borderColor:COLORS.bg, borderWidth:2}, emphasis:{itemStyle:{borderColor:COLORS.teal, borderWidth:1}}}]
+  };
+}
+
+function buildTreemapOption(){
+  const byCat = new Map();
+  for(const m of state.filteredMaterials){
+    if(!byCat.has(m.category)) byCat.set(m.category, []);
+    byCat.get(m.category).push(m);
+  }
+  const data = CATEGORIES.filter(c=>byCat.has(c)).map((c,i)=>{
+    const items = byCat.get(c).slice().sort((a,b)=>b.revenue-a.revenue);
+    return {
+      name:c,
+      itemStyle:{color:CATEGORY_COLORS[i%CATEGORY_COLORS.length]},
+      children: items.map(m=>({name:m.name, value:Math.round(m.revenue), sku:m.sku}))
+    };
+  });
+  return {
+    tooltip:Object.assign({formatter:p=> p.data.sku ? (p.name+'<br/>'+p.data.sku+'<br/>'+fmtUSDFull(p.value)) : (p.name+'<br/>'+fmtUSDFull(p.value))}, tooltipBase),
+    series:[{
+      type:'treemap', roam:'move', nodeClick:'zoomToNode',
+      breadcrumb:{itemStyle:{color:COLORS.panelRaised, textStyle:{color:COLORS.textDim, fontFamily:'IBM Plex Mono', fontSize:11}}},
+      label:{show:true, color:'#0B111C', fontFamily:'IBM Plex Sans', fontSize:11, overflow:'truncate'},
+      upperLabel:{show:true, height:26, color:COLORS.text, fontFamily:'IBM Plex Sans', fontWeight:600},
+      itemStyle:{borderColor:COLORS.bg, borderWidth:1, gapWidth:1},
+      levels:[{itemStyle:{borderWidth:0, gapWidth:2}}, {itemStyle:{gapWidth:1}}],
+      data
+    }]
+  };
+}
+
+function buildScatterOption(){
+  const source = state.filteredMaterials.map(m=>[m.unitPrice, m.volume, m.category, m.name]);
+  return {
+    grid:{left:66, right:24, top:16, bottom:64},
+    tooltip:Object.assign({formatter:p=> p.data[3]+'<br/>'+p.data[2]+'<br/>Price: $'+p.data[0].toFixed(2)+'<br/>Volume: '+fmtNum(p.data[1])}, tooltipBase),
+    xAxis:{type:'log', name:'Unit Price (USD, log scale)', nameLocation:'middle', nameGap:34, nameTextStyle:{color:COLORS.textDim, fontFamily:'IBM Plex Sans', fontSize:11}, axisLabel:axisLabelStyle({fontSize:10, formatter:v=>fmtUSD(v)}), splitLine:{lineStyle:{color:COLORS.grid, type:'dashed'}}},
+    yAxis:{type:'log', name:'Volume Sold (log scale)', nameLocation:'middle', nameGap:50, nameTextStyle:{color:COLORS.textDim, fontFamily:'IBM Plex Sans', fontSize:11}, axisLabel:axisLabelStyle({fontSize:10, formatter:v=>fmtNum(v)}), splitLine:{lineStyle:{color:COLORS.grid, type:'dashed'}}},
+    dataZoom:[{type:'inside', xAxisIndex:0}, {type:'inside', yAxisIndex:0}],
+    visualMap:{show:false, dimension:2, type:'piecewise', categories:CATEGORIES, inRange:{color:CATEGORY_COLORS}},
+    series:[{
+      type:'scatter', data:source, symbolSize:6,
+      large:true, largeThreshold:2000, progressive:400, progressiveThreshold:3000,
+      itemStyle:{opacity:0.65}
+    }]
+  };
+}
+
+/* ======================================================================
+   5. CHART INSTANCES + RENDER ORCHESTRATION
+   ====================================================================== */
+const charts = {};
+function ensureChart(key, domId){
+  if(!charts[key]){
+    charts[key] = echarts.init(document.getElementById(domId), null, {renderer:'canvas'});
+  }
+  return charts[key];
+}
+
+function sparklinePath(values, w, h){
+  if(values.length < 2) return '';
+  const max = Math.max.apply(null, values), min = Math.min.apply(null, values);
+  const range = (max-min) || 1;
+  const step = w/(values.length-1);
+  return values.map((v,i)=> (i===0?'M':'L') + (i*step).toFixed(1) + ',' + (h-((v-min)/range)*h).toFixed(1)).join(' ');
+}
+
+function renderKPIs(){
+  const revDelta = computeDelta(state.weeklySeries, 52);
+  const spark12 = state.weeklySeries.slice(-12);
+  const sparkPath = sparklinePath(spark12, 120, 26);
+
+  const kpis = [
+    {tag:'GA-01', label:'Total Revenue', value: fmtUSD(state.totalRevenue), delta: revDelta, spark:sparkPath},
+    {tag:'GA-02', label:'Units Shipped', value: fmtNum(state.totalUnits), delta: revDelta, spark:sparkPath},
+    {tag:'GA-03', label:'Active Plants', value: fmtNum(state.activePlantsCount), sub:'of '+ALL_PLANTS.length+' total'},
+    {tag:'GA-04', label:'Materials Tracked', value: fmtNum(state.materialsCount), sub:'of '+fmtNum(MATERIAL_COUNT)+' total'},
+    {tag:'GA-05', label:'Avg Order Value', value: fmtUSD(state.totalUnits>0 ? state.totalRevenue/(state.totalUnits/16) : 0), delta: revDelta, spark:sparkPath},
+    {tag:'GA-06', label:'YoY Output', value: fmtPct(revDelta.pct), sub:'trailing 52 wks vs prior 52'}
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>{
+    const deltaHtml = k.delta
+      ? '<span class="delta '+(k.delta.positive?'up':'down')+'">'+fmtPct(k.delta.pct)+'</span>'
+      : '<span class="sub">'+(k.sub||'')+'</span>';
+    const sparkHtml = k.spark
+      ? '<svg class="spark" viewBox="0 0 120 26" preserveAspectRatio="none"><path d="'+k.spark+'" fill="none" stroke="'+COLORS.amber+'" stroke-width="1.5"/></svg>'
+      : '<div style="height:26px;margin-top:6px;"></div>';
+    return (
+      '<div class="kpi">' +
+        '<div class="eyebrow"><span>'+k.label+'</span><span>'+k.tag+'</span></div>' +
+        '<div class="value">'+k.value+'</div>' +
+        '<div class="meta">'+deltaHtml+'</div>' +
+        sparkHtml +
+      '</div>'
+    );
+  }).join('');
+}
+
+function renderDonutLegend(){
+  const total = sum(state.categoryTotals.map(c=>c.value)) || 1;
+  document.getElementById('donutLegend').innerHTML = state.categoryTotals.map(c=>{
+    const pct = ((c.value/total)*100).toFixed(1);
+    return '<div class="legend-row" data-cat="'+c.name+'"><span class="sw" style="background:'+c.color+'"></span><span class="lbl">'+c.name+'</span><span class="val">'+pct+'%</span></div>';
+  }).join('');
+  document.getElementById('donutLegend').querySelectorAll('.legend-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const cat = row.dataset.cat;
+      setCategoryFilter(state.filters.category===cat ? 'all' : cat);
+    });
+  });
+}
+
+function renderScatterLegend(){
+  document.getElementById('scatterLegend').innerHTML = CATEGORIES.map((c,i)=>
+    '<div class="legend-row" data-cat="'+c+'" style="padding:2px 6px;"><span class="sw" style="background:'+CATEGORY_COLORS[i%CATEGORY_COLORS.length]+'"></span><span class="lbl">'+c+'</span></div>'
+  ).join('');
+  document.getElementById('scatterLegend').querySelectorAll('.legend-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const cat = row.dataset.cat;
+      setCategoryFilter(state.filters.category===cat ? 'all' : cat);
+    });
+  });
+}
+
+function updateLegendActiveStates(){
+  document.querySelectorAll('.legend-row').forEach(row=>{
+    row.classList.toggle('active', state.filters.category === row.dataset.cat);
+  });
+}
+
+let plantsTable, materialsTable;
+
+function renderOverview(){
+  renderKPIs();
+  document.getElementById('trendRangeLabel').textContent = state.filters.rangeWeeks+'-week window · drag slider to pan';
+  ensureChart('revenueTrend','chartRevenueTrend').setOption(buildRevenueTrendOption(), true);
+  ensureChart('categoryDonut','chartCategoryDonut').setOption(buildCategoryDonutOption(), true);
+  renderDonutLegend();
+  ensureChart('plantBarTop','chartPlantBarTop').setOption(buildPlantBarOption(false), true);
+  updateLegendActiveStates();
+}
+
+function renderPlantsTab(){
+  document.getElementById('statStripPlants').innerHTML =
+    '<span><b>'+fmtNum(state.activePlantsCount)+'</b>active plants</span>' +
+    '<span><b>'+ALL_PLANTS.length+'</b>network total</span>' +
+    '<span><b>'+fmtUSD(state.totalRevenue)+'</b>filtered revenue</span>' +
+    '<span><b>'+REGIONS.length+'</b>regions</span>';
+  ensureChart('plantBarFull','chartPlantBarFull').setOption(buildPlantBarOption(true), true);
+  ensureChart('regionHeat','chartRegionHeat').setOption(buildRegionHeatOption(), true);
+
+  if(!plantsTable){
+    plantsTable = new VirtualTable(document.getElementById('tablePlants'), {
+      placeholder:'Search plants, region, or location…',
+      viewportHeight:460, rowHeight:36, defaultSortKey:'revenue', defaultSortDir:-1,
+      columns:[
+        {key:'code', label:'Code', width:'90px', searchable:true, tag:true},
+        {key:'name', label:'Plant', width:'1.4fr', searchable:true},
+        {key:'region', label:'Region', width:'130px', searchable:true},
+        {key:'city', label:'Location', width:'1fr', searchable:true},
+        {key:'revenue', label:'Revenue', width:'130px', type:'number', format:fmtUSDFull},
+        {key:'units', label:'Units', width:'110px', type:'number', format:fmtNum},
+        {key:'materialsCount', label:'Materials', width:'110px', type:'number', format:fmtNum}
+      ]
+    });
+  }
+  plantsTable.setData(state.filteredPlants);
+  document.getElementById('plantsLedgerSub').textContent = fmtNum(state.filteredPlants.length)+' plants in current view';
+}
+
+function renderMaterialsTab(){
+  document.getElementById('statStripMaterials').innerHTML =
+    '<span><b>'+fmtNum(state.materialsCount)+'</b>materials in view</span>' +
+    '<span><b>'+fmtNum(MATERIAL_COUNT)+'</b>catalog total</span>' +
+    '<span><b>'+fmtUSD(state.totalRevenue)+'</b>filtered revenue</span>' +
+    '<span><b>'+CATEGORIES.length+'</b>material classes</span>';
+  ensureChart('treemap','chartTreemap').setOption(buildTreemapOption(), true);
+  ensureChart('scatter','chartScatter').setOption(buildScatterOption(), true);
+  renderScatterLegend();
+  updateLegendActiveStates();
+  document.getElementById('scatterCountLabel').textContent = fmtNum(state.filteredMaterials.length)+' materials plotted · large-mode rendering';
+
+  if(!materialsTable){
+    materialsTable = new VirtualTable(document.getElementById('tableMaterials'), {
+      placeholder:'Search SKU, material, class, or plant…',
+      viewportHeight:520, rowHeight:36, defaultSortKey:'revenue', defaultSortDir:-1,
+      columns:[
+        {key:'sku', label:'SKU', width:'120px', searchable:true, tag:true},
+        {key:'name', label:'Material', width:'1.6fr', searchable:true},
+        {key:'category', label:'Class', width:'170px', searchable:true},
+        {key:'plantName', label:'Plant', width:'1fr', searchable:true},
+        {key:'unitPrice', label:'Unit Price', width:'110px', type:'number', format:v=>'$'+v.toFixed(2)},
+        {key:'volume', label:'Volume', width:'100px', type:'number', format:fmtNum},
+        {key:'revenue', label:'Revenue', width:'130px', type:'number', format:fmtUSDFull},
+        {key:'margin', label:'Margin', width:'90px', type:'number', format:v=>v.toFixed(1)+'%'}
+      ]
+    });
+  }
+  materialsTable.setData(state.filteredMaterials);
+  document.getElementById('materialsLedgerSub').textContent = fmtNum(state.filteredMaterials.length)+' materials in current view';
+}
+
+let currentTab = 'overview';
+function renderActiveTab(){
+  if(currentTab==='overview') renderOverview();
+  else if(currentTab==='plants') renderPlantsTab();
+  else renderMaterialsTab();
+}
+
+function applyFilters(){
+  recomputeFilteredData();
+  renderActiveTab();
+}
+
+function setCategoryFilter(cat){
+  state.filters.category = cat;
+  document.getElementById('fltCategory').value = cat;
+  applyFilters();
+}
+
+/* ======================================================================
+   6. UI WIRING (tabs, filters, resize)
+   ====================================================================== */
+function populateSelect(id, values, labelFn){
+  const el = document.getElementById(id);
+  el.innerHTML = values.map(v=> '<option value="'+v+'">'+(labelFn?labelFn(v):v)+'</option>').join('');
+}
+
+function initControls(){
+  populateSelect('fltRegion', ['all'].concat(REGIONS), v=> v==='all' ? 'All Regions' : v);
+  populateSelect('fltCategory', ['all'].concat(CATEGORIES), v=> v==='all' ? 'All Classes' : v);
+
+  document.getElementById('fltRegion').addEventListener('change', e=>{ state.filters.region = e.target.value; applyFilters(); });
+  document.getElementById('fltCategory').addEventListener('change', e=>{ state.filters.category = e.target.value; applyFilters(); });
+  document.getElementById('fltRange').addEventListener('change', e=>{ state.filters.rangeWeeks = parseInt(e.target.value,10); applyFilters(); });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    state.filters = {region:'all', category:'all', rangeWeeks:156};
+    document.getElementById('fltRegion').value = 'all';
+    document.getElementById('fltCategory').value = 'all';
+    document.getElementById('fltRange').value = '156';
+    applyFilters();
+  });
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    if(currentTab==='materials' && materialsTable) materialsTable._exportCSV();
+    else if(currentTab==='plants' && plantsTable) plantsTable._exportCSV();
+    else {
+      const rows = state.categoryTotals.map(c=>c.name+','+Math.round(c.value));
+      const csv = ['category,revenue'].concat(rows).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'overview_summary.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+  });
+
+  document.querySelectorAll('.tabnav button[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tabnav button[data-tab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('section.tab').forEach(s=>s.classList.remove('active'));
+      currentTab = btn.dataset.tab;
+      document.getElementById('tab-'+currentTab).classList.add('active');
+      requestAnimationFrame(()=>{
+        renderActiveTab();
+        Object.keys(charts).forEach(k=> charts[k] && charts[k].resize());
+      });
+    });
+  });
+
+  window.addEventListener('resize', debounce(()=>{
+    Object.keys(charts).forEach(k=> charts[k] && charts[k].resize());
+  }, 150));
+
+  document.getElementById('updatedAt').textContent = '· updated just now';
+  document.getElementById('scaleNote').textContent = fmtNum(ALL_PLANTS.length)+' plants · '+fmtNum(MATERIAL_COUNT)+' materials tracked';
+}
+
+/* ======================================================================
+   7. BOOT
+   ====================================================================== */
+initControls();
+recomputeFilteredData();
+renderActiveTab();
+</script>
+</body>
+</html>

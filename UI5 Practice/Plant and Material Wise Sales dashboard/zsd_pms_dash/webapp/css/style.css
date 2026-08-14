@@ -1,0 +1,401 @@
+/*
+ * Plant & Material Wise Sales Dashboard - panel styling.
+ *
+ * The panels below the filter bar are a port of the reviewed HTML prototype
+ * (../../Final Template/sales-dashboard-india_claude V8.html): its palette, typography,
+ * card chrome and grid. Only the filter bar is stock Fiori, so the two have to agree on
+ * light/dark - the theme switcher sets data-pms-theme on <html> and the matching
+ * sap_horizon / sap_horizon_dark theme at the same time. See model/appTheme.js.
+ *
+ * Structure follows the GRN Dashboard's own css/style.css (../../GRN Dashboard/zmm_grn_dash)
+ * 1:1, re-themed with the prototype's own tokens (--pms-* instead of --grn-*): an 8-colour
+ * categorical ramp (c1..c8) for schemes/zones/materials, plus pos/neg for KPI deltas,
+ * rather than GRN's single accent/alt/warn set.
+ *
+ * No @import/@font-face here deliberately - public CDN fonts are blocked in this
+ * environment (see the sibling GRN Dashboard's own libs_README.md), so the stack falls
+ * back to system fonts when IBM Plex/Archivo are not installed.
+ */
+
+/* ------------------------------------------------------------------ tokens --- */
+
+:root {
+	--pms-bg: #ecf0f2;
+	--pms-panel: #ffffff;
+	--pms-panel2: #f7f9fa;
+	--pms-line: #dce3e7;
+	--pms-line2: #eaeff2;
+	--pms-ink: #0d2430;
+	--pms-ink2: #3d5866;
+	--pms-ink3: #7a909d;
+	--pms-c1: #0e7c86;
+	--pms-c2: #2e72c8;
+	--pms-c3: #5b54c6;
+	--pms-c4: #8b4db8;
+	--pms-c5: #b8489b;
+	--pms-c6: #d2762c;
+	--pms-c7: #4b9aa0;
+	--pms-c8: #8fa0b4;
+	--pms-accent: var(--pms-c2);
+	--pms-accent-soft: #e8f1f9;
+	--pms-pos: #137f5b;
+	--pms-pos-soft: #e3f3ec;
+	--pms-neg: #b4413b;
+	--pms-neg-soft: #fbe9e7;
+	--pms-shadow: 0 1px 2px rgba(13, 36, 48, .04), 0 8px 24px -18px rgba(13, 36, 48, .35);
+	--pms-shadow-pop: 0 14px 34px rgba(13, 36, 48, .18);
+	--pms-font: "IBM Plex Sans", "72", "72full", Arial, Helvetica, sans-serif;
+	--pms-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+	--pms-heading: "Archivo", var(--pms-font);
+}
+
+:root[data-pms-theme="dark"] {
+	--pms-bg: #0d1117;
+	--pms-panel: #151b22;
+	--pms-panel2: #121820;
+	--pms-line: #242c36;
+	--pms-line2: #1c232c;
+	--pms-ink: #e8ecf1;
+	--pms-ink2: #9aa5b2;
+	--pms-ink3: #6d7885;
+	--pms-c1: #39a6af;
+	--pms-c2: #5c9ae8;
+	--pms-c3: #8b84e8;
+	--pms-c4: #b27cd9;
+	--pms-c5: #d976be;
+	--pms-c6: #e6975a;
+	--pms-c7: #75c2c8;
+	--pms-c8: #aab9c8;
+	--pms-accent-soft: #16283a;
+	--pms-pos: #3fbf9c;
+	--pms-pos-soft: #12291f;
+	--pms-neg: #ef6f66;
+	--pms-neg-soft: #2b1613;
+	--pms-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+	--pms-shadow-pop: 0 14px 34px rgba(0, 0, 0, .55);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-pms-theme="light"]) {
+		--pms-bg: #0d1117;
+		--pms-panel: #151b22;
+		--pms-panel2: #121820;
+		--pms-line: #242c36;
+		--pms-line2: #1c232c;
+		--pms-ink: #e8ecf1;
+		--pms-ink2: #9aa5b2;
+		--pms-ink3: #6d7885;
+		--pms-accent-soft: #16283a;
+		--pms-pos: #3fbf9c;
+		--pms-pos-soft: #12291f;
+		--pms-neg: #ef6f66;
+		--pms-neg-soft: #2b1613;
+		--pms-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+		--pms-shadow-pop: 0 14px 34px rgba(0, 0, 0, .55);
+	}
+}
+
+.pmsTone--accent { --pms-tone: var(--pms-accent); --pms-tone-tint: var(--pms-accent-soft); }
+.pmsTone--pos { --pms-tone: var(--pms-pos); --pms-tone-tint: var(--pms-pos-soft); }
+.pmsTone--neg { --pms-tone: var(--pms-neg); --pms-tone-tint: var(--pms-neg-soft); }
+.pmsTone--none { --pms-tone: var(--pms-ink); --pms-tone-tint: transparent; }
+
+/* -------------------------------------------------------------------- page --- */
+
+.pmsDashPage .sapMPageEnableScrolling,
+.pmsDashPage > section {
+	background: var(--pms-bg);
+}
+
+.pmsBox { box-sizing: border-box; }
+.pmsBox *, .pmsBox *::before, .pmsBox *::after { box-sizing: border-box; }
+
+/* ----------------------------------------------------------------- top bar --- */
+
+.pmsTopBar {
+	background: var(--pms-panel);
+	border-bottom: 1px solid var(--pms-line);
+	padding: 14px 26px 0;
+	position: relative;
+}
+
+.pmsTopBar::before {
+	content: "";
+	position: absolute;
+	top: 0; left: 0; right: 0; height: 3px;
+	background: linear-gradient(90deg, var(--pms-c1), var(--pms-c2) 26%, var(--pms-c3) 48%, var(--pms-c4) 66%, var(--pms-c5) 82%, var(--pms-c6));
+}
+
+.pmsHead {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 24px;
+	flex-wrap: wrap;
+	font-family: var(--pms-font);
+}
+
+.pmsHeadMain { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pmsHeadTitleRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.pmsHeadTitle {
+	margin: 0;
+	font-family: var(--pms-heading);
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -.015em;
+	color: var(--pms-ink);
+}
+
+.pmsHeadSub { margin: 0; font-size: 12px; color: var(--pms-ink2); line-height: 1.45; }
+.pmsHeadActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.pmsTag {
+	font-family: var(--pms-mono);
+	font-size: 10px;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--pms-accent);
+	border: 1px solid var(--pms-line);
+	background: var(--pms-accent-soft);
+	padding: 3px 7px;
+	border-radius: 4px;
+	white-space: nowrap;
+}
+
+.pmsScopeLine {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 12px 0 14px;
+	font-family: var(--pms-mono);
+	font-size: 10.5px;
+	color: var(--pms-ink3);
+}
+
+.pmsScopeLine .pmsScopeLabel { color: var(--pms-accent); letter-spacing: .1em; }
+
+/* --------------------------------------------------------------- filter bar --- */
+
+.pmsFilterRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px 12px;
+	padding: 12px 0 2px;
+}
+
+.pmsField { min-width: 11rem; flex: 1 1 11rem; max-width: 18rem; }
+.pmsField--wide { min-width: 15rem; flex: 1 1 15rem; max-width: 22rem; }
+.pmsField--actions { flex: 0 0 auto; max-width: none; }
+
+.pmsFieldLabel.sapMLabel {
+	font-family: var(--pms-mono);
+	font-size: 9px;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--pms-ink3);
+	padding-bottom: 4px;
+}
+
+.pmsFilterActions { display: flex; align-items: flex-end; gap: 8px; padding-bottom: 1px; }
+
+.pmsFilterHint {
+	display: block;
+	font-family: var(--pms-font);
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--pms-ink3);
+	padding-bottom: 10px;
+}
+
+.pmsMessageStrip { margin: 12px 26px 0; }
+
+/* ------------------------------------------------------------------- grids --- */
+
+.pmsGrid { display: grid; gap: 12px; padding: 12px 26px 0; }
+.pmsGrid--hero { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.pmsGrid--full { grid-template-columns: minmax(0, 1fr); }
+.pmsGrid--charts { grid-template-columns: repeat(12, minmax(0, 1fr)); padding-bottom: 40px; }
+
+.pmsSpan4 { grid-column: span 4; }
+.pmsSpan6 { grid-column: span 6; }
+.pmsSpan8 { grid-column: span 8; }
+.pmsSpan12 { grid-column: span 12; }
+
+@media (max-width: 1100px) {
+	.pmsGrid--charts > .pmsCard { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+	.pmsTopBar, .pmsGrid { padding-left: 12px; padding-right: 12px; }
+	.pmsMessageStrip { margin-left: 12px; margin-right: 12px; }
+}
+
+/* ------------------------------------------------------------------- cards --- */
+
+.pmsCard {
+	background: var(--pms-panel);
+	border: 1px solid var(--pms-line);
+	border-radius: 14px;
+	box-shadow: var(--pms-shadow);
+	padding: 14px 16px 10px;
+	font-family: var(--pms-font);
+	color: var(--pms-ink);
+	min-width: 0;
+}
+
+.pmsCardHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pmsCardHeadText { min-width: 0; }
+.pmsCardTitle { font-family: var(--pms-heading); font-size: 13.5px; font-weight: 600; color: var(--pms-ink); }
+.pmsCardSub { font-size: 11.5px; color: var(--pms-ink2); margin-top: 3px; line-height: 1.4; }
+.pmsCardActions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* --------------------------------------------------------------- KPI cards --- */
+
+.pmsKpiCard { padding: 15px 16px 10px; }
+.pmsKpiTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pmsKpiLabel { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; color: var(--pms-ink2); }
+.pmsKpiBody { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.pmsKpiFigures { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.pmsKpiValueRow { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+
+.pmsKpiValue {
+	font-family: var(--pms-heading);
+	font-size: 27px;
+	font-weight: 700;
+	letter-spacing: -.025em;
+	line-height: 1;
+	color: var(--pms-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.pmsKpiUnit { font-family: var(--pms-mono); font-size: 11px; color: var(--pms-ink3); }
+.pmsKpiDeltaRow { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+
+.pmsKpiDelta {
+	font-family: var(--pms-mono);
+	font-size: 10.5px;
+	font-weight: 600;
+	border-radius: 20px;
+	padding: 2px 8px;
+	color: var(--pms-tone, var(--pms-ink));
+	background: var(--pms-tone-tint, transparent);
+}
+
+.pmsKpiDeltaNote { font-size: 10.5px; color: var(--pms-ink3); }
+.pmsKpiSubNote { font-size: 10.5px; color: var(--pms-ink3); margin-top: 6px; font-family: var(--pms-mono); }
+.pmsKpiSpark { flex: 0 1 112px; min-width: 60px; }
+
+/* -------------------------------------------------------------- india map --- */
+
+.pmsMapWrap { position: relative; display: flex; justify-content: center; width: 100%; }
+.pmsMapSvg { width: 100%; height: 100%; display: block; }
+
+.pmsMapState {
+	stroke: var(--pms-panel);
+	stroke-width: .6;
+	cursor: pointer;
+	transition: fill .2s, stroke-width .1s;
+}
+.pmsMapState:hover { stroke: var(--pms-ink); stroke-width: 1.4; }
+.pmsMapState--sel { stroke: var(--pms-ink); stroke-width: 1.8; }
+
+.pmsMapZoneDiv {
+	fill: none;
+	stroke: rgba(13, 36, 48, .28);
+	stroke-width: 1;
+	pointer-events: none;
+	stroke-linejoin: round;
+}
+
+.pmsMapDot {
+	fill: #e4162a;
+	fill-opacity: .82;
+	stroke: #ffffff;
+	stroke-width: 1;
+	cursor: default;
+	transition: stroke-width .1s;
+}
+.pmsMapDot:hover { stroke: var(--pms-ink); stroke-width: 2; }
+
+.pmsMapLegend {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+	padding-top: 12px;
+	border-top: 1px solid var(--pms-line2);
+	flex-wrap: wrap;
+	font-family: var(--pms-mono);
+	font-size: 10px;
+	color: var(--pms-ink3);
+}
+
+/* Five-stop choropleth scale, drawn as one gradient so the legend needs no
+   markup of its own (raw HTML tags are not allowed inside an XML view). */
+.pmsMapScale {
+	width: 110px;
+	height: 9px;
+	border-radius: 2px;
+	background: linear-gradient(to right,
+		#E3EEF0 0 20%,
+		#AFD6DA 20% 40%,
+		#72B8C0 40% 60%,
+		#2E8B9B 60% 80%,
+		#12596E 80% 100%);
+}
+
+.pmsMapDotKey { display: inline-flex; align-items: center; gap: 6px; }
+.pmsMapDotKey .d { width: 9px; height: 9px; border-radius: 50%; background: #e4162a; opacity: .82; }
+
+/* ----------------------------------------------------- toggles and flat buttons --- */
+
+.pmsToggle {
+	display: flex;
+	background: var(--pms-panel2);
+	border: 1px solid var(--pms-line);
+	border-radius: 9px;
+	padding: 2px;
+}
+
+.pmsToggleBtn {
+	border: none;
+	background: transparent;
+	color: var(--pms-ink2);
+	font-family: var(--pms-mono);
+	font-size: 10px;
+	letter-spacing: .07em;
+	text-transform: uppercase;
+	padding: 6px 11px;
+	border-radius: 7px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.pmsToggleBtn:hover { color: var(--pms-ink); }
+.pmsToggleBtn--on, .pmsToggleBtn--on:hover { background: var(--pms-ink); color: #ffffff; }
+
+.pmsBtn {
+	background: var(--pms-panel2);
+	border: 1px solid var(--pms-line);
+	color: var(--pms-ink2);
+	font-family: var(--pms-mono);
+	font-size: 9.5px;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	padding: 6px 10px;
+	border-radius: 8px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.pmsBtn:hover { border-color: var(--pms-accent); color: var(--pms-accent); }
+
+.pmsToggleBtn:focus-visible, .pmsBtn:focus-visible {
+	outline: 1px dotted var(--pms-ink);
+	outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------ charts --- */
+
+.pmsEChart { margin-top: 6px; }
