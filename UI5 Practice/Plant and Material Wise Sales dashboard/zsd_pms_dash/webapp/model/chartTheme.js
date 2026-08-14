@@ -122,30 +122,6 @@ sap.ui.define([], function () {
 			oPending = null;
 		},
 
-		/**
-		 * The 8-colour categorical ramp, in order - used for schemes, zones and any
-		 * other small categorical series, mirroring the prototype's RAMP constant.
-		 * @param {object} oPalette from get()
-		 * @returns {string[]} 8 hex colours
-		 */
-		ramp: function (oPalette) {
-			return [oPalette.c1, oPalette.c2, oPalette.c3, oPalette.c4,
-				oPalette.c5, oPalette.c6, oPalette.c7, oPalette.c8];
-		},
-
-		/**
-		 * Appends an alpha channel to a #rrggbb colour.
-		 * @param {string} sColor a colour value
-		 * @param {number} fAlpha 0..1
-		 * @returns {string} #rrggbbaa, or sColor unchanged
-		 */
-		alpha: function (sColor, fAlpha) {
-			if (!/^#[0-9a-f]{6}$/i.test(sColor || "")) {
-				return sColor;
-			}
-			var sHex = Math.round(Math.max(0, Math.min(1, fAlpha)) * 255).toString(16);
-			return sColor + (sHex.length === 1 ? "0" + sHex : sHex);
-		}
 	};
 
 	return chartTheme;

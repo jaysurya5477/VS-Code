@@ -132,6 +132,7 @@
                 </Key>
                 <Property Name="Matnr" Type="Edm.String" Nullable="false" MaxLength="18"/>
                 <Property Name="Arktx" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="Bismt" Type="Edm.String" Nullable="false" MaxLength="18"/>
                 <Property Name="Uom" Type="Edm.String" Nullable="false" MaxLength="3"/>
                 <Property Name="MatValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="Qty" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="3"/>

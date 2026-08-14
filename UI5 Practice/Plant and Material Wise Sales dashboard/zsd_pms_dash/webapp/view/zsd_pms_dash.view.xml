@@ -55,6 +55,9 @@
 							id="zoneFilter"
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/zone}">
 							<core:ListItem key="{dash>key}" text="{dash>text}"/>
 						</MultiComboBox>
@@ -67,6 +70,9 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/state}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -79,6 +85,9 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/plant}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -91,6 +100,9 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/scheme}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -103,6 +115,9 @@
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
 							showSecondaryValues="true"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/material}">
 							<core:ListItem key="{dash>key}" text="{dash>text}" additionalText="{dash>info}"/>
 						</MultiComboBox>
@@ -114,6 +129,9 @@
 							id="periodFilter"
 							width="100%"
 							placeholder="{i18n>filterAllPlaceholder}"
+							showSelectAll="true"
+							selectionFinish=".onFilterSelectionFinish"
+							selectionChange=".onFilterSelectionChange"
 							items="{dash>/options/period}">
 							<core:ListItem key="{dash>key}" text="{dash>text}"/>
 						</MultiComboBox>
@@ -155,16 +173,6 @@
 					spark="{dash>spark}"/>
 			</viz:Box>
 
-			<!-- ============================= Trend ============================= -->
-			<viz:Box layout="full">
-				<viz:Card
-					span="12"
-					title="{i18n>chartTrendTitle}"
-					subtitle="{i18n>chartTrendSub}">
-					<viz:EChart id="chartTrend" option="{dash>/charts/trend}" height="16rem"/>
-				</viz:Card>
-			</viz:Box>
-
 			<!-- ====================== Map + scheme roll-up ====================== -->
 			<viz:Box layout="charts">
 
@@ -179,12 +187,11 @@
 								items="{dash>/granularityOptions}"
 								selectedKey="{dash>/mapGranularity}"
 								select=".onMapGranularityChange"/>
-							<Switch
-								id="mapDotsSwitch"
-								state="{dash>/mapShowDots}"
-								customTextOn="{i18n>dotsOn}"
-								customTextOff="{i18n>dotsOff}"
-								change=".onMapDotsChange"/>
+							<viz:DotSwitch
+								id="mapDotsToggle"
+								on="{dash>/mapShowDots}"
+								label="{i18n>unitDotsLabel}"
+								press=".onMapDotsToggle"/>
 						</HBox>
 					</viz:actions>
 					<viz:IndiaMap

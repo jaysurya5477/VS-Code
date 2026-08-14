@@ -12,7 +12,8 @@
 // GRN Dashboard's ty_material_row-grand_total exactly. No YoY - not shown
 // by the template for this panel. Matnr's length is a best-effort guess
 // (18, classic length) - verify against the real DDIC on import, newer
-// systems may need 40.
+// systems may need 40. Bismt (old material number) mirrors that same
+// best-effort length.
 @ObjectModel.query.implementedBy: 'ABAP:ZCL_PMS_MATERIAL_QRY'
 @UI.headerInfo: { typeName: 'Material', typeNamePlural: 'Materials' }
 define custom entity ZSD_PMS_MATERIAL
@@ -29,6 +30,9 @@ define custom entity ZSD_PMS_MATERIAL
 {
   key Matnr           : abap.char(18);
       Arktx           : abap.char(40);
+      // Old material number (MARA-BISMT) - display/search convenience in the Material
+      // filter only; the filter still sends Matnr as P_Material.
+      Bismt           : abap.char(18);
       Uom             : abap.char(3);
       MatValue        : abap.dec(15,2);   // "Value" alone is a reserved word, same issue as KPI's "Label"
       Qty             : abap.dec(15,3);

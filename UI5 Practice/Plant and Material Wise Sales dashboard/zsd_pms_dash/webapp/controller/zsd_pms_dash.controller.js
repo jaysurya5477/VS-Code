@@ -50,7 +50,11 @@ sap.ui.define([
 		material: [{
 			entity: "material",
 			key: "Matnr",
-			name: "Arktx"
+			name: "Arktx",
+			// Folded into the catalog item's `info` (secondary value) alongside the material
+			// code, so a user who only knows a material's old number can still find it - both
+			// by reading the dropdown and by typing it, see _wireMaterialSearch().
+			extra: "Bismt"
 		}]
 	};
 
@@ -143,6 +147,8 @@ sap.ui.define([
 				errorText: ""
 			}), "dash");
 
+			this._wireMaterialSearch();
+
 			appTheme.apply();
 			this._fnAppThemeChanged = this._onAppThemeChanged.bind(this);
 			appTheme.attachChanged(this._fnAppThemeChanged);
@@ -181,6 +187,28 @@ sap.ui.define([
 			this._loadData();
 		},
 
+		/**
+		 * Reloads once a MultiComboBox's picker popover closes after a multi-pick session -
+		 * same dual-event pattern as the Balance Sheet Dashboard's own filter bar
+		 * (../../Balance Sheet Dashboard/balance_sheet/webapp/controller/zfi_bs.controller.js):
+		 * ticking five checkboxes and then closing the popover triggers one reload, not five.
+		 */
+		onFilterSelectionFinish: function () {
+			this._loadData();
+		},
+
+		/**
+		 * Catches the one case selectionFinish does not cover: removing a token directly from
+		 * the closed input (clicking a chip's own "x") fires selectionChange with the popover
+		 * already closed, and no selectionFinish at all.
+		 * @param {sap.ui.base.Event} oEvent selectionChange
+		 */
+		onFilterSelectionChange: function (oEvent) {
+			if (!oEvent.getSource().isOpen()) {
+				this._loadData();
+			}
+		},
+
 		onReset: function () {
 			Object.keys(FILTER_INPUTS).forEach(function (sKey) {
 				this.byId(FILTER_INPUTS[sKey]).setSelectedKeys([]);
@@ -200,13 +228,17 @@ sap.ui.define([
 		onMapGranularityChange: function (oEvent) {
 			this._dash().setProperty("/mapGranularity", oEvent.getParameter("key"));
 			if (this._oRaw) {
-				this._dash().setProperty("/mapSubtitle", this._buildMapHint(this._oRaw.geo || []));
+				// Re-derive from the already-masked /geoRows, not the raw response - the hint's
+				// "N of M states billed" count must agree with what the map itself is showing.
+				this._dash().setProperty("/mapSubtitle",
+					this._buildMapHint(this._dash().getProperty("/geoRows") || []));
 			}
 		},
 
-		/** Unit-dot overlay switch - purely a local re-render, no round trip. */
-		onMapDotsChange: function (oEvent) {
-			this._dash().setProperty("/mapShowDots", oEvent.getParameter("state"));
+		/** Unit-dot overlay toggle - purely a local re-render, no round trip. */
+		onMapDotsToggle: function () {
+			var oModel = this._dash();
+			oModel.setProperty("/mapShowDots", !oModel.getProperty("/mapShowDots"));
 		},
 
 		/**
@@ -303,6 +335,26 @@ sap.ui.define([
 		},
 
 		/**
+		 * The secondary/additionalText line for one catalog item: the raw code, plus an
+		 * optional "extra" field (only the Material filter's own Bismt uses this - see
+		 * CATALOG_SOURCES) so a value like an old material number is visible in the dropdown
+		 * and, via materialFilter's own custom filterFunction (see onInit), typeable in the
+		 * search box too.
+		 * @param {string} sKey the item's key/code
+		 * @param {string} sName the item's display name (blank if the source has none)
+		 * @param {string} sExtra the extra field's value, if the source configures one
+		 * @returns {string} the additionalText value
+		 * @private
+		 */
+		_buildCatalogInfo: function (sKey, sName, sExtra) {
+			var sInfo = sName ? sKey : "";
+			if (sExtra) {
+				sInfo += (sInfo ? " " + formatter.MIDDOT + " " : "") + this._text("filterOldNumber", [sExtra]);
+			}
+			return sInfo;
+		},
+
+		/**
 		 * Folds the codes in a response into the dropdown catalogs. Lists accumulate across
 		 * loads instead of being replaced: every result set is a top-N/top-20, so a code
 		 * drops out of the response as soon as it is filtered on, and a MultiComboBox
@@ -327,7 +379,7 @@ sap.ui.define([
 						mSeen[sKey] = {
 							key: sKey,
 							text: sName || sKey,
-							info: sName ? sKey : ""
+							info: that._buildCatalogInfo(sKey, sName, oSource.extra ? oRow[oSource.extra] : "")
 						};
 						bChanged = true;
 					});
@@ -416,13 +468,16 @@ sap.ui.define([
 			var oModel = this._dash();
 			var oCtx = this._ctx();
 			var iPriorFy = parseInt(this._oFilters.fy, 10) - 1;
+			var aGeo = this._maskGeoByZoneFilter(oData.geo || []);
 
 			oModel.setProperty("/kpis", this._buildKpiCards(oData));
-			oModel.setProperty("/geoRows", oData.geo || []);
+			oModel.setProperty("/geoRows", aGeo);
 			oModel.setProperty("/dotRows", oData.unitDots || []);
-			oModel.setProperty("/schemeRows", oData.scheme || []);
+			oModel.setProperty("/schemeRows", (oData.scheme || []).filter(function (r) {
+				return parseFloat(r.NetValue) > 0;
+			}));
 			oModel.setProperty("/scopeText", this._buildScopeText());
-			oModel.setProperty("/mapSubtitle", this._buildMapHint(oData.geo || []));
+			oModel.setProperty("/mapSubtitle", this._buildMapHint(aGeo));
 			oModel.setProperty("/schemeSubtitle", this._text("schemeVsFy", [String(iPriorFy)]));
 			oModel.setProperty("/priorFyLabel", this._text("fyShort", [String(iPriorFy)]));
 			oModel.setProperty("/lastRefreshedText",
@@ -430,7 +485,6 @@ sap.ui.define([
 
 			this._syncSelections();
 
-			this._setChart("trend", chartOptions.trend(oData.trend, oCtx), "noDataTrend", oData.trend.length);
 			this._setChart("plant", chartOptions.plant(oData.plant, oCtx), "noDataPlant", oData.plant.length);
 			this._setChart("material", chartOptions.material(oData.material, oCtx), "noDataMaterial", oData.material.length);
 		},
@@ -450,6 +504,32 @@ sap.ui.define([
 			].forEach(function (a) {
 				oModel.setProperty(a[0], this.byId(FILTER_INPUTS[a[1]]).getSelectedKeys().slice());
 			}, this);
+		},
+
+		/**
+		 * Defends the map and Top-States list against an unreliable server-side zone filter.
+		 *
+		 * The Zone filter is sent to the backend as P_Zone, which ZCL_PMS_DASH_QUERY matches
+		 * against ZSD_ZONE_PLANT-ALM_ZONE - a field its own comment calls "unconfirmed... CHAR10
+		 * placeholder". If that match is looser than it should be (padding, casing, a stale
+		 * code), states outside the selected zone can leak into the Geo response, which is
+		 * exactly what showed up as a picked "South" filter still colouring a North state on
+		 * the choropleth. This re-filters the response down to the selected zone using
+		 * INDIA.zoneOfState(), which derives the zone from StateText instead - the same
+		 * defensive move already applied to the map's own choropleth and legend.
+		 * @param {object[]} aGeo the raw Geo entity response
+		 * @returns {object[]} aGeo unchanged if no Zone filter is active, otherwise only the
+		 *   rows whose real zone is one of the selected ones
+		 * @private
+		 */
+		_maskGeoByZoneFilter: function (aGeo) {
+			var aZones = (this._oFilters && this._oFilters.zone) || [];
+			if (!aZones.length) {
+				return aGeo;
+			}
+			return aGeo.filter(function (r) {
+				return aZones.indexOf(INDIA.zoneOfState(r.StateText)) >= 0;
+			});
 		},
 
 		/**
@@ -585,7 +665,7 @@ sap.ui.define([
 		_clearPanels: function () {
 			var that = this;
 			var oCharts = {};
-			["trend", "plant", "material"].forEach(function (sKey) {
+			["plant", "material"].forEach(function (sKey) {
 				oCharts[sKey] = chartOptions.empty(that._text("noData"), that._oPalette);
 			});
 
@@ -616,6 +696,28 @@ sap.ui.define([
 		/* ==================================================================== */
 		/* Small helpers                                                        */
 		/* ==================================================================== */
+
+		/**
+		 * Lets the Material filter be searched by old material number (Bismt) as well as by
+		 * code/description - the "Old {0}" text _buildCatalogInfo() puts in the dropdown's
+		 * secondary column is otherwise just decoration a MultiComboBox's own default filter
+		 * has no defined obligation to search. A custom filterFunction is the only reliable
+		 * way to guarantee that, since it can check whatever fields it wants; MultiComboBox
+		 * only exposes it as a method (setFilterFunction), not an XML-bindable property, so
+		 * this must run once from JS rather than being declared in the view.
+		 * @private
+		 */
+		_wireMaterialSearch: function () {
+			this.byId("materialFilter").setFilterFunction(function (sTerm, oItem) {
+				var sNeedle = (sTerm || "").toLowerCase();
+				if (!sNeedle) {
+					return true;
+				}
+				return [oItem.getText(), oItem.getKey(), oItem.getAdditionalText()].some(function (sField) {
+					return String(sField || "").toLowerCase().indexOf(sNeedle) >= 0;
+				});
+			});
+		},
 
 		/**
 		 * Builds the items for a Toggle from i18n keys, e.g. "theme" + "auto" -> themeAuto.

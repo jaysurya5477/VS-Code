@@ -55,6 +55,7 @@ CLASS zcl_pms_material_qry IMPLEMENTATION.
     lt_out = VALUE #( FOR ls IN ls_dash-material_top20 (
                         matnr           = ls-matnr
                         arktx           = ls-arktx
+                        bismt           = ls-bismt
                         uom             = ls-uom
                         matvalue        = ls-value
                         qty             = ls-qty

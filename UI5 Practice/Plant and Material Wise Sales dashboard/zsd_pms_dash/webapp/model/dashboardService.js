@@ -53,7 +53,7 @@ sap.ui.define([
 		},
 		material: {
 			set: "Material",
-			select: "Matnr,Arktx,Uom,MatValue,Qty,Igst,Sgst,Cgst,Tcs,GrandTotalValue",
+			select: "Matnr,Arktx,Bismt,Uom,MatValue,Qty,Igst,Sgst,Cgst,Tcs,GrandTotalValue",
 			orderby: "MatValue desc"
 		}
 	};

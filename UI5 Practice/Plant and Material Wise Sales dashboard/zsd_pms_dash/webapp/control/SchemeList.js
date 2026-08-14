@@ -1,7 +1,8 @@
 sap.ui.define([
 	"sap/ui/core/Control",
-	"../model/formatter"
-], function (Control, formatter) {
+	"../model/formatter",
+	"../model/indiaGeo"
+], function (Control, formatter, INDIA) {
 	"use strict";
 
 	/**
@@ -25,7 +26,7 @@ sap.ui.define([
 	 * whole panel re-themes with the stylesheet and never needs a redraw on a theme switch.
 	 */
 
-	// Categorical ramp, in the order chartTheme.ramp() uses.
+	// The 8-colour categorical ramp, in the prototype's own RAMP order.
 	var RAMP = ["--pms-c1", "--pms-c2", "--pms-c3", "--pms-c4",
 		"--pms-c5", "--pms-c6", "--pms-c7", "--pms-c8"];
 
@@ -255,8 +256,9 @@ sap.ui.define([
 
 					oRm.openStart("span").class("pmsStRank").openEnd()
 						.text(String(i + 1).length < 2 ? "0" + (i + 1) : String(i + 1)).close("span");
+					var sStateZone = INDIA.zoneOfState(r.StateText);
 					oRm.openStart("span").class("pmsZChip")
-						.style("background", cssVar(ZONE_VAR[r.AlmZone] || "--pms-c8"))
+						.style("background", cssVar(ZONE_VAR[sStateZone] || "--pms-c8"))
 						.openEnd().close("span");
 					oRm.openStart("span").class("pmsStName").openEnd()
 						.text(r.StateText || r.Regio).close("span");

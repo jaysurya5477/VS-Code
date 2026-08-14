@@ -82,6 +82,134 @@ sap.ui.define([
 		return [PJ.ox + (fLon - PJ.minx) * PJ.S, PJ.oy + (PJ.maxy - my) * PJ.S];
 	}
 
+	/*
+	 * Leader-line callouts for the map dots.
+	 *
+	 * The 760x840 viewBox is a wedge, not a rectangle: the landmass spans nearly the full
+	 * width in the middle latitudes (the north-east panhandle reaches x~790), but is much
+	 * narrower at the very north (Kashmir) and very south (the Tamil Nadu/Kerala tip) - which
+	 * is exactly the open space either side of the card the dots otherwise waste. A dot that
+	 * falls in one of those narrow bands gets a thin leader line out to a label in the margin;
+	 * a dot in the wide middle band has nowhere to put one and stays a plain hoverable dot,
+	 * same as before.
+	 */
+
+	// Islands far from the mainland (Andaman & Nicobar, Lakshadweep) would otherwise make
+	// every latitude band look "full width" and defeat the whole margin calculation.
+	var MARGIN_SKIP_STATES = {"Andaman and Nicobar Islands": true, "Lakshadweep": true};
+	var MARGIN_BAND_HEIGHT = 20; // px of viewBox y per band sampled for land extent
+	var MARGIN_MIN_GAP = 95; // minimum clear margin (px) a side needs to carry a label
+	var MARGIN_INSET = 6; // px from the viewBox edge the label text sits at
+	var CALLOUT_ROW_HEIGHT = 24; // minimum vertical spacing between stacked callout labels
+
+	/** Computed once and reused by every IndiaMap instance - the geometry never changes. */
+	var aMarginBands = null;
+
+	/** @returns {object[]} one {minX, maxX} entry per MARGIN_BAND_HEIGHT-tall horizontal band */
+	function marginBands() {
+		if (aMarginBands) {
+			return aMarginBands;
+		}
+
+		var iBandCount = Math.ceil(INDIA.h / MARGIN_BAND_HEIGHT);
+		var aBands = [];
+		for (var i = 0; i < iBandCount; i++) {
+			aBands.push({minX: Infinity, maxX: -Infinity});
+		}
+
+		Object.keys(INDIA.paths).forEach(function (sState) {
+			if (MARGIN_SKIP_STATES[sState]) {
+				return;
+			}
+			var reCoord = /(-?\d+\.?\d*)\s+(-?\d+\.?\d*)/g;
+			var oMatch;
+			while ((oMatch = reCoord.exec(INDIA.paths[sState])) !== null) {
+				var fX = parseFloat(oMatch[1]);
+				var fY = parseFloat(oMatch[2]);
+				var iBand = Math.min(iBandCount - 1, Math.max(0, Math.floor(fY / MARGIN_BAND_HEIGHT)));
+				if (fX < aBands[iBand].minX) {
+					aBands[iBand].minX = fX;
+				}
+				if (fX > aBands[iBand].maxX) {
+					aBands[iBand].maxX = fX;
+				}
+			}
+		});
+
+		// A band with no sampled land at all (shouldn't happen within India.h, but a static
+		// geometry file predates this code) is fully open on both sides, not zero-width.
+		aBands.forEach(function (o) {
+			if (o.minX === Infinity) {
+				o.minX = INDIA.w;
+				o.maxX = 0;
+			}
+		});
+
+		aMarginBands = aBands;
+		return aBands;
+	}
+
+	/** @returns {object} {left, right} clear margin in viewBox px at a given y */
+	function marginAt(fY) {
+		var aBands = marginBands();
+		var iBand = Math.min(aBands.length - 1, Math.max(0, Math.floor(fY / MARGIN_BAND_HEIGHT)));
+		return {
+			left: aBands[iBand].minX,
+			right: INDIA.w - aBands[iBand].maxX
+		};
+	}
+
+	/**
+	 * Assigns each dot that has enough clear margin on one side to a left/right group, then
+	 * stacks that group's labels top-to-bottom with a minimum row height - a dot's own y is
+	 * the label's preferred position, pushed down only far enough to clear the label above it.
+	 * @param {object[]} aProjected dots from _buildModel's own map step: {code, x, y, r, net}
+	 * @returns {object[]} {code, x1, y1, x2, y2, textX, textY, anchor, label}
+	 */
+	function buildCallouts(aProjected) {
+		var aLeft = [];
+		var aRight = [];
+
+		aProjected.forEach(function (d) {
+			var oMargin = marginAt(parseFloat(d.y));
+			var bLeft = oMargin.left >= oMargin.right;
+			var fGap = bLeft ? oMargin.left : oMargin.right;
+			if (fGap < MARGIN_MIN_GAP) {
+				return;
+			}
+			(bLeft ? aLeft : aRight).push(d);
+		});
+
+		function layout(aGroup, sSide) {
+			aGroup.sort(function (a, b) {
+				return parseFloat(a.y) - parseFloat(b.y);
+			});
+
+			var fPrevY = -Infinity;
+			var fLineX = sSide === "left" ? MARGIN_INSET + 4 : INDIA.w - MARGIN_INSET - 4;
+			var fTextX = sSide === "left" ? MARGIN_INSET : INDIA.w - MARGIN_INSET;
+
+			return aGroup.map(function (d) {
+				var fY = Math.max(parseFloat(d.y), fPrevY + CALLOUT_ROW_HEIGHT);
+				fPrevY = fY;
+
+				return {
+					code: d.code,
+					label: d.code + " " + formatter.MIDDOT + " " + formatter.money(d.net, 1),
+					x1: d.x,
+					y1: d.y,
+					x2: fLineX.toFixed(1),
+					y2: fY.toFixed(1),
+					textX: fTextX.toFixed(1),
+					textY: fY.toFixed(1),
+					anchor: sSide === "left" ? "start" : "end"
+				};
+			});
+		}
+
+		return layout(aLeft, "left").concat(layout(aRight, "right"));
+	}
+
 	/**
 	 * Prototype quantile(): equal-count bins rather than equal-width ones. Degenerate inputs
 	 * (one distinct value, or fewer distinct values than steps) spread what there is across
@@ -296,6 +424,30 @@ sap.ui.define([
 						oRm.openEnd();
 						oRm.close("circle");
 					});
+
+					// Leader-line labels for whichever dots have room in the map's own open
+					// margins (north/south, where the landmass narrows) - see buildCallouts()'s
+					// own header for why this only ever covers some dots, not all of them.
+					oModel.callouts.forEach(function (o) {
+						oRm.openStart("line");
+						oRm.class("pmsMapCalloutLine");
+						oRm.attr("x1", o.x1);
+						oRm.attr("y1", o.y1);
+						oRm.attr("x2", o.x2);
+						oRm.attr("y2", o.y2);
+						oRm.openEnd();
+						oRm.close("line");
+
+						oRm.openStart("text");
+						oRm.class("pmsMapCalloutText");
+						oRm.attr("x", o.textX);
+						oRm.attr("y", o.textY);
+						oRm.attr("text-anchor", o.anchor);
+						oRm.attr("dominant-baseline", "middle");
+						oRm.openEnd();
+						oRm.text(o.label);
+						oRm.close("text");
+					});
 				}
 
 				oRm.close("svg");
@@ -379,6 +531,7 @@ sap.ui.define([
 			var aSelRegios = this.getSelectedRegios() || [];
 			var aSelZones = this.getSelectedZones() || [];
 
+			var aStateNames = Object.keys(INDIA.paths);
 			var mByState = {};
 			var mZone = {};
 			var fTotal = 0;
@@ -388,11 +541,14 @@ sap.ui.define([
 				var p = num(r.PriorValue);
 				fTotal += v;
 
-				if (r.StateText) {
-					mByState[r.StateText] = r;
+				var sCanonical = INDIA.resolveState(r.StateText);
+				if (sCanonical) {
+					mByState[sCanonical] = r;
 				}
 
-				var sZone = r.AlmZone || INDIA.zoneOf[r.StateText] || "";
+				// Zone comes from INDIA.zoneOfState(), not from AlmZone - see this file's own
+				// header comment for why AlmZone cannot be trusted for this.
+				var sZone = INDIA.zoneOfState(r.StateText);
 				if (!sZone) {
 					return;
 				}
@@ -406,7 +562,6 @@ sap.ui.define([
 				z.states += 1;
 			});
 
-			var aStateNames = Object.keys(INDIA.paths);
 			var oScale = quantile((bZone ?
 				Object.keys(mZone).map(function (k) {
 					return mZone[k].net;
@@ -456,7 +611,8 @@ sap.ui.define([
 					code: d.UnitCode,
 					x: xy[0].toFixed(1),
 					y: xy[1].toFixed(1),
-					r: (2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5).toFixed(1)
+					r: (2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5).toFixed(1),
+					net: num(d.NetValue)
 				};
 			});
 
@@ -465,6 +621,7 @@ sap.ui.define([
 				states: aStates,
 				zones: aZones,
 				dots: aProjected,
+				callouts: buildCallouts(aProjected),
 				scale: oScale,
 				byState: mByState,
 				byZone: mZone,

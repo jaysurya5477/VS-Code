@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PMS full view preview (stub model, no backend)</title>
+<!--
+	Loads the REAL zsd_pms_dash.view.xml with a stub "dash" JSONModel standing in for the
+	OData-backed controller state, so what renders here is the actual shipped markup - not a
+	hand-typed copy - without needing VPN access to the SAP backend. The controller's own
+	_loadData() is short-circuited (no OData model on the component), so onGo/onReset are
+	inert; everything else (filters, KPI cards, map, scheme list) is driven by the stub model
+	set below.
+
+	Open with:
+	  node node_modules/@ui5/cli/bin/ui5.cjs serve --config=ui5.yaml
+	  http://localhost:8099/test/viewPreview.html
+-->
+<script
+	id="sap-ui-bootstrap"
+	src="../resources/sap-ui-core.js"
+	data-sap-ui-theme="sap_horizon"
+	data-sap-ui-resourceroots='{"com.sap.zsdpmsdash": "../"}'
+	data-sap-ui-async="true"
+	data-sap-ui-compatVersion="edge"
+	data-sap-ui-libs="sap.m"></script>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+	html, body { margin: 0; padding: 0; height: 100%; }
+	body { background: var(--pms-bg); }
+</style>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content">
+<div id="host" style="height:100%"></div>
+<script>
+sap.ui.getCore().attachInit(function () {
+	"use strict";
+
+	var sTheme = /theme=dark/.test(location.search) ? "dark" : "light";
+
+	sap.ui.require([
+		"sap/ui/model/json/JSONModel",
+		"sap/ui/model/resource/ResourceModel",
+		"sap/ui/core/mvc/XMLView",
+		"com/sap/zsdpmsdash/controller/zsd_pms_dash.controller",
+		"com/sap/zsdpmsdash/model/appTheme"
+	], function (JSONModel, ResourceModel, XMLView, ControllerClass, appTheme) {
+
+		// onInit normally builds its own "dash" model, loads ECharts and calls _loadData()
+		// against the component's OData model - none of which exists in this standalone
+		// preview. Replaced with just the theming side effect; the stub model below is set
+		// straight onto the view once it exists, and the interactive handlers are stubbed
+		// out further down so a click during visual testing can't call into a _loadData()
+		// that would throw for lack of an OData model.
+		//
+		// setMode(), not apply(): appTheme's "auto" mode follows the OS/browser's own
+		// prefers-color-scheme, which headless Chromium reports as dark by default - calling
+		// apply() alone would silently re-derive dark regardless of the ?theme= query param.
+		// setMode() is exactly what the real header's Light/Dark toggle calls, so this pins
+		// the theme the same way a user's click would.
+		ControllerClass.prototype.onInit = function () {
+			appTheme.setMode(sTheme);
+		};
+
+		var TREND = [41200000, 38800000, 50100000, 47000000, 52300000, 61000000,
+			54500000, 58800000, 60100000, 64000000, 59000000, 71200000];
+
+		var GEO = [
+			{Regio: "27", StateText: "Maharashtra", AlmZone: "", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
+			{Regio: "33", StateText: "Tamil Nadu", AlmZone: "south ", NetValue: "61050000", PriorValue: "64200000", DeltaPct: "-4.9", PlantCount: "9", InvoiceCount: "2410"},
+			{Regio: "24", StateText: "Gujarat", AlmZone: "WEST", NetValue: "45300000", PriorValue: "40100000", DeltaPct: "13.0", PlantCount: "7", InvoiceCount: "1877"},
+			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "Z1", NetValue: "31200000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
+			{Regio: "29", StateText: "Karnataka", AlmZone: "10", NetValue: "27800000", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
+			{Regio: "19", StateText: "West Bengal", AlmZone: "", NetValue: "14400000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
+			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "", NetValue: "9800000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
+			{Regio: "18", StateText: "Assam", AlmZone: "", NetValue: "0", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
+		];
+		// Hostile AlmZone values throughout - blank, wrong case, trailing space, or a raw
+		// code - to prove the map and scheme panel resolve zones from the state name, not
+		// from this unreliable backend field. See control/IndiaMap.js's own header comment.
+
+		// U01/U02 sit in the map's wide middle band (no room for a callout - stay plain
+		// hoverable dots). U03/U04/U05 sit in the narrow north/south bands, where there's
+		// real open margin either side of the landmass, so they get a leader-line label.
+		var DOTS = [
+			{UnitCode: "U01", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", Latitude: "18.52", Longitude: "73.86", PlantCount: "12"},
+			{UnitCode: "U02", NetValue: "31000000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "13.08", Longitude: "80.27", PlantCount: "6"},
+			{UnitCode: "U03", NetValue: "22000000", PriorValue: "19000000", DeltaPct: "15.8", Latitude: "33.5", Longitude: "75.0", PlantCount: "3"},
+			{UnitCode: "U04", NetValue: "18500000", PriorValue: "17000000", DeltaPct: "8.8", Latitude: "8.5", Longitude: "77.5", PlantCount: "2"},
+			{UnitCode: "U05", NetValue: "9800000", PriorValue: "9100000", DeltaPct: "7.7", Latitude: "9.9", Longitude: "76.3", PlantCount: "2"}
+		];
+
+		var SCHEMES = [
+			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
+			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
+			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: null},
+			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
+		];
+
+		var options = function (aKeys) { return aKeys.map(function (k) { return {key: k, text: k}; }); };
+
+		var oDash = new JSONModel({
+			fy: "2026",
+			options: {
+				fy: [{key: "2026", text: "FY 2026-27"}, {key: "2025", text: "FY 2025-26"}],
+				zone: options(["North", "West", "South", "East", "Central"]),
+				state: GEO.map(function (r) { return {key: r.Regio, text: r.StateText, info: r.Regio}; }),
+				plant: options(["1001", "1002", "1003"]),
+				scheme: SCHEMES.map(function (s) { return {key: s.Category, text: s.CatDesc, info: s.Category}; }),
+				material: options(["MAT-1", "MAT-2"]),
+				period: options(["1", "2", "3"])
+			},
+			themeMode: sTheme,
+			themeOptions: [{key: "auto", text: "Auto"}, {key: "light", text: "Light"}, {key: "dark", text: "Dark"}],
+			granularityOptions: [{key: "state", text: "State"}, {key: "zone", text: "Zone"}],
+			mapGranularity: "state",
+			mapShowDots: true,
+			mapSubtitle: "9 of 36 states billed · click a state to filter",
+			mapTexts: {
+				scaleCap: "Net value", lowest: "lowest", low: "low", high: "high",
+				noBilling: "no billing", dotKey: "dot size = unit net value",
+				netBilled: "Net billed", growth: "Growth", share: "Share of India",
+				plantsBilling: "Plants billing", invoices: "Invoices",
+				zoneStates: "states", unitPlants: "plants", newLabel: "new"
+			},
+			schemeSubtitle: "Net value by scheme · vs FY 2025",
+			priorFyLabel: "FY 2025",
+			selectedRegios: ["27"],
+			selectedZones: [],
+			selectedSchemes: ["ADIPSSA"],
+			scopeText: "FY 2026 · All zones · Maharashtra · All plants · All schemes · All materials",
+			lastRefreshedText: "Refreshed just now",
+			errorText: "",
+			kpis: [
+				{label: "Total net value", valueText: "₹6.58 Cr", deltaText: "+9.2%", deltaTone: "up", sub: "₹65,800,000", accent: "net", spark: TREND},
+				{label: "Total tax (GST)", valueText: "₹1.18 Cr", deltaText: "+7.1%", deltaTone: "up", sub: "18.0% avg rate", accent: "tax", spark: TREND},
+				{label: "Total gross value", valueText: "₹7.76 Cr", deltaText: "-2.4%", deltaTone: "down", sub: "₹77,600,000", accent: "gross", spark: TREND},
+				{label: "Yesterday Sale", valueText: "₹12.40 L", deltaText: "+0.0%", deltaTone: "flat", sub: "13 Aug 26 · 143 invoices", accent: "daily", spark: TREND}
+			],
+			geoRows: GEO,
+			dotRows: DOTS,
+			schemeRows: SCHEMES.filter(function (s) { return parseFloat(s.NetValue) > 0; }),
+			charts: {
+				plant: {title: {text: "plant chart placeholder (ECharts not loaded in this preview)", left: "center", top: "middle", textStyle: {fontSize: 12}}},
+				material: {title: {text: "material chart placeholder (ECharts not loaded in this preview)", left: "center", top: "middle", textStyle: {fontSize: 12}}}
+			}
+		});
+
+		var oI18n = new ResourceModel({bundleUrl: "../i18n/i18n.properties"});
+
+		XMLView.create({
+			viewName: "com.sap.zsdpmsdash.view.zsd_pms_dash"
+		}).then(function (oView) {
+			oView.setModel(oDash, "dash");
+			oView.setModel(oI18n, "i18n");
+			// Stub out every controller method that would otherwise touch a live OData
+			// model or ECharts instance - this preview only needs the filter bar, KPI
+			// cards, map and scheme list to render and be interactive.
+			var oController = oView.getController();
+			["onGo", "onReset", "onMapGranularityChange", "onMapDotsToggle", "onMapStatePress",
+				"onMapZonePress", "onSchemePress", "onTopStatePress", "onThemeSelect"
+			].forEach(function (sMethod) {
+				oController[sMethod] = function () { /* inert in this preview */ };
+			});
+			oView.placeAt("host");
+
+			// ?action=selectAllZone|zoneMode|tipMaharashtra drives a one-off interaction after
+			// layout has settled, so the headless capture can photograph the result of an
+			// actual click rather than a hand-typed equivalent state.
+			setTimeout(function () {
+				var m = /action=([^&]+)/.exec(location.search);
+				if (m === null) {
+					document.body.setAttribute("data-preview-ready", "1");
+					return;
+				}
+				var sAction = decodeURIComponent(m[1]);
+				if (sAction === "openZonePicker") {
+					// Opens the Zone MultiComboBox's own picker popover, so the screenshot
+					// shows the native showSelectAll checkbox row a real click would reveal.
+					oView.byId("zoneFilter").open();
+				} else if (sAction === "zoneMode") {
+					oView.byId("indiaMap").setGranularity("zone");
+					oView.byId("indiaMap").setSelectedZones(["West"]);
+				} else if (sAction.indexOf("tip") === 0) {
+					var sState = sAction.slice(3);
+					var oNode = oView.byId("indiaMap").getDomRef()
+						.querySelector('[data-pms-state="' + sState + '"]');
+					if (oNode) {
+						oNode.dispatchEvent(new MouseEvent("mouseover",
+							{bubbles: true, clientX: 500, clientY: 500}));
+					} else {
+						document.title = "TIP TARGET NOT FOUND: " + sState;
+					}
+				}
+				setTimeout(function () { document.body.setAttribute("data-preview-ready", "1"); }, 300);
+			}, 800);
+		}).catch(function (e) {
+			document.title = "VIEW LOAD FAILED: " + e.message;
+			document.getElementById("host").textContent = String(e.stack || e);
+		});
+	});
+});
+</script>
+</body>
+</html>

@@ -52,7 +52,9 @@ select from vbrp as a
       b.fkdat        as fkdat,       // billing date
       b.gjahr        as gjahr,       // fiscal year the item belongs to - confirm source (derived from fkdat vs. stored)
 
-      c.matkl        as matkl       // material group
+      c.matkl        as matkl,      // material group
+      c.bismt        as bismt       // old material number (MARA-BISMT) - lets users find a
+                                     // material by its legacy code in the Material filter
 
 }
 where a.matnr <> ' '

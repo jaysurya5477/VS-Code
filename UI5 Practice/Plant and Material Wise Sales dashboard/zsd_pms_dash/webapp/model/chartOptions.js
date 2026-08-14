@@ -134,89 +134,6 @@ sap.ui.define([
 		},
 
 		/**
-		 * 12-period (FY Apr-Mar) net-value trend - bars with a smoothed net line, mirroring
-		 * the KPI cards' own sparkline series at panel scale.
-		 * @param {object[]} aRows Trend entity rows {Period, NetValue}
-		 * @param {object} ctx {echarts, pal, animate}
-		 * @returns {object} ECharts option
-		 */
-		trend: function (aRows, ctx) {
-			var pal = ctx.pal;
-			var echarts = ctx.echarts;
-			var aNet = aRows.map(function (r) {
-				return Math.round(num(r.NetValue));
-			});
-			var fMax = Math.max.apply(null, [1].concat(aNet.map(Math.abs)));
-
-			return Object.assign({}, baseOption(ctx), {
-				grid: {
-					left: 66,
-					right: 20,
-					top: 24,
-					bottom: 26
-				},
-				tooltip: Object.assign({
-					trigger: "axis",
-					axisPointer: {
-						type: "cross",
-						lineStyle: {
-							color: pal.line
-						}
-					},
-					// Wrapped, not passed by reference: ECharts calls valueFormatter with a
-					// second argument, which money()'s optional decimals would swallow.
-					valueFormatter: function (v) {
-						return formatter.money(v);
-					}
-				}, tooltipStyle(pal)),
-				xAxis: axis(pal, {
-					type: "category",
-					data: aRows.map(function (r) {
-						return formatter.periodLabel(r.Period);
-					})
-				}),
-				yAxis: axis(pal, {
-					type: "value",
-					axisLabel: {
-						formatter: scaledAxis(fMax)
-					}
-				}),
-				series: [{
-					name: "Net value",
-					type: "bar",
-					barWidth: "52%",
-					data: aNet,
-					itemStyle: {
-						color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-							offset: 0,
-							color: pal.accent
-						}, {
-							offset: 1,
-							color: chartTheme.alpha(pal.accent, 0.35)
-						}]),
-						borderRadius: [3, 3, 0, 0]
-					}
-				}, {
-					name: "Trend",
-					type: "line",
-					smooth: true,
-					symbol: "circle",
-					symbolSize: 6,
-					data: aNet,
-					lineStyle: {
-						width: 2.2,
-						color: pal.c6
-					},
-					itemStyle: {
-						color: pal.c6,
-						borderColor: pal.panel,
-						borderWidth: 2
-					}
-				}]
-			});
-		},
-
-		/**
 		 * Sales by plant - stacked net + tax, top 20 ranked by net value. The Top-20 cap is
 		 * applied server-side (ZCL_PMS_DASH_QUERY) since production has ~109 billing plants.
 		 * @param {object[]} aRows Plant entity rows {Werks, City, NetValue, TaxValue, GrossValue}
@@ -319,7 +236,8 @@ sap.ui.define([
 					},
 					formatter: function (aParams) {
 						var r = aData[aParams[0].dataIndex] || {};
-						return "<b>" + r.Matnr + "</b><br/>" + (r.Arktx || "") + "<br/>" +
+						return "<b>" + r.Matnr + "</b>" + (r.Bismt ? " (old " + r.Bismt + ")" : "") +
+							"<br/>" + (r.Arktx || "") + "<br/>" +
 							formatter.money(r.MatValue) + " " + formatter.MIDDOT + " " +
 							formatter.count(r.Qty) + " " + (r.Uom || "") + "<br/>" +
 							"IGST " + formatter.money(r.Igst) + " " + formatter.MIDDOT +

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PMS panel preview (mock data)</title>
+<!--
+	Renders the hand-built panels against mock rows shaped like the OData entities, with no
+	backend. This landscape has no VPN to vhafbmedap01, so this is the only way to eyeball a
+	panel before it ships. Open with:
+
+	  node node_modules/@ui5/cli/bin/ui5.cjs serve --config=ui5.yaml
+	  http://localhost:8080/test/panelPreview.html          (add ?theme=dark for the dark pass)
+
+	Not part of the app - nothing in webapp/ references it, and ui5 build leaves it out of
+	Component-preload.js.
+-->
+<script
+	id="sap-ui-bootstrap"
+	src="../resources/sap-ui-core.js"
+	data-sap-ui-theme="sap_horizon"
+	data-sap-ui-resourceroots='{"com.sap.zsdpmsdash": "../"}'
+	data-sap-ui-async="true"
+	data-sap-ui-compatVersion="edge"></script>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+	html, body { margin: 0; padding: 0; }
+	body { background: var(--pms-bg); }
+	#host { padding: 18px 22px 40px; }
+	.previewNote {
+		font-family: var(--pms-mono); font-size: 10px; letter-spacing: .12em;
+		text-transform: uppercase; color: var(--pms-ink3); padding: 10px 0 6px;
+	}
+</style>
+</head>
+<body class="sapUiBody">
+<div id="host"></div>
+<script>
+sap.ui.getCore().attachInit(function () {
+	"use strict";
+
+	var sTheme = /theme=dark/.test(location.search) ? "dark" : "light";
+	document.documentElement.setAttribute("data-pms-theme", sTheme);
+	if (sTheme === "dark") {
+		sap.ui.getCore().applyTheme("sap_horizon_dark");
+	}
+
+	sap.ui.require([
+		"com/sap/zsdpmsdash/control/Box",
+		"com/sap/zsdpmsdash/control/Card",
+		"com/sap/zsdpmsdash/control/KpiCard",
+		"com/sap/zsdpmsdash/control/IndiaMap",
+		"com/sap/zsdpmsdash/control/SchemeList",
+		"com/sap/zsdpmsdash/control/Toggle",
+		"sap/ui/model/json/JSONModel",
+		"sap/m/Page",
+		"sap/m/HBox"
+	], function (Box, Card, KpiCard, IndiaMap, SchemeList, Toggle, JSONModel, Page, HBox) {
+
+		var TREND = [41200000, 38800000, 50100000, 47000000, 52300000, 61000000,
+			54500000, 58800000, 60100000, 64000000, 59000000, 71200000];
+
+		var GEO = [
+			{Regio: "27", StateText: "Maharashtra", AlmZone: "West", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
+			{Regio: "33", StateText: "Tamil Nadu", AlmZone: "South", NetValue: "61050000", PriorValue: "64200000", DeltaPct: "-4.9", PlantCount: "9", InvoiceCount: "2410"},
+			{Regio: "24", StateText: "Gujarat", AlmZone: "West", NetValue: "45300000", PriorValue: "40100000", DeltaPct: "13.0", PlantCount: "7", InvoiceCount: "1877"},
+			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "North", NetValue: "31200000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
+			{Regio: "29", StateText: "Karnataka", AlmZone: "South", NetValue: "27800000", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
+			{Regio: "19", StateText: "West Bengal", AlmZone: "East", NetValue: "14400000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
+			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "Central", NetValue: "9800000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
+			{Regio: "08", StateText: "Rajasthan", AlmZone: "North", NetValue: "5200000", PriorValue: "4900000", DeltaPct: "6.1", PlantCount: "2", InvoiceCount: "310"},
+			{Regio: "32", StateText: "Kerala", AlmZone: "South", NetValue: "2100000", PriorValue: "2600000", DeltaPct: "-19.2", PlantCount: "1", InvoiceCount: "150"},
+			{Regio: "18", StateText: "Assam", AlmZone: "East", NetValue: "0", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
+		];
+
+		var DOTS = [
+			{UnitCode: "U01", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", Latitude: "18.52", Longitude: "73.86", PlantCount: "12"},
+			{UnitCode: "U02", NetValue: "31000000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "13.08", Longitude: "80.27", PlantCount: "6"},
+			{UnitCode: "U03", NetValue: "9800000", PriorValue: "0", DeltaPct: null, Latitude: "26.85", Longitude: "80.95", PlantCount: "2"},
+			{UnitCode: "U04", NetValue: "22000000", PriorValue: "19000000", DeltaPct: "15.8", Latitude: "22.57", Longitude: "88.36", PlantCount: "4"}
+		];
+
+		var SCHEMES = [
+			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
+			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
+			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: null},
+			{Category: "CSR", CatDesc: "CSR Business", NetValue: "19000000", SharePct: "7.1", InvoiceCount: "612", DeltaPct: "22.0"},
+			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
+		];
+
+		var MAP_TEXTS = {
+			scaleCap: "Net value", lowest: "lowest", low: "low", high: "high",
+			noBilling: "no billing", dotKey: "dot size = unit net value",
+			netBilled: "Net billed", growth: "Growth", share: "Share of India",
+			plantsBilling: "Plants billing", invoices: "Invoices",
+			zoneStates: "states", unitPlants: "plants", newLabel: "new"
+		};
+
+		var KPIS = [
+			{label: "Total net value", valueText: "₹6.58 Cr", deltaText: "+9.2%", deltaTone: "up", sub: "₹65,800,000", accent: "net", spark: TREND},
+			{label: "Total tax (GST)", valueText: "₹1.18 Cr", deltaText: "+7.1%", deltaTone: "up", sub: "18.0% avg rate", accent: "tax", spark: TREND},
+			{label: "Total gross value", valueText: "₹7.76 Cr", deltaText: "-2.4%", deltaTone: "down", sub: "₹77,600,000", accent: "gross", spark: TREND},
+			{label: "Yesterday Sale", valueText: "₹12.40 L", deltaText: "+0.0%", deltaTone: "flat", sub: "13 Aug 26 · 143 invoices", accent: "daily", spark: TREND}
+		];
+
+		var oHost = new Box({layout: "hero"});
+		KPIS.forEach(function (k) { oHost.addItem(new KpiCard(k)); });
+
+		var oGran = new Toggle({
+			items: [{key: "state", text: "State"}, {key: "zone", text: "Zone"}],
+			selectedKey: "state"
+		});
+
+		var oMap = new IndiaMap({
+			geoRows: GEO, dotRows: DOTS, granularity: "state", showDots: true,
+			selectedRegios: ["27"], selectedZones: [], priorFyLabel: "FY 2025",
+			texts: MAP_TEXTS, height: "35rem"
+		});
+		oGran.attachSelect(function (e) { oMap.setGranularity(e.getParameter("key")); });
+
+		var oScheme = new SchemeList({
+			schemeRows: SCHEMES, stateRows: GEO, selectedSchemes: ["ADIPSSA"], selectedStates: ["27"],
+			topStatesLabel: "Top states", shareLabel: "of India", invoicesLabel: "invoices",
+			newLabel: "new", emptyText: "No schemes for the current selection",
+			emptyStatesText: "No billing in range."
+		});
+
+		var oPanels = new Box({
+			layout: "charts",
+			items: [
+				new Card({span: 8, title: "Sales across India", subtitle: "9 of 36 states billed · click a state to filter",
+					actions: [oGran], content: [oMap]}),
+				new Card({span: 4, title: "Scheme performance", subtitle: "Net value by scheme · vs FY 2025",
+					content: [oScheme]})
+			]
+		});
+
+		// Placed straight into the host div, not into a Page: sap.m.Page is absolutely
+		// positioned and would collapse to zero height here.
+		oHost.placeAt("host");
+		oPanels.placeAt("host");
+
+		// ?zone=1 paints the zone granularity, ?tip=<State> pins the hover card open so the
+		// headless capture can photograph it.
+		setTimeout(function () {
+			if (/zone=1/.test(location.search)) {
+				oMap.setGranularity("zone");
+				oMap.setSelectedZones(["West"]);
+				sap.ui.getCore().applyChanges();
+			}
+			var m = /tip=([^&]+)/.exec(location.search);
+			if (m) {
+				var sWanted = decodeURIComponent(m[1]);
+				var oNode = oMap.getDomRef().querySelector('[data-pms-' +
+					(/zone=1/.test(location.search) ? "zone" : "state") + '="' + sWanted + '"]');
+				if (oNode) {
+					oNode.dispatchEvent(new MouseEvent("mouseover",
+						{bubbles: true, clientX: 320, clientY: 300}));
+				} else {
+					document.title = "TIP TARGET NOT FOUND: " + sWanted;
+				}
+			}
+			document.body.setAttribute("data-preview-ready", "1");
+		}, 1500);
+	});
+});
+</script>
+</body>
+</html>

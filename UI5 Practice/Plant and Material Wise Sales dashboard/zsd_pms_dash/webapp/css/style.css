@@ -51,11 +51,11 @@
 	   boundary stroke. Emitted as var() references by control/IndiaMap.js, so switching
 	   light/dark re-colours the map with no redraw. Light values are the prototype's own
 	   SCALE_VALUE/NO_DATA. */
-	--pms-scale-0: #e3eef0;
-	--pms-scale-1: #afd6da;
-	--pms-scale-2: #72b8c0;
-	--pms-scale-3: #2e8b9b;
-	--pms-scale-4: #12596e;
+	--pms-scale-0: #f7fbff;
+	--pms-scale-1: #deebf7;
+	--pms-scale-2: #9ecae1;
+	--pms-scale-3: #4292c6;
+	--pms-scale-4: #084594;
 	--pms-nodata: #f2f5f6;
 	--pms-zonediv: rgba(13, 36, 48, .28);
 	--pms-dot: #e4162a;
@@ -90,11 +90,11 @@
 
 	/* Dark ramp runs muted -> bright rather than pale -> deep: on a near-black panel the
 	   light ramp's palest steps read as "no data" instead of "a little". */
-	--pms-scale-0: #1c3038;
-	--pms-scale-1: #23515c;
-	--pms-scale-2: #2c7684;
-	--pms-scale-3: #3aa0ae;
-	--pms-scale-4: #5fcbd6;
+	--pms-scale-0: #08306b;
+	--pms-scale-1: #2171b5;
+	--pms-scale-2: #4292c6;
+	--pms-scale-3: #6baed6;
+	--pms-scale-4: #c6dbef;
 	--pms-nodata: #1a212a;
 	--pms-zonediv: rgba(232, 236, 241, .3);
 	--pms-dot: #ff5f68;
@@ -245,6 +245,9 @@
 .pmsField--wide { min-width: 15rem; flex: 1 1 15rem; max-width: 22rem; }
 .pmsField--actions { flex: 0 0 auto; max-width: none; }
 
+.pmsFieldLabelRow { gap: 8px; padding-bottom: 4px; }
+.pmsFieldLabelRow .pmsFieldLabel.sapMLabel { padding-bottom: 0; }
+
 .pmsFieldLabel.sapMLabel {
 	font-family: var(--pms-mono);
 	font-size: 9px;
@@ -252,6 +255,16 @@
 	text-transform: uppercase;
 	color: var(--pms-ink3);
 	padding-bottom: 4px;
+}
+
+.pmsSelectAll.sapMLnk {
+	font-family: var(--pms-mono);
+	font-size: 9px;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--pms-accent);
+	white-space: nowrap;
+	flex: none;
 }
 
 .pmsFilterActions { display: flex; align-items: flex-end; gap: 8px; padding-bottom: 1px; }
@@ -442,12 +455,30 @@
 .pmsMapDot {
 	fill: var(--pms-dot);
 	fill-opacity: .66;
-	stroke: var(--pms-panel);
+	/* Literal white, not a theme token: the template's own dots always ring in white
+	   regardless of the fill underneath. var(--pms-panel) would resolve to near-black in
+	   dark mode and cancel the rim against a dark map area. */
+	stroke: #fff;
 	stroke-width: .9;
 	cursor: pointer;
-	transition: stroke-width .1s, fill-opacity .1s;
+	transition: stroke-width .1s;
 }
-.pmsMapDot:hover { fill-opacity: .95; stroke: var(--pms-ink); stroke-width: 2; }
+.pmsMapDot:hover { stroke: var(--pms-ink); stroke-width: 2; }
+
+/* Leader-line callouts, only drawn where the map's own open margins (north/south) have
+   room for one - see control/IndiaMap.js's buildCallouts() for the placement logic. */
+.pmsMapCalloutLine {
+	stroke: var(--pms-ink3);
+	stroke-width: 1;
+	fill: none;
+	pointer-events: none;
+}
+.pmsMapCalloutText {
+	font-family: var(--pms-mono);
+	font-size: 9px;
+	fill: var(--pms-ink2);
+	pointer-events: none;
+}
 
 /* Colour scale: one flex cell per step, labelled with the actual quantile break. */
 .pmsMapScale {
@@ -615,23 +646,59 @@
 /* Not a literal white: in dark, --pms-ink is the *light* colour, so white-on-ink would be
    white on near-white. Pairing it with --pms-panel keeps the contrast inverted in both themes. */
 .pmsToggleBtn--on, .pmsToggleBtn--on:hover { background: var(--pms-ink); color: var(--pms-panel); }
+/* Map action bar: align granularity toggle and dot toggle. */
+.pmsMapActions { gap: 8px; align-items: center; }
 
-.pmsBtn {
-	background: var(--pms-panel2);
+/* Unit-dots switch - the prototype's own .dotswitch, reproduced pixel-for-pixel (track
+   30x17, thumb 13px sliding 2px -> 15px) rather than as a button whose text changes. */
+.pmsDotSwitch {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 	border: 1px solid var(--pms-line);
-	color: var(--pms-ink2);
-	font-family: var(--pms-mono);
-	font-size: 9.5px;
-	letter-spacing: .06em;
-	text-transform: uppercase;
-	padding: 6px 10px;
-	border-radius: 8px;
+	border-radius: 20px;
+	padding: 4px 12px 4px 4px;
+	background: var(--pms-panel);
 	cursor: pointer;
-	white-space: nowrap;
+	font-family: var(--pms-font);
+	font-size: 11.5px;
+	font-weight: 500;
+	color: var(--pms-ink3);
+	transition: border-color .18s, box-shadow .18s;
 }
-.pmsBtn:hover { border-color: var(--pms-accent); color: var(--pms-accent); }
+.pmsDotSwitch:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pms-dot) 8%, transparent); }
+.pmsDotSwitch--on {
+	color: var(--pms-ink);
+	border-color: color-mix(in srgb, var(--pms-dot) 35%, transparent);
+}
 
-.pmsToggleBtn:focus-visible, .pmsBtn:focus-visible {
+.pmsDsTrack {
+	width: 30px;
+	height: 17px;
+	border-radius: 10px;
+	background: var(--pms-line2);
+	position: relative;
+	flex: none;
+	transition: background .2s;
+}
+.pmsDotSwitch--on .pmsDsTrack { background: var(--pms-dot); }
+
+.pmsDsThumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 13px;
+	height: 13px;
+	border-radius: 50%;
+	/* Literal white, not a theme token: the thumb must stay legible against both the grey
+	   (off) and red (on) track fills in either theme - same reasoning as the map dot's ring. */
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(13, 36, 48, .35);
+	transition: left .2s cubic-bezier(.4, 0, .2, 1);
+}
+.pmsDotSwitch--on .pmsDsThumb { left: 15px; }
+
+.pmsToggleBtn:focus-visible, .pmsDotSwitch:focus-visible {
 	outline: 1px dotted var(--pms-ink);
 	outline-offset: 1px;
 }

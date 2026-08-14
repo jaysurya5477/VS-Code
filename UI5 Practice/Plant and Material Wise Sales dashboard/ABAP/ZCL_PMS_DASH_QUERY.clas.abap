@@ -149,6 +149,9 @@ CLASS zcl_pms_dash_query DEFINITION
       BEGIN OF ty_material_row,
         matnr             TYPE matnr,
         arktx             TYPE arktx,
+        " Old material number (MARA-BISMT) - display/search aid only, never sent as a filter
+        " value; P_Material still filters on matnr.
+        bismt             TYPE bismt,
         uom               TYPE vrkme,
         value             TYPE p LENGTH 15 DECIMALS 2,
         qty               TYPE p LENGTH 15 DECIMALS 3,
@@ -238,6 +241,7 @@ CLASS zcl_pms_dash_query DEFINITION
         fkdat     TYPE dats,
         gjahr     TYPE gjahr,
         matkl     TYPE matkl,
+        bismt     TYPE bismt,
       END OF ty_item_row,
       ty_item_row_tab TYPE STANDARD TABLE OF ty_item_row WITH EMPTY KEY,
 
@@ -810,7 +814,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
                                      ELSE |{ is_filters-fy + 1 }0331| ).
 
     SELECT vbeln, posnr, aubel, matnr, arktx, werks, fkimg, vrkme, netwr,
-           knumv_ana, fkart, fkdat, gjahr, matkl
+           knumv_ana, fkart, fkdat, gjahr, matkl, bismt
       FROM zsdd_pms_item_cds
       WHERE gjahr = @is_filters-fy
         AND fkdat BETWEEN @lv_date_from AND @lv_date_to
@@ -1132,7 +1136,8 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     LOOP AT it_item ASSIGNING FIELD-SYMBOL(<ls_item>).
       ASSIGN lt_mat[ matnr = <ls_item>-matnr ] TO FIELD-SYMBOL(<ls_mat>).
       IF sy-subrc <> 0.
-        INSERT VALUE #( matnr = <ls_item>-matnr arktx = <ls_item>-arktx uom = <ls_item>-vrkme )
+        INSERT VALUE #( matnr = <ls_item>-matnr arktx = <ls_item>-arktx
+                         bismt = <ls_item>-bismt uom = <ls_item>-vrkme )
           INTO TABLE lt_mat ASSIGNING <ls_mat>.
       ENDIF.
       <ls_mat>-value += <ls_item>-netwr.

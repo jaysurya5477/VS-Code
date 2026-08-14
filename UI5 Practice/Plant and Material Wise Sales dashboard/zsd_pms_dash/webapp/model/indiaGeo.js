@@ -38,5 +38,47 @@ sap.ui.define([], function () {
 		"Uttar Pradesh": "UP", "Uttarakhand": "UK", "West Bengal": "WB"
 	};
 
+	// state name (any case/whitespace) -> canonical INDIA.paths/zoneOf key, built once.
+	var mNormState = {};
+	Object.keys(INDIA.paths).forEach(function (s) {
+		mNormState[s.toLowerCase().trim()] = s;
+	});
+
+	/**
+	 * Canonicalises an OData StateText to the exact key INDIA.paths/zoneOf use. OData is not
+	 * guaranteed to return the same casing/whitespace this file's own keys use (e.g. a CHAR40
+	 * DB column, "UTTAR PRADESH", a trailing space), so every consumer that needs to bucket a
+	 * row by state should resolve through here rather than indexing INDIA.paths directly.
+	 * @param {string} sStateText raw state name from the backend
+	 * @returns {string} the canonical key, or "" if it doesn't match any known state
+	 */
+	INDIA.resolveState = function (sStateText) {
+		if (!sStateText) {
+			return "";
+		}
+		if (INDIA.paths[sStateText]) {
+			return sStateText;
+		}
+		return mNormState[sStateText.toLowerCase().trim()] || "";
+	};
+
+	/**
+	 * The real zone (North/West/South/East/Central) for a state name, derived from the state
+	 * itself rather than trusted from the backend's own AlmZone field.
+	 *
+	 * ZCL_PMS_DASH_QUERY's own comment flags ZSD_ZONE_PLANT-ALM_ZONE as "unconfirmed... CHAR10
+	 * placeholder" - its real values (casing, zone codes vs names, CHAR padding) are an unknown
+	 * quantity, so every place that needs a state's zone (the map's own choropleth/legend, the
+	 * Top-States colour chips, and the controller's own zone-filter masking) should resolve
+	 * through here, which encodes the actual 5-zone business rule above, instead of reading
+	 * AlmZone off a row.
+	 * @param {string} sStateText raw state name from the backend
+	 * @returns {string} zone name, or "" if the state doesn't resolve to anything on the map
+	 */
+	INDIA.zoneOfState = function (sStateText) {
+		var sCanonical = INDIA.resolveState(sStateText);
+		return sCanonical ? (INDIA.zoneOf[sCanonical] || "") : "";
+	};
+
 	return INDIA;
 });
