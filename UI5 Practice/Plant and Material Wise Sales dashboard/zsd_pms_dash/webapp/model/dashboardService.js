@@ -40,7 +40,7 @@ sap.ui.define([
 		},
 		unitDots: {
 			set: "UnitDots",
-			select: "UnitCode,NetValue,PriorValue,DeltaPct,Latitude,Longitude,PlantCount"
+			select: "UnitCode,UnitName,NetValue,PriorValue,DeltaPct,Latitude,Longitude,PlantCount"
 		},
 		scheme: {
 			set: "Scheme",
