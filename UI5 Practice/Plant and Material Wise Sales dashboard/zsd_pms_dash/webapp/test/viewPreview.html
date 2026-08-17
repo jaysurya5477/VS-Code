@@ -104,8 +104,14 @@ sap.ui.getCore().attachInit(function () {
 				["3600", 101000000, 13.1, 80.3], ["3200", 26000000, 9.9, 76.3],
 				["4800", 14000000, 8.5, 77.5], ["4600", 89000000, 26.2, 91.7],
 				["4200", 30000000, 20.3, 85.8], ["3400", 16000000, 22.6, 88.4]
-			].map(function (a) {
-				return {UnitCode: a[0], NetValue: String(a[1]), PriorValue: "0", DeltaPct: null,
+			].map(function (a, i) {
+				// Deliberately mixed lengths - calloutLabel() has to trim the long ones to
+				// the gutter without ever dropping the code or the value.
+				var aNames = ["Jammu", "Ambala", "New Delhi", "Jaipur", "Ahmedabad",
+					"Mumbai Andheri East", "Nagpur", "Bengaluru", "Chennai", "Kochi",
+					"Kanyakumari", "Guwahati", "Bhubaneswar", "Kolkata"];
+				return {UnitCode: a[0], UnitName: aNames[i], NetValue: String(a[1]),
+					PriorValue: "0", DeltaPct: null,
 					Latitude: String(a[2]), Longitude: String(a[3]), PlantCount: "3"};
 			});
 		}

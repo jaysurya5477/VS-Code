@@ -99,7 +99,7 @@ sap.ui.define([
 	 * predictable, and it is what the reviewed reference does.
 	 */
 
-	var CALLOUT_GUTTER = 270; // viewBox px added either side of the map for the label columns
+	var CALLOUT_GUTTER = 360; // viewBox px added either side of the map for the label columns
 	var CALLOUT_PAD = 10; // px from the gutter's outer edge the label text starts at
 	var CALLOUT_ROW_HEIGHT = 40; // minimum vertical spacing between stacked callout labels
 	var CALLOUT_EDGE_PAD = 24; // px kept clear at the top and bottom of a label stack
@@ -115,6 +115,35 @@ sap.ui.define([
 	/** @returns {number} approximate rendered width of a label, in viewBox px */
 	function labelWidth(sLabel) {
 		return sLabel.length * CALLOUT_FONT_SIZE * CALLOUT_CHAR_W;
+	}
+
+	/**
+	 * Builds one callout label - "<code> <name> · <value>" - trimming the unit name to
+	 * whatever the gutter can still fit. The name is the only elastic part: the code and the
+	 * value are what the label exists for, so they are never shortened, and a unit whose name
+	 * is long (or absent, on a backend that does not yet return one) simply shows less of it
+	 * rather than overflowing the column or pushing into the map.
+	 * @param {string} sCode unit code
+	 * @param {string} sName unit name, may be empty
+	 * @param {string} sValue the pre-formatted money string
+	 * @returns {string} the label
+	 */
+	function calloutLabel(sCode, sName, sValue) {
+		var sTail = " " + formatter.MIDDOT + " " + sValue;
+		if (!sName) {
+			return sCode + sTail;
+		}
+
+		var iMaxChars = Math.floor(
+			(CALLOUT_GUTTER - 2 * CALLOUT_PAD - CALLOUT_LINE_GAP) / (CALLOUT_FONT_SIZE * CALLOUT_CHAR_W));
+		var iRoom = iMaxChars - sCode.length - sTail.length - 1;
+
+		if (iRoom < 3) {
+			return sCode + sTail;
+		}
+		return sCode + " " +
+			(sName.length > iRoom ? sName.slice(0, iRoom - 1).replace(/\s+$/, "") + "…" : sName) +
+			sTail;
 	}
 
 	/**
@@ -212,7 +241,7 @@ sap.ui.define([
 			return aGroup.map(function (o, i) {
 				var d = o.d;
 				var fY = aY[i];
-				var sLabel = d.code + " " + formatter.MIDDOT + " " + formatter.money(d.net, 1);
+				var sLabel = calloutLabel(d.code, d.name, formatter.money(d.net, 1));
 				var fWidth = labelWidth(sLabel) + CALLOUT_LINE_GAP;
 
 				return {
@@ -253,13 +282,21 @@ sap.ui.define([
 			return i === 0 || x !== aNums[i - 1];
 		});
 
+		// Carried through to the legend: the per-swatch labels are each band's LOWER bound,
+		// so without the real extremes on show the ramp looks like it stops at the last
+		// break rather than running on to the largest value actually painted.
+		var oRange = {
+			min: aNums.length ? aNums[0] : NaN,
+			max: aNums.length ? aNums[aNums.length - 1] : NaN
+		};
+
 		if (aUniq.length <= 1) {
-			return {
+			return Object.assign({
 				bins: [],
 				index: function () {
 					return STEPS - 1;
 				}
-			};
+			}, oRange);
 		}
 
 		if (aUniq.length < STEPS) {
@@ -267,26 +304,26 @@ sap.ui.define([
 			aUniq.forEach(function (x, i) {
 				mIndex[x] = Math.round(i * (STEPS - 1) / (aUniq.length - 1));
 			});
-			return {
+			return Object.assign({
 				bins: aUniq.slice(1),
 				index: function (x) {
 					return mIndex.hasOwnProperty(x) ? mIndex[x] : STEPS - 1;
 				}
-			};
+			}, oRange);
 		}
 
 		var aBins = [];
 		for (var i = 1; i < STEPS; i++) {
 			aBins.push(aNums[Math.floor(i * aNums.length / STEPS)]);
 		}
-		return {
+		return Object.assign({
 			bins: aBins,
 			index: function (x) {
 				return aBins.filter(function (b) {
 					return x >= b;
 				}).length;
 			}
-		};
+		}, oRange);
 	}
 
 	/** @returns {string} one row of the hover card */
@@ -502,14 +539,29 @@ sap.ui.define([
 			oRm.openStart("span").class("pmsScaleCap").openEnd().text(t.scaleCap || "").close("span");
 
 			for (var i = 0; i < STEPS; i++) {
+				// Each label is its own band's lower bound, so band 0 is the smallest value
+				// painted, not a vague "lowest" - one decimal, since rounding 2.4 Cr down to
+				// "2 Cr" was itself part of why the scale looked wrong.
 				var sLabel = bLabelled ?
-					(i === 0 ? (t.lowest || "") : formatter.money(aBins[i - 1], 0)) :
+					(i === 0 ?
+						(isFinite(oModel.scale.min) ? formatter.money(oModel.scale.min, 1) : (t.lowest || "")) :
+						formatter.money(aBins[i - 1], 1)) :
 					(i === 0 ? (t.low || "") : i === STEPS - 1 ? (t.high || "") : "");
 
 				oRm.openStart("span").class("pmsScaleSwatch").openEnd();
 				oRm.openStart("span").class("pmsScaleChip")
 					.style("background", "var(--pms-scale-" + i + ")").openEnd().close("span");
 				oRm.openStart("span").class("pmsScaleLabel").openEnd().text(sLabel).close("span");
+				oRm.close("span");
+			}
+
+			// Closes the ramp with the largest value on the map, so the top band reads as
+			// "last break -> max" instead of appearing to end at the last break.
+			if (isFinite(oModel.scale.max)) {
+				oRm.openStart("span").class("pmsScaleSwatch").class("pmsScaleSwatch--max").openEnd();
+				oRm.openStart("span").class("pmsScaleChip").class("pmsScaleChip--tick").openEnd().close("span");
+				oRm.openStart("span").class("pmsScaleLabel").openEnd()
+					.text(formatter.money(oModel.scale.max, 1)).close("span");
 				oRm.close("span");
 			}
 
@@ -639,6 +691,9 @@ sap.ui.define([
 				var xy = projLL(num(d.Latitude), num(d.Longitude));
 				return {
 					code: d.UnitCode,
+					// Blank until the backend exposes UnitName - see the ZSD_PMS_UNIT_DOTS
+					// change; the label and hover card both degrade to the code alone.
+					name: d.UnitName || "",
 					x: xy[0].toFixed(1),
 					y: xy[1].toFixed(1),
 					r: ((2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5) *
@@ -686,7 +741,9 @@ sap.ui.define([
 				if (!d) {
 					return null;
 				}
-				return tipHead(t.unitPlants ? formatter.count(d.PlantCount) + " " + t.unitPlants : "", d.UnitCode) +
+				// Full name here, untruncated - the hover card has the room the gutter does not.
+				return tipHead(t.unitPlants ? formatter.count(d.PlantCount) + " " + t.unitPlants : "",
+						d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
 					tipRow(t.netBilled || "", formatter.money(d.NetValue)) +
 					tipRow(sPrior, formatter.money(d.PriorValue)) +
 					tipRow(t.growth || "", growth(d.DeltaPct));

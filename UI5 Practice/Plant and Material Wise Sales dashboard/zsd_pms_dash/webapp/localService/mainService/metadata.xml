@@ -282,6 +282,7 @@
                     <PropertyRef Name="UnitCode"/>
                 </Key>
                 <Property Name="UnitCode" Type="Edm.String" Nullable="false" MaxLength="10"/>
+                <Property Name="UnitName" Type="Edm.String" Nullable="false" MaxLength="40"/>
                 <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="PriorValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>

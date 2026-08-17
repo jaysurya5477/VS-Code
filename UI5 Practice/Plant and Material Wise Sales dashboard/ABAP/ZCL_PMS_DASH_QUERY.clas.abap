@@ -114,6 +114,9 @@ CLASS zcl_pms_dash_query DEFINITION
       " Map dots, Unit grain (OD-3/OD-5) - NOT the same grain as ty_geo_row.
       BEGIN OF ty_unit_dot,
         unit        TYPE char10,   " ZSD_ZONE_PLANT-UNIT - retype once confirmed, P0-7
+        " ZSD_ZONE_PLANT-REMARKS (the "city" column on ZSDD_PMS_GL_CDS) - a Unit-level
+        " descriptive name, shown beside the code on the map callouts and hover card.
+        unit_name   TYPE char40,
         net_value   TYPE p LENGTH 15 DECIMALS 2,
         prior_value TYPE p LENGTH 15 DECIMALS 2,
         delta_pct   TYPE p LENGTH 8 DECIMALS 2,
@@ -1049,6 +1052,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     TYPES: BEGIN OF ty_plant_acc,
              werks     TYPE werks_d,
              unit      TYPE char10,
+             unit_name TYPE char40,
              latitude  TYPE p LENGTH 9 DECIMALS 6,
              longitude TYPE p LENGTH 9 DECIMALS 6,
              has_coord TYPE abap_bool,
@@ -1066,6 +1070,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       ASSIGN lt_plant[ werks = <ls_row>-werks unit = <ls_row>-unit ] TO FIELD-SYMBOL(<ls_plant>).
       IF sy-subrc <> 0.
         INSERT VALUE #( werks = <ls_row>-werks unit = <ls_row>-unit
+                         unit_name = <ls_row>-city
                          latitude = <ls_row>-latitude longitude = <ls_row>-longitude
                          has_coord = xsdbool( <ls_row>-latitude IS NOT INITIAL AND <ls_row>-longitude IS NOT INITIAL ) )
           INTO TABLE lt_plant ASSIGNING <ls_plant>.
@@ -1076,6 +1081,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     " Step 2: roll plants up to units - OD-5 value-weighted centroid.
     TYPES: BEGIN OF ty_unit_acc,
              unit         TYPE char10,
+             unit_name    TYPE char40,
              value        TYPE p LENGTH 15 DECIMALS 2,
              coord_weight TYPE p LENGTH 15 DECIMALS 2,   " sum of value across ONLY plants with coordinates
              lat_weighted TYPE p LENGTH 15 DECIMALS 6,
@@ -1087,7 +1093,8 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     LOOP AT lt_plant INTO DATA(ls_plant) WHERE unit IS NOT INITIAL.
       ASSIGN lt_unit[ unit = ls_plant-unit ] TO FIELD-SYMBOL(<ls_unit>).
       IF sy-subrc <> 0.
-        INSERT VALUE #( unit = ls_plant-unit ) INTO TABLE lt_unit ASSIGNING <ls_unit>.
+        INSERT VALUE #( unit = ls_plant-unit unit_name = ls_plant-unit_name )
+          INTO TABLE lt_unit ASSIGNING <ls_unit>.
       ENDIF.
       <ls_unit>-value       += ls_plant-value.
       <ls_unit>-plant_count += 1.
@@ -1105,6 +1112,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       " than plotting at a meaningless (0,0).
       CHECK ls_unit-coord_weight > 0.
       APPEND VALUE #( unit = ls_unit-unit
+                       unit_name = ls_unit-unit_name
                        net_value = ls_unit-value
                        plant_count = ls_unit-plant_count
                        latitude  = ls_unit-lat_weighted / ls_unit-coord_weight

@@ -515,7 +515,11 @@
 }
 
 .pmsScaleSwatch { flex: 1 1 44px; min-width: 44px; }
+/* Closing tick of the ramp: label only, sized to its text rather than sharing the ramp's
+   width, with an invisible chip so its label lines up with the labelled swatches'. */
+.pmsScaleSwatch--max { flex: 0 0 auto; min-width: 0; margin-right: 10px; }
 .pmsScaleChip { display: block; height: 9px; border-radius: 2px; }
+.pmsScaleChip--tick { background: transparent; }
 .pmsScaleChip--none { background: var(--pms-nodata); box-shadow: inset 0 0 0 1px var(--pms-line); }
 
 .pmsScaleLabel {

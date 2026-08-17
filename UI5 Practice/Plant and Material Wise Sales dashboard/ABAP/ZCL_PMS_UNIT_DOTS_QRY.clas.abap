@@ -48,6 +48,7 @@ CLASS zcl_pms_unit_dots_qry IMPLEMENTATION.
     DATA lt_out TYPE STANDARD TABLE OF zsd_pms_unit_dots.
     lt_out = VALUE #( FOR ls IN ls_dash-unit_dots (
                         unitcode   = ls-unit
+                        unitname   = ls-unit_name
                         netvalue   = ls-net_value
                         priorvalue = ls-prior_value
                         deltapct   = ls-delta_pct

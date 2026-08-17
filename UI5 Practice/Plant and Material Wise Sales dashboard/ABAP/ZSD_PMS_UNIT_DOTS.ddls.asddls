@@ -25,6 +25,10 @@ define custom entity ZSD_PMS_UNIT_DOTS
     P_Period   : zsd_pms_flt
 {
   key UnitCode    : abap.char(10);   // "Unit" alone is a reserved word, same issue as KPI's "Label"
+      // ZSD_ZONE_PLANT-REMARKS, exposed as "city" on ZSDD_PMS_GL_CDS. That table holds one
+      // row per Unit (see the GL CDS header), so REMARKS is the Unit's own descriptive name,
+      // not a per-plant value - it needs no aggregation, just carrying through.
+      UnitName    : abap.char(40);
       NetValue    : abap.dec(15,2);
       PriorValue  : abap.dec(15,2);
       DeltaPct    : abap.dec(8,2);
