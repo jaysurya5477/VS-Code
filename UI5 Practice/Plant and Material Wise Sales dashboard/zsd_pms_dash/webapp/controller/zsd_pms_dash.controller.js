@@ -25,11 +25,21 @@ sap.ui.define([
 	};
 
 	/**
-	 * Where the State/Plant/Scheme/Material dropdowns' selectable values come from. The
-	 * service exposes no value-help entity sets yet (deferred, see
-	 * ../../Documentation/ABAP_Backend_Plan.md Part C Phase 2), so the lists are built from
-	 * the codes the result sets actually contain - see _mergeCatalog for why they accumulate
-	 * rather than replace. Same pattern as the GRN Dashboard's controller.
+	 * Where the State/Plant/Scheme/Material dropdowns' selectable values come from.
+	 *
+	 * State and Scheme have no dedicated catalog entity - they're built from the codes the
+	 * Geo/Scheme result sets actually contain, so the lists accumulate rather than replace
+	 * (see _mergeCatalog for why). Plant and Material each list TWO sources: `plant`/
+	 * `material` (Top-20-by-value, capped for their chart panels - production has ~109
+	 * billing plants and far more materials than 20) plus the uncapped `plantCatalog`/
+	 * `materialCatalog` entities - a filter must never be limited to what a chart happens to
+	 * show. Both stay listed, not just the catalog one, because dashboardService.js treats
+	 * the two catalog entities as optional (they degrade to an empty list rather than fail
+	 * the whole load if the backend hasn't been updated with them yet - see its own
+	 * OPTIONAL_ENTITIES comment): keeping the Top-20 source here means the filter still gets
+	 * *some* codes during that rollout window instead of going empty, and gets the full
+	 * uncapped set as soon as the catalog entities are actually available. _mergeCatalog
+	 * already dedupes by key, so once both sources return the same code it's listed once.
 	 */
 	var CATALOG_SOURCES = {
 		state: [{
@@ -41,6 +51,10 @@ sap.ui.define([
 			entity: "plant",
 			key: "Werks",
 			name: "City"
+		}, {
+			entity: "plantCatalog",
+			key: "Werks",
+			name: "City"
 		}],
 		scheme: [{
 			entity: "scheme",
@@ -49,6 +63,11 @@ sap.ui.define([
 		}],
 		material: [{
 			entity: "material",
+			key: "Matnr",
+			name: "Arktx",
+			extra: "Bismt"
+		}, {
+			entity: "materialCatalog",
 			key: "Matnr",
 			name: "Arktx",
 			// Folded into the catalog item's `info` (secondary value) alongside the material
@@ -188,25 +207,36 @@ sap.ui.define([
 		},
 
 		/**
-		 * Reloads once a MultiComboBox's picker popover closes after a multi-pick session -
-		 * same dual-event pattern as the Balance Sheet Dashboard's own filter bar
-		 * (../../Balance Sheet Dashboard/balance_sheet/webapp/controller/zfi_bs.controller.js):
-		 * ticking five checkboxes and then closing the popover triggers one reload, not five.
+		 * Changing a filter only stages it - the dashboard reloads when Go is pressed, never
+		 * on the selection itself. That is the whole point of having a Go button: a scoping
+		 * session usually means touching several filters, and reloading on each one costs a
+		 * full nine-entity round trip per click and repeatedly repaints every panel underneath
+		 * the user. _markDirty() flags the pending change so the button can advertise it.
 		 */
 		onFilterSelectionFinish: function () {
-			this._loadData();
+			this._markDirty();
 		},
 
 		/**
-		 * Catches the one case selectionFinish does not cover: removing a token directly from
-		 * the closed input (clicking a chip's own "x") fires selectionChange with the popover
-		 * already closed, and no selectionFinish at all.
-		 * @param {sap.ui.base.Event} oEvent selectionChange
+		 * Removing a token directly from the closed input (clicking a chip's own "x") fires
+		 * selectionChange with no selectionFinish, so both events have to stage the change.
 		 */
-		onFilterSelectionChange: function (oEvent) {
-			if (!oEvent.getSource().isOpen()) {
-				this._loadData();
-			}
+		onFilterSelectionChange: function () {
+			this._markDirty();
+		},
+
+		/** Fiscal year is staged like every other filter - see onFilterSelectionFinish. */
+		onFyChange: function () {
+			this._markDirty();
+		},
+
+		/**
+		 * Flags that the staged filters no longer match what is on screen, which the Go
+		 * button binds to. Reset by _loadData once the response has been rendered.
+		 * @private
+		 */
+		_markDirty: function () {
+			this._dash().setProperty("/filtersDirty", true);
 		},
 
 		onReset: function () {
@@ -216,6 +246,7 @@ sap.ui.define([
 			this._dash().setProperty("/fy", String(this._currentFy()));
 			this._dash().setProperty("/mapGranularity", "state");
 			this._dash().setProperty("/mapShowDots", true);
+			// Reset is an explicit action, not a staged edit, so it applies immediately.
 			this._loadData();
 		},
 
@@ -287,7 +318,9 @@ sap.ui.define([
 			}
 
 			oBox.setSelectedKeys(aKeys);
-			this._loadData();
+			// Staged, not applied - a map/scheme/top-state click is a filter edit like any
+			// other, and mixing "some clicks reload, some don't" is worse than one rule.
+			this._markDirty();
 		},
 
 		/* ==================================================================== */
@@ -413,7 +446,7 @@ sap.ui.define([
 		/* ==================================================================== */
 
 		/**
-		 * Reads all seven entity sets and rebuilds the whole dashboard. Only one load is
+		 * Reads all nine entity sets and rebuilds the whole dashboard. Only one load is
 		 * ever in flight - see the GRN Dashboard's own _loadData for the full rationale.
 		 * @private
 		 */
@@ -443,6 +476,8 @@ sap.ui.define([
 				that._oFilters = oFilters;
 				that._mergeCatalog(oData);
 				that._render();
+				// What is on screen now matches the filter controls again.
+				that._dash().setProperty("/filtersDirty", false);
 			}).catch(function (oError) {
 				Log.error("PMS dashboard load failed", oError && oError.stack, "com.sap.zsdpmsdash");
 				var sWhere = oError && oError.pmsEntity ? oError.pmsEntity : "?";

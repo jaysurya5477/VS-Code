@@ -6,5 +6,7 @@ define service ZSD_PMS_DASH_O4 {
   expose ZSD_PMS_UNIT_DOTS as UnitDots;
   expose ZSD_PMS_SCHEME as Scheme;
   expose ZSD_PMS_PLANT as Plant;
+  expose ZSD_PMS_PLANT_CATALOG as PlantCatalog;
   expose ZSD_PMS_MATERIAL as Material;
+  expose ZSD_PMS_MATERIAL_CATALOG as MaterialCatalog;
 }

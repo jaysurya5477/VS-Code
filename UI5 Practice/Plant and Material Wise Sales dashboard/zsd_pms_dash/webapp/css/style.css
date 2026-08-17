@@ -285,7 +285,11 @@
 .pmsGrid { display: grid; gap: 12px; padding: 12px 26px 0; }
 .pmsGrid--hero { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
 .pmsGrid--full { grid-template-columns: minmax(0, 1fr); }
-.pmsGrid--charts { grid-template-columns: repeat(12, minmax(0, 1fr)); padding-bottom: 40px; }
+/* padding-bottom is deliberately modest, not the page's own bottom margin: every
+   layout="charts" row (map+scheme, then plant+material) gets this same class, so it stacks
+   with the next row's own top padding (.pmsGrid's 12px) - 40px here read as a near-60px gap
+   between the two chart rows, not just trailing space after the last one. */
+.pmsGrid--charts { grid-template-columns: repeat(12, minmax(0, 1fr)); padding-bottom: 16px; }
 
 .pmsSpan4 { grid-column: span 4; }
 .pmsSpan6 { grid-column: span 6; }
@@ -436,7 +440,11 @@
 .pmsMapSvg { width: 100%; height: 100%; display: block; }
 
 .pmsMapArea {
-	stroke: var(--pms-panel);
+	/* A real border token, not --pms-panel: the panel-coloured stroke this used to be is
+	   invisible against a state filled with --pms-nodata or the palest --pms-scale-0 step,
+	   since both are near-white (near-black in dark mode) just like the panel itself - the
+	   "no billing"/lowest-billing states visually merged into the card with no outline at all. */
+	stroke: var(--pms-line);
 	stroke-width: .6;
 	cursor: pointer;
 	transition: fill .25s, stroke-width .12s;
@@ -465,18 +473,24 @@
 }
 .pmsMapDot:hover { stroke: var(--pms-ink); stroke-width: 2; }
 
-/* Leader-line callouts, only drawn where the map's own open margins (north/south) have
-   room for one - see control/IndiaMap.js's buildCallouts() for the placement logic. */
+/* Leader-line callouts for every map dot, routed to whichever open margin (north/south) is
+   nearest - see control/IndiaMap.js's buildCallouts() for the placement logic. */
+/* Widths are in viewBox units, and the callout gutters make that box ~1.7x wider than the
+   map alone - so these are scaled up to match, or they render hairline-thin on screen. */
 .pmsMapCalloutLine {
 	stroke: var(--pms-ink3);
-	stroke-width: 1;
+	stroke-width: 1.6;
 	fill: none;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 	pointer-events: none;
 }
+/* No font-size here: the layout maths in buildCallouts() needs the type size to place each
+   line's start, so control/IndiaMap.js sets it as an attribute to keep the two in step. */
 .pmsMapCalloutText {
-	font-family: var(--pms-mono);
-	font-size: 9px;
-	fill: var(--pms-ink2);
+	font-family: var(--pms-heading);
+	font-weight: 700;
+	fill: var(--pms-ink);
 	pointer-events: none;
 }
 

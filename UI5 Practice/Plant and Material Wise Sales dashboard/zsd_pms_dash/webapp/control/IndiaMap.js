@@ -85,129 +85,154 @@ sap.ui.define([
 	/*
 	 * Leader-line callouts for the map dots.
 	 *
-	 * The 760x840 viewBox is a wedge, not a rectangle: the landmass spans nearly the full
-	 * width in the middle latitudes (the north-east panhandle reaches x~790), but is much
-	 * narrower at the very north (Kashmir) and very south (the Tamil Nadu/Kerala tip) - which
-	 * is exactly the open space either side of the card the dots otherwise waste. A dot that
-	 * falls in one of those narrow bands gets a thin leader line out to a label in the margin;
-	 * a dot in the wide middle band has nowhere to put one and stays a plain hoverable dot,
-	 * same as before.
+	 * Every dot gets a labelled leader line, laid out in a gutter either side of the map
+	 * rather than in whatever gaps the coastline happens to leave. The SVG viewBox is widened
+	 * by CALLOUT_GUTTER on both sides (see the renderer), which turns space the panel was
+	 * already wasting into a dedicated label column: India is far taller than it is wide, so
+	 * fitting the 760x840 map into a landscape panel letterboxes it, leaving broad empty
+	 * bands left and right. Because that column always exists, a label never has to hunt for
+	 * an open latitude band, and the stack spreads over the panel's whole height instead of
+	 * bunching wherever the landmass happens to be narrow.
+	 *
+	 * Line shape: label -> horizontal run across the gutter -> one diagonal into the dot.
+	 * Lines may cross land; that is what keeps the label column readable and the geometry
+	 * predictable, and it is what the reviewed reference does.
 	 */
 
-	// Islands far from the mainland (Andaman & Nicobar, Lakshadweep) would otherwise make
-	// every latitude band look "full width" and defeat the whole margin calculation.
-	var MARGIN_SKIP_STATES = {"Andaman and Nicobar Islands": true, "Lakshadweep": true};
-	var MARGIN_BAND_HEIGHT = 20; // px of viewBox y per band sampled for land extent
-	var MARGIN_MIN_GAP = 95; // minimum clear margin (px) a side needs to carry a label
-	var MARGIN_INSET = 6; // px from the viewBox edge the label text sits at
-	var CALLOUT_ROW_HEIGHT = 24; // minimum vertical spacing between stacked callout labels
+	var CALLOUT_GUTTER = 270; // viewBox px added either side of the map for the label columns
+	var CALLOUT_PAD = 10; // px from the gutter's outer edge the label text starts at
+	var CALLOUT_ROW_HEIGHT = 40; // minimum vertical spacing between stacked callout labels
+	var CALLOUT_EDGE_PAD = 24; // px kept clear at the top and bottom of a label stack
+	// Set as an attribute rather than left to CSS: the layout below has to know the type size
+	// to place line starts, and a stylesheet-only value would silently desync from it.
+	var CALLOUT_FONT_SIZE = 22; // viewBox px
+	var CALLOUT_CHAR_W = 0.56; // mean glyph advance as a fraction of font size
+	var CALLOUT_LINE_GAP = 10; // px between the end of the label text and its line
+	// The gutters make the viewBox this much wider than the map, so everything in it renders
+	// proportionally smaller. Dot radii are scaled by it to hold their on-screen size.
+	var GUTTER_SCALE = (INDIA.w + 2 * CALLOUT_GUTTER) / INDIA.w;
 
-	/** Computed once and reused by every IndiaMap instance - the geometry never changes. */
-	var aMarginBands = null;
-
-	/** @returns {object[]} one {minX, maxX} entry per MARGIN_BAND_HEIGHT-tall horizontal band */
-	function marginBands() {
-		if (aMarginBands) {
-			return aMarginBands;
-		}
-
-		var iBandCount = Math.ceil(INDIA.h / MARGIN_BAND_HEIGHT);
-		var aBands = [];
-		for (var i = 0; i < iBandCount; i++) {
-			aBands.push({minX: Infinity, maxX: -Infinity});
-		}
-
-		Object.keys(INDIA.paths).forEach(function (sState) {
-			if (MARGIN_SKIP_STATES[sState]) {
-				return;
-			}
-			var reCoord = /(-?\d+\.?\d*)\s+(-?\d+\.?\d*)/g;
-			var oMatch;
-			while ((oMatch = reCoord.exec(INDIA.paths[sState])) !== null) {
-				var fX = parseFloat(oMatch[1]);
-				var fY = parseFloat(oMatch[2]);
-				var iBand = Math.min(iBandCount - 1, Math.max(0, Math.floor(fY / MARGIN_BAND_HEIGHT)));
-				if (fX < aBands[iBand].minX) {
-					aBands[iBand].minX = fX;
-				}
-				if (fX > aBands[iBand].maxX) {
-					aBands[iBand].maxX = fX;
-				}
-			}
-		});
-
-		// A band with no sampled land at all (shouldn't happen within India.h, but a static
-		// geometry file predates this code) is fully open on both sides, not zero-width.
-		aBands.forEach(function (o) {
-			if (o.minX === Infinity) {
-				o.minX = INDIA.w;
-				o.maxX = 0;
-			}
-		});
-
-		aMarginBands = aBands;
-		return aBands;
-	}
-
-	/** @returns {object} {left, right} clear margin in viewBox px at a given y */
-	function marginAt(fY) {
-		var aBands = marginBands();
-		var iBand = Math.min(aBands.length - 1, Math.max(0, Math.floor(fY / MARGIN_BAND_HEIGHT)));
-		return {
-			left: aBands[iBand].minX,
-			right: INDIA.w - aBands[iBand].maxX
-		};
+	/** @returns {number} approximate rendered width of a label, in viewBox px */
+	function labelWidth(sLabel) {
+		return sLabel.length * CALLOUT_FONT_SIZE * CALLOUT_CHAR_W;
 	}
 
 	/**
-	 * Assigns each dot that has enough clear margin on one side to a left/right group, then
-	 * stacks that group's labels top-to-bottom with a minimum row height - a dot's own y is
-	 * the label's preferred position, pushed down only far enough to clear the label above it.
+	 * One-dimensional label declutter. Every row wants to sit at its own dot's latitude, but
+	 * no two may end up closer than CALLOUT_ROW_HEIGHT and none may leave the panel: a
+	 * forward pass pushes overlapping rows down, a backward pass pulls the stack back up if
+	 * that ran it off the bottom, and a final forward pass handles a stack taller than the
+	 * panel (nothing left to give - it just starts at the top and overflows the bottom).
+	 * @param {object[]} aRows sorted by preferred y, each carrying {prefY}
+	 * @returns {number[]} resolved y per row, in the same order
+	 */
+	function declutter(aRows) {
+		var fMin = CALLOUT_EDGE_PAD;
+		var fMax = INDIA.h - CALLOUT_EDGE_PAD;
+		var aY = aRows.map(function (o) {
+			return o.prefY;
+		});
+		var i;
+
+		for (i = 1; i < aY.length; i++) {
+			aY[i] = Math.max(aY[i], aY[i - 1] + CALLOUT_ROW_HEIGHT);
+		}
+
+		if (aY.length && aY[aY.length - 1] > fMax) {
+			aY[aY.length - 1] = fMax;
+			for (i = aY.length - 2; i >= 0; i--) {
+				aY[i] = Math.min(aY[i], aY[i + 1] - CALLOUT_ROW_HEIGHT);
+			}
+		}
+
+		if (aY.length && aY[0] < fMin) {
+			aY[0] = fMin;
+			for (i = 1; i < aY.length; i++) {
+				aY[i] = Math.max(aY[i], aY[i - 1] + CALLOUT_ROW_HEIGHT);
+			}
+		}
+
+		return aY;
+	}
+
+	/**
+	 * Splits the dots between the two gutters and lays each column out.
+	 *
+	 * Assignment is geographic - a dot labels in the gutter on its own side of the map, so a
+	 * Gujarat plant goes left and an Odisha plant goes right and neither line has to cross
+	 * the country. Geography alone can overfill a column though (this customer's plants skew
+	 * heavily west), so once a side holds more rows than the panel height can take at
+	 * CALLOUT_ROW_HEIGHT, the dots nearest the map's centre line - the ones with the least
+	 * detour to lose - move across to the emptier side.
 	 * @param {object[]} aProjected dots from _buildModel's own map step: {code, x, y, r, net}
-	 * @returns {object[]} {code, x1, y1, x2, y2, textX, textY, anchor, label}
+	 * @returns {object[]} {code, x1, y1, xm, ym, x2, y2, textX, textY, anchor, label}
 	 */
 	function buildCallouts(aProjected) {
-		var aLeft = [];
-		var aRight = [];
+		var fMid = INDIA.w / 2;
+		var iMaxRows = Math.floor((INDIA.h - 2 * CALLOUT_EDGE_PAD) / CALLOUT_ROW_HEIGHT) + 1;
 
-		aProjected.forEach(function (d) {
-			var oMargin = marginAt(parseFloat(d.y));
-			var bLeft = oMargin.left >= oMargin.right;
-			var fGap = bLeft ? oMargin.left : oMargin.right;
-			if (fGap < MARGIN_MIN_GAP) {
-				return;
-			}
-			(bLeft ? aLeft : aRight).push(d);
+		var aAll = aProjected.map(function (d) {
+			return {
+				d: d,
+				x: parseFloat(d.x),
+				prefY: parseFloat(d.y)
+			};
 		});
 
-		function layout(aGroup, sSide) {
+		var aLeft = aAll.filter(function (o) {
+			return o.x < fMid;
+		});
+		var aRight = aAll.filter(function (o) {
+			return o.x >= fMid;
+		});
+
+		// Innermost dot first, so a forced move costs the shortest possible extra span.
+		function rebalance(aFrom, aTo, iDir) {
+			aFrom.sort(function (a, b) {
+				return iDir * (b.x - a.x);
+			});
+			while (aFrom.length > iMaxRows && aTo.length < iMaxRows) {
+				aTo.push(aFrom.shift());
+			}
+		}
+		rebalance(aLeft, aRight, 1);
+		rebalance(aRight, aLeft, -1);
+
+		function layout(aGroup, bLeft) {
 			aGroup.sort(function (a, b) {
-				return parseFloat(a.y) - parseFloat(b.y);
+				return a.prefY - b.prefY;
 			});
 
-			var fPrevY = -Infinity;
-			var fLineX = sSide === "left" ? MARGIN_INSET + 4 : INDIA.w - MARGIN_INSET - 4;
-			var fTextX = sSide === "left" ? MARGIN_INSET : INDIA.w - MARGIN_INSET;
+			var aY = declutter(aGroup);
+			var fTextX = bLeft ?
+				CALLOUT_PAD - CALLOUT_GUTTER :
+				INDIA.w + CALLOUT_GUTTER - CALLOUT_PAD;
+			var fBendX = bLeft ? 0 : INDIA.w;
 
-			return aGroup.map(function (d) {
-				var fY = Math.max(parseFloat(d.y), fPrevY + CALLOUT_ROW_HEIGHT);
-				fPrevY = fY;
+			return aGroup.map(function (o, i) {
+				var d = o.d;
+				var fY = aY[i];
+				var sLabel = d.code + " " + formatter.MIDDOT + " " + formatter.money(d.net, 1);
+				var fWidth = labelWidth(sLabel) + CALLOUT_LINE_GAP;
 
 				return {
 					code: d.code,
-					label: d.code + " " + formatter.MIDDOT + " " + formatter.money(d.net, 1),
-					x1: d.x,
-					y1: d.y,
-					x2: fLineX.toFixed(1),
-					y2: fY.toFixed(1),
+					label: sLabel,
+					// Label -> horizontal run out of the gutter -> one diagonal into the dot.
+					x1: (bLeft ? fTextX + fWidth : fTextX - fWidth).toFixed(1),
+					y1: fY.toFixed(1),
+					xm: fBendX.toFixed(1),
+					ym: fY.toFixed(1),
+					x2: d.x,
+					y2: d.y,
 					textX: fTextX.toFixed(1),
 					textY: fY.toFixed(1),
-					anchor: sSide === "left" ? "start" : "end"
+					anchor: bLeft ? "start" : "end"
 				};
 			});
 		}
 
-		return layout(aLeft, "left").concat(layout(aRight, "right"));
+		return layout(aLeft, true).concat(layout(aRight, false));
 	}
 
 	/**
@@ -367,7 +392,12 @@ sap.ui.define([
 
 				oRm.openStart("div").class("pmsMapWrap").style("height", oControl.getHeight()).openEnd();
 				oRm.openStart("svg");
-				oRm.attr("viewBox", "0 0 " + INDIA.w + " " + INDIA.h);
+				// Widened by a gutter either side when dots are shown, so the callout columns
+				// have somewhere to live - see buildCallouts()'s own header. Without dots there
+				// is nothing to label, so the map gets the full panel to itself.
+				oRm.attr("viewBox", oControl.getShowDots() ?
+					(-CALLOUT_GUTTER) + " 0 " + (INDIA.w + 2 * CALLOUT_GUTTER) + " " + INDIA.h :
+					"0 0 " + INDIA.w + " " + INDIA.h);
 				oRm.attr("preserveAspectRatio", "xMidYMid meet");
 				oRm.attr("role", "img");
 				oRm.class("pmsMapSvg");
@@ -429,19 +459,17 @@ sap.ui.define([
 					// margins (north/south, where the landmass narrows) - see buildCallouts()'s
 					// own header for why this only ever covers some dots, not all of them.
 					oModel.callouts.forEach(function (o) {
-						oRm.openStart("line");
+						oRm.openStart("polyline");
 						oRm.class("pmsMapCalloutLine");
-						oRm.attr("x1", o.x1);
-						oRm.attr("y1", o.y1);
-						oRm.attr("x2", o.x2);
-						oRm.attr("y2", o.y2);
+						oRm.attr("points", o.x1 + "," + o.y1 + " " + o.xm + "," + o.ym + " " + o.x2 + "," + o.y2);
 						oRm.openEnd();
-						oRm.close("line");
+						oRm.close("polyline");
 
 						oRm.openStart("text");
 						oRm.class("pmsMapCalloutText");
 						oRm.attr("x", o.textX);
 						oRm.attr("y", o.textY);
+						oRm.attr("font-size", CALLOUT_FONT_SIZE);
 						oRm.attr("text-anchor", o.anchor);
 						oRm.attr("dominant-baseline", "middle");
 						oRm.openEnd();
@@ -528,6 +556,8 @@ sap.ui.define([
 			var aGeo = this.getGeoRows() || [];
 			var aDots = this.getDotRows() || [];
 			var bZone = this.getGranularity() === "zone";
+			// Matches the renderer's own viewBox choice - no dots, no gutters, no rescale.
+			var bShowDots = this.getShowDots();
 			var aSelRegios = this.getSelectedRegios() || [];
 			var aSelZones = this.getSelectedZones() || [];
 
@@ -611,7 +641,8 @@ sap.ui.define([
 					code: d.UnitCode,
 					x: xy[0].toFixed(1),
 					y: xy[1].toFixed(1),
-					r: (2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5).toFixed(1),
+					r: ((2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5) *
+						(bShowDots ? GUTTER_SCALE : 1)).toFixed(1),
 					net: num(d.NetValue)
 				};
 			});

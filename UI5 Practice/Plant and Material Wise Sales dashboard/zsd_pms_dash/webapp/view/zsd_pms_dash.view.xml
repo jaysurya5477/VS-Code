@@ -44,7 +44,7 @@
 							width="100%"
 							items="{dash>/options/fy}"
 							selectedKey="{dash>/fy}"
-							change=".onGo">
+							change=".onFyChange">
 							<core:Item key="{dash>key}" text="{dash>text}"/>
 						</Select>
 					</VBox>
@@ -139,7 +139,13 @@
 
 					<VBox class="pmsField pmsField--actions">
 						<HBox class="pmsFilterActions">
-							<Button id="goBtn" text="{i18n>go}" type="Emphasized" press=".onGo"/>
+							<!-- Emphasised only while filter edits are staged, so the button itself
+							     tells the user a reload is pending - see onFilterSelectionFinish. -->
+							<Button
+								id="goBtn"
+								text="{i18n>go}"
+								type="{= ${dash>/filtersDirty} ? 'Emphasized' : 'Default'}"
+								press=".onGo"/>
 							<Button id="resetBtn" text="{i18n>reset}" icon="sap-icon://clear-filter" press=".onReset"/>
 							<Button id="refreshBtn" icon="sap-icon://refresh" tooltip="{dash>/lastRefreshedText}" press=".onGo"/>
 						</HBox>

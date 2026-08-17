@@ -166,15 +166,34 @@ CLASS zcl_pms_dash_query DEFINITION
         grand_total_value TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_material_row,
       ty_material_row_tab TYPE STANDARD TABLE OF ty_material_row WITH EMPTY KEY,
+      " Every distinct plant/material billing in the filtered scope, uncapped - feeds the
+      " Plant/Material filter dropdowns. ty_plant_row/ty_material_row's own Top-20 cap is
+      " real and load-bearing for the chart panels (production has ~109 plants and far more
+      " materials than 20) but must never limit what a user can actually pick in a filter -
+      " these two mirror the same scope with no cap and none of the chart-only aggregates.
+      BEGIN OF ty_plant_catalog_row,
+        werks TYPE werks_d,
+        city  TYPE char40,
+      END OF ty_plant_catalog_row,
+      ty_plant_catalog_tab TYPE STANDARD TABLE OF ty_plant_catalog_row WITH EMPTY KEY,
+
+      BEGIN OF ty_material_catalog_row,
+        matnr TYPE matnr,
+        arktx TYPE arktx,
+        bismt TYPE bismt,
+      END OF ty_material_catalog_row,
+      ty_material_catalog_tab TYPE STANDARD TABLE OF ty_material_catalog_row WITH EMPTY KEY,
 
       BEGIN OF ty_dashboard,
-        kpis           TYPE ty_kpi_tab,
-        trend          TYPE ty_trend_tab,
-        geo            TYPE ty_geo_row_tab,
-        unit_dots      TYPE ty_unit_dot_tab,
-        scheme         TYPE ty_scheme_row_tab,
-        plant_top20    TYPE ty_plant_row_tab,
-        material_top20 TYPE ty_material_row_tab,
+        kpis             TYPE ty_kpi_tab,
+        trend            TYPE ty_trend_tab,
+        geo              TYPE ty_geo_row_tab,
+        unit_dots        TYPE ty_unit_dot_tab,
+        scheme           TYPE ty_scheme_row_tab,
+        plant_top20      TYPE ty_plant_row_tab,
+        plant_catalog    TYPE ty_plant_catalog_tab,
+        material_top20   TYPE ty_material_row_tab,
+        material_catalog TYPE ty_material_catalog_tab,
       END OF ty_dashboard.
 
     CLASS-METHODS:
@@ -422,10 +441,22 @@ CLASS zcl_pms_dash_query DEFINITION
         IMPORTING it_curr         TYPE ty_gl_row_tab
         RETURNING VALUE(rt_plant) TYPE ty_plant_row_tab,
 
+      "! Every distinct plant billing in scope, uncapped - feeds the Plant filter, not the
+      "! chart (see ty_plant_catalog_row's own header comment).
+      get_plant_catalog
+        IMPORTING it_curr       TYPE ty_gl_row_tab
+        RETURNING VALUE(rt_cat) TYPE ty_plant_catalog_tab,
+
       get_material_top20
         IMPORTING it_item       TYPE ty_item_row_tab
                   it_tax        TYPE ty_item_tax_tab
-        RETURNING VALUE(rt_mat) TYPE ty_material_row_tab.
+        RETURNING VALUE(rt_mat) TYPE ty_material_row_tab,
+
+      "! Every distinct material billing in scope, uncapped - feeds the Material filter, not
+      "! the chart (see ty_material_catalog_row's own header comment).
+      get_material_catalog
+        IMPORTING it_item       TYPE ty_item_row_tab
+        RETURNING VALUE(rt_cat) TYPE ty_material_catalog_tab.
 
 ENDCLASS.
 
@@ -763,10 +794,37 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
         iv_fy = is_filters-fy iv_date_from = lv_date_from iv_date_to = lv_date_to
         it_material = is_filters-material ).
 
+      " Every billing document that actually contains the material.
+      "
+      " The precise (vbeln, hkont) bridge above is the accurate filter, but it can
+      " only resolve a document whose pricing conditions use one of the condition
+      " types resolve_material_gl_keys hardcodes - a tax-exempt line, or any plant
+      " on a differently configured pricing procedure, produces no key at all. That
+      " used to drop the document silently, which emptied EVERY GL-grain panel (the
+      " KPI cards, map, scheme list and trend) the moment a Material filter was set,
+      " while the material panel - which reads the item CDS directly and never needs
+      " the bridge - carried on working. Unresolvable documents therefore fall back
+      " to document-level inclusion below: coarser, since a multi-material invoice
+      " then contributes all of its GL lines rather than just this material's, but
+      " an over-stated figure on an unusual document beats a blank dashboard.
+      SELECT DISTINCT vbeln
+        FROM zsdd_pms_item_cds
+        WHERE gjahr = @is_filters-fy
+          AND fkdat BETWEEN @lv_date_from AND @lv_date_to
+          AND matnr IN @is_filters-material
+        INTO TABLE @DATA(lt_mat_docs).
+
       DATA(lt_gl_filtered) = VALUE ty_gl_row_tab( ).
       LOOP AT rt_gl INTO DATA(ls_gl).
-        READ TABLE lt_keys TRANSPORTING NO FIELDS WITH TABLE KEY vbeln = ls_gl-vbeln hkont = ls_gl-hkont.
-        IF sy-subrc = 0.
+        IF line_exists( lt_keys[ vbeln = ls_gl-vbeln hkont = ls_gl-hkont ] ).
+          " Bridge resolved this exact line - keep it.
+          APPEND ls_gl TO lt_gl_filtered.
+        ELSEIF NOT line_exists( lt_keys[ vbeln = ls_gl-vbeln ] )
+           AND line_exists( lt_mat_docs[ vbeln = ls_gl-vbeln ] ).
+          " Bridge resolved nothing at all for this document, but the document does
+          " contain the material - fall back to keeping it rather than dropping it.
+          " (A document the bridge DID resolve falls through both branches, so its
+          " other materials' lines are still correctly excluded.)
           APPEND ls_gl TO lt_gl_filtered.
         ENDIF.
       ENDLOOP.
@@ -1130,6 +1188,20 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD get_plant_catalog.
+    DATA lt_cat TYPE SORTED TABLE OF ty_plant_catalog_row WITH UNIQUE KEY werks.
+
+    LOOP AT it_curr ASSIGNING FIELD-SYMBOL(<ls_row>).
+      READ TABLE lt_cat TRANSPORTING NO FIELDS WITH TABLE KEY werks = <ls_row>-werks.
+      IF sy-subrc <> 0.
+        INSERT VALUE #( werks = <ls_row>-werks city = <ls_row>-city ) INTO TABLE lt_cat.
+      ENDIF.
+    ENDLOOP.
+
+    rt_cat = lt_cat.
+  ENDMETHOD.
+
+
   METHOD get_material_top20.
     DATA lt_mat TYPE ty_material_row_tab.
 
@@ -1167,6 +1239,21 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD get_material_catalog.
+    DATA lt_cat TYPE SORTED TABLE OF ty_material_catalog_row WITH UNIQUE KEY matnr.
+
+    LOOP AT it_item ASSIGNING FIELD-SYMBOL(<ls_item>).
+      READ TABLE lt_cat TRANSPORTING NO FIELDS WITH TABLE KEY matnr = <ls_item>-matnr.
+      IF sy-subrc <> 0.
+        INSERT VALUE #( matnr = <ls_item>-matnr arktx = <ls_item>-arktx bismt = <ls_item>-bismt )
+          INTO TABLE lt_cat.
+      ENDIF.
+    ENDLOOP.
+
+    rt_cat = lt_cat.
+  ENDMETHOD.
+
+
   METHOD get_dashboard_data.
     DATA(lt_curr)  = get_gl_rows( is_filters ).
     DATA(lt_prior) = get_gl_rows_prior( is_filters ).
@@ -1174,15 +1261,17 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     rs_result-kpis = get_kpis( it_curr = lt_curr it_prior = lt_prior ).
     APPEND get_daily_kpi( is_filters ) TO rs_result-kpis.
 
-    rs_result-trend       = get_trend( lt_curr ).
-    rs_result-geo         = get_geo( it_curr = lt_curr it_prior = lt_prior ).
-    rs_result-unit_dots   = get_unit_dots( lt_curr ).
-    rs_result-scheme      = get_scheme_agg( it_curr = lt_curr it_prior = lt_prior ).
-    rs_result-plant_top20 = get_plant_top20( lt_curr ).
+    rs_result-trend         = get_trend( lt_curr ).
+    rs_result-geo           = get_geo( it_curr = lt_curr it_prior = lt_prior ).
+    rs_result-unit_dots     = get_unit_dots( lt_curr ).
+    rs_result-scheme        = get_scheme_agg( it_curr = lt_curr it_prior = lt_prior ).
+    rs_result-plant_top20   = get_plant_top20( lt_curr ).
+    rs_result-plant_catalog = get_plant_catalog( lt_curr ).
 
     DATA(lt_item) = get_item_rows( is_filters ).
     DATA(lt_tax)  = get_item_tax( lt_item ).
-    rs_result-material_top20 = get_material_top20( it_item = lt_item it_tax = lt_tax ).
+    rs_result-material_top20   = get_material_top20( it_item = lt_item it_tax = lt_tax ).
+    rs_result-material_catalog = get_material_catalog( lt_item ).
   ENDMETHOD.
 
 ENDCLASS.

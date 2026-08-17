@@ -143,6 +143,38 @@
                 <Property Name="GrandTotalValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialParameters" Nullable="false"/>
             </EntityType>
+            <EntityType Name="MaterialCatalogParameters">
+                <Key>
+                    <PropertyRef Name="P_Fy"/>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Zone"/>
+                    <PropertyRef Name="P_State"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Scheme"/>
+                    <PropertyRef Name="P_Period"/>
+                </Key>
+                <Property Name="P_Fy" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Zone" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_State" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Scheme" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Period" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialCatalogType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="MaterialCatalogType">
+                <Key>
+                    <PropertyRef Name="Matnr"/>
+                </Key>
+                <Property Name="Matnr" Type="Edm.String" Nullable="false" MaxLength="18"/>
+                <Property Name="Arktx" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="Bismt" Type="Edm.String" Nullable="false" MaxLength="18"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialCatalogParameters" Nullable="false"/>
+            </EntityType>
             <EntityType Name="SchemeParameters">
                 <Key>
                     <PropertyRef Name="P_Fy"/>
@@ -213,6 +245,37 @@
                 <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.PlantParameters" Nullable="false"/>
+            </EntityType>
+            <EntityType Name="PlantCatalogParameters">
+                <Key>
+                    <PropertyRef Name="P_Fy"/>
+                    <PropertyRef Name="P_DateFrom"/>
+                    <PropertyRef Name="P_DateTo"/>
+                    <PropertyRef Name="P_Zone"/>
+                    <PropertyRef Name="P_State"/>
+                    <PropertyRef Name="P_Plant"/>
+                    <PropertyRef Name="P_Material"/>
+                    <PropertyRef Name="P_Scheme"/>
+                    <PropertyRef Name="P_Period"/>
+                </Key>
+                <Property Name="P_Fy" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="P_DateFrom" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_DateTo" Type="Edm.Date" Nullable="false"/>
+                <Property Name="P_Zone" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_State" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Plant" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Material" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Scheme" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <Property Name="P_Period" Type="Edm.String" Nullable="false" MaxLength="1000"/>
+                <NavigationProperty Name="Set" Type="Collection(com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.PlantCatalogType)" Partner="Parameters" ContainsTarget="true"/>
+            </EntityType>
+            <EntityType Name="PlantCatalogType">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                </Key>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="City" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.PlantCatalogParameters" Nullable="false"/>
             </EntityType>
             <EntityType Name="UnitDotsType">
                 <Key>
@@ -304,8 +367,14 @@
                 <EntitySet Name="Material" EntityType="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialParameters">
                     <NavigationPropertyBinding Path="Set/Parameters" Target="Material"/>
                 </EntitySet>
+                <EntitySet Name="MaterialCatalog" EntityType="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialCatalogParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="MaterialCatalog"/>
+                </EntitySet>
                 <EntitySet Name="Plant" EntityType="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.PlantParameters">
                     <NavigationPropertyBinding Path="Set/Parameters" Target="Plant"/>
+                </EntitySet>
+                <EntitySet Name="PlantCatalog" EntityType="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.PlantCatalogParameters">
+                    <NavigationPropertyBinding Path="Set/Parameters" Target="PlantCatalog"/>
                 </EntitySet>
                 <EntitySet Name="Scheme" EntityType="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.SchemeParameters">
                     <NavigationPropertyBinding Path="Set/Parameters" Target="Scheme"/>

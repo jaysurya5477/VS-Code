@@ -79,16 +79,36 @@ sap.ui.getCore().attachInit(function () {
 		// code - to prove the map and scheme panel resolve zones from the state name, not
 		// from this unreliable backend field. See control/IndiaMap.js's own header comment.
 
-		// U01/U02 sit in the map's wide middle band (no room for a callout - stay plain
-		// hoverable dots). U03/U04/U05 sit in the narrow north/south bands, where there's
-		// real open margin either side of the landmass, so they get a leader-line label.
+		// U01 (Mumbai) sits right on the west coast, so its leader line is short even though
+		// its own latitude band is otherwise wide. U02 is deep inland (Madhya Pradesh, no
+		// coast anywhere near its own band) and still gets a callout - routed to the nearer of
+		// the map's open north/south margins instead (see control/IndiaMap.js
+		// buildCallouts()'s own header). U03/U04/U05 sit in the narrow north/south bands
+		// themselves, so their lines stay short.
 		var DOTS = [
 			{UnitCode: "U01", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", Latitude: "18.52", Longitude: "73.86", PlantCount: "12"},
-			{UnitCode: "U02", NetValue: "31000000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "13.08", Longitude: "80.27", PlantCount: "6"},
+			{UnitCode: "U02", NetValue: "31000000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "22.0", Longitude: "79.0", PlantCount: "6"},
 			{UnitCode: "U03", NetValue: "22000000", PriorValue: "19000000", DeltaPct: "15.8", Latitude: "33.5", Longitude: "75.0", PlantCount: "3"},
 			{UnitCode: "U04", NetValue: "18500000", PriorValue: "17000000", DeltaPct: "8.8", Latitude: "8.5", Longitude: "77.5", PlantCount: "2"},
 			{UnitCode: "U05", NetValue: "9800000", PriorValue: "9100000", DeltaPct: "7.7", Latitude: "9.9", Longitude: "76.3", PlantCount: "2"}
 		];
+
+		// A production-shaped spread (14 plants, west/south heavy) for eyeballing the callout
+		// gutters, which only really show their behaviour at that scale: ?dots=stress
+		if (/dots=stress/.test(location.search)) {
+			DOTS = [
+				["2000", 272000000, 32.7, 74.8], ["4100", 60000000, 30.3, 76.0],
+				["3100", 64000000, 28.6, 77.2], ["4700", 62000000, 26.8, 75.8],
+				["3300", 155000000, 23.2, 72.6], ["4500", 111000000, 19.1, 72.9],
+				["3500", 31000000, 21.1, 79.1], ["4300", 101000000, 12.9, 77.6],
+				["3600", 101000000, 13.1, 80.3], ["3200", 26000000, 9.9, 76.3],
+				["4800", 14000000, 8.5, 77.5], ["4600", 89000000, 26.2, 91.7],
+				["4200", 30000000, 20.3, 85.8], ["3400", 16000000, 22.6, 88.4]
+			].map(function (a) {
+				return {UnitCode: a[0], NetValue: String(a[1]), PriorValue: "0", DeltaPct: null,
+					Latitude: String(a[2]), Longitude: String(a[3]), PlantCount: "3"};
+			});
+		}
 
 		var SCHEMES = [
 			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
