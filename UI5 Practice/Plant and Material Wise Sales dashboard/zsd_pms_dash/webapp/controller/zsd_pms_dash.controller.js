@@ -84,6 +84,14 @@ sap.ui.define([
 	var FY_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
 	/**
+	 * Aggregation-binding ceiling for the "dash" model. The framework default is 100, which
+	 * is far below the real material catalog and silently truncates the filter dropdowns.
+	 * This is a render-time guard rail, not a fetch limit - dashboardService caps the rows
+	 * it will read at MAX_CATALOG_ROWS (5000), so this sits above that and never binds.
+	 */
+	var MAX_OPTION_ITEMS = 10000;
+
+	/**
 	 * KPI Id -> KpiCard accent variant. The variants carry the prototype's own four card
 	 * gradients (see .pmsKpi--* in css/style.css) and the matching sparkline colour; the
 	 * ids are the ones ZCL_PMS_DASH_QUERY emits.
@@ -165,6 +173,14 @@ sap.ui.define([
 				lastRefreshedText: "",
 				errorText: ""
 			}), "dash");
+
+			// sap.ui.model.Model defaults sizeLimit to 100, and that cap is applied when an
+			// aggregation binding builds its contexts - so a MultiComboBox bound to
+			// options/plant or options/material silently renders only the first 100 codes
+			// however many the array actually holds ("Select All (0 of 100)"). The filter
+			// lists are deliberately uncapped (dashboardService pages the catalog entities
+			// precisely so they can exceed one server page), so the model must be told.
+			this.getView().getModel("dash").setSizeLimit(MAX_OPTION_ITEMS);
 
 			this._wireMaterialSearch();
 
@@ -508,8 +524,10 @@ sap.ui.define([
 			oModel.setProperty("/kpis", this._buildKpiCards(oData));
 			oModel.setProperty("/geoRows", aGeo);
 			oModel.setProperty("/dotRows", oData.unitDots || []);
+			// Gross, matching what the panel displays - a scheme with net 0 but tax booked
+			// would otherwise be dropped from a panel that would have shown a value for it.
 			oModel.setProperty("/schemeRows", (oData.scheme || []).filter(function (r) {
-				return parseFloat(r.NetValue) > 0;
+				return parseFloat(r.GrossValue) > 0;
 			}));
 			oModel.setProperty("/scopeText", this._buildScopeText());
 			oModel.setProperty("/mapSubtitle", this._buildMapHint(aGeo));
@@ -575,8 +593,9 @@ sap.ui.define([
 		 * @private
 		 */
 		_buildMapHint: function (aGeo) {
+			// Gross, so this count agrees with what the choropleth actually paints.
 			var iLive = aGeo.filter(function (r) {
-				return (parseFloat(r.NetValue) || 0) > 0;
+				return (parseFloat(r.GrossValue) || 0) > 0;
 			}).length;
 			var bZone = this._dash().getProperty("/mapGranularity") === "zone";
 
@@ -620,6 +639,7 @@ sap.ui.define([
 					deltaTone: !isFinite(fDelta) || Math.abs(fDelta) < 0.05 ? "flat" :
 						fDelta > 0 ? "up" : "down",
 					sub: that._kpiSub(oKpi, mById),
+					sub2: that._kpiSub2(oKpi),
 					accent: KPI_ACCENT[oKpi.Id] || "net",
 					spark: aSpark
 				};
@@ -649,6 +669,22 @@ sap.ui.define([
 			}
 
 			return formatter.moneyFull(oKpi.CurrValue);
+		},
+
+		/**
+		 * The daily card's headline is GROSS, so it carries a second, smaller line breaking
+		 * that into net and tax. The other three cards each already ARE one of those three
+		 * measures, so a breakdown there would only repeat the value above it.
+		 * @param {object} oKpi the KPI row
+		 * @returns {string} the card's second sub-line, or "" for the totals cards
+		 * @private
+		 */
+		_kpiSub2: function (oKpi) {
+			if (oKpi.Id !== "DAILY_SALE" || !oKpi.SnapshotDate) {
+				return "";
+			}
+			return this._text("kpiNetTax",
+				[formatter.money(oKpi.NetValue), formatter.money(oKpi.TaxValue)]);
 		},
 
 		/**
@@ -780,8 +816,8 @@ sap.ui.define([
 		_mapTexts: function () {
 			var that = this;
 			var o = {};
-			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey", "netBilled", "growth",
-				"share", "plantsBilling", "invoices", "zoneStates", "unitPlants"
+			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey", "grossBilled", "netValue",
+				"taxValue", "growth", "share", "plantsBilling", "invoices", "zoneStates", "unitPlants"
 			].forEach(function (sKey) {
 				o[sKey] = that._text("map" + sKey.charAt(0).toUpperCase() + sKey.slice(1));
 			});

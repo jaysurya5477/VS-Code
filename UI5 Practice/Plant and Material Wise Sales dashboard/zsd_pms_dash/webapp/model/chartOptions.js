@@ -212,7 +212,9 @@ sap.ui.define([
 		},
 
 		/**
-		 * Sales by material - top 20 ranked by net material value.
+		 * Sales by material - top 20 ranked by GROSS material value. Net and the GST split
+		 * that makes up the difference are on the tooltip; the backend ranks by gross too,
+		 * so the incoming order and this axis agree.
 		 * @param {object[]} aRows Material entity rows
 		 * @param {object} ctx {pal, animate}
 		 * @returns {object} ECharts option
@@ -220,7 +222,7 @@ sap.ui.define([
 		material: function (aRows, ctx) {
 			var pal = ctx.pal;
 			var aData = aRows.slice().reverse();
-			var fMax = maxOf(aData, "MatValue");
+			var fMax = maxOf(aData, "GrossValue");
 
 			return Object.assign({}, baseOption(ctx), {
 				grid: {
@@ -238,13 +240,15 @@ sap.ui.define([
 						var r = aData[aParams[0].dataIndex] || {};
 						return "<b>" + r.Matnr + "</b>" + (r.Bismt ? " (old " + r.Bismt + ")" : "") +
 							"<br/>" + (r.Arktx || "") + "<br/>" +
-							formatter.money(r.MatValue) + " " + formatter.MIDDOT + " " +
+							"Gross " + formatter.money(r.GrossValue) + " " + formatter.MIDDOT + " " +
 							formatter.count(r.Qty) + " " + (r.Uom || "") + "<br/>" +
+							"Net " + formatter.money(r.MatValue) + " " + formatter.MIDDOT +
+							" Tax " + formatter.money(r.TaxValue) + "<br/>" +
 							"IGST " + formatter.money(r.Igst) + " " + formatter.MIDDOT +
 							" SGST " + formatter.money(r.Sgst) + " " + formatter.MIDDOT +
 							" CGST " + formatter.money(r.Cgst) + " " + formatter.MIDDOT +
 							" TCS " + formatter.money(r.Tcs) + "<br/>" +
-							"Grand total " + formatter.money(r.GrandTotalValue);
+							"Grand total " + formatter.money(r.GrandTotalGross);
 					}
 				}, tooltipStyle(pal)),
 				xAxis: axis(pal, {
@@ -272,7 +276,7 @@ sap.ui.define([
 					type: "bar",
 					barWidth: "60%",
 					data: aData.map(function (r) {
-						return Math.round(num(r.MatValue));
+						return Math.round(num(r.GrossValue));
 					}),
 					itemStyle: {
 						color: pal.c3,

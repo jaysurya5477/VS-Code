@@ -79,6 +79,12 @@ CLASS zcl_pms_dash_query DEFINITION
         curr_value    TYPE p LENGTH 15 DECIMALS 2,
         prior_value   TYPE p LENGTH 15 DECIMALS 2,
         delta_pct     TYPE p LENGTH 8 DECIMALS 2,
+        " Breakdown of the daily card's own curr_value, which is GROSS - the card prints
+        " these two small beneath it. Like snapshot_date below, they belong to that card
+        " alone: the NET/TAX/GROSS cards each already ARE one of the three measures, so a
+        " breakdown there would just repeat the card's own value.
+        net_value     TYPE p LENGTH 15 DECIMALS 2,
+        tax_value     TYPE p LENGTH 15 DECIMALS 2,
         " Only populated for the 4th ("Yesterday Sale" / "Month-End Sale")
         " KPI - OD-1c. Left initial for the net/tax/gross cards.
         snapshot_date TYPE dats,
@@ -99,12 +105,20 @@ CLASS zcl_pms_dash_query DEFINITION
       " is carried as an attribute so the frontend/UI5 can roll this up to
       " zone granularity by summing - assumes each state belongs to exactly
       " one zone, which holds for the 5 zones seen so far (P0-0).
+      " gross_value is the panel's HEADLINE measure (net and tax are carried alongside it
+      " for the hover card only). prior_gross is what delta_pct compares against - a gross
+      " headline must not be growth-compared against a net prior, or the percentage
+      " describes a different measure from the number above it. prior_value (net) is kept
+      " because the hover card shows last year's figure on its own row.
       BEGIN OF ty_geo_row,
         regio         TYPE regio,
         state_text    TYPE char40,
         zone          TYPE char10,
         net_value     TYPE p LENGTH 15 DECIMALS 2,
+        tax_value     TYPE p LENGTH 15 DECIMALS 2,
+        gross_value   TYPE p LENGTH 15 DECIMALS 2,
         prior_value   TYPE p LENGTH 15 DECIMALS 2,
+        prior_gross   TYPE p LENGTH 15 DECIMALS 2,
         delta_pct     TYPE p LENGTH 8 DECIMALS 2,
         plant_count   TYPE i,
         invoice_count TYPE i,
@@ -117,8 +131,13 @@ CLASS zcl_pms_dash_query DEFINITION
         " ZSD_ZONE_PLANT-REMARKS (the "city" column on ZSDD_PMS_GL_CDS) - a Unit-level
         " descriptive name, shown beside the code on the map callouts and hover card.
         unit_name   TYPE char40,
+        " Same headline/breakdown split as ty_geo_row - gross drives the dot radius and
+        " the label, net/tax ride along for the hover card, prior_gross backs delta_pct.
         net_value   TYPE p LENGTH 15 DECIMALS 2,
+        tax_value   TYPE p LENGTH 15 DECIMALS 2,
+        gross_value TYPE p LENGTH 15 DECIMALS 2,
         prior_value TYPE p LENGTH 15 DECIMALS 2,
+        prior_gross TYPE p LENGTH 15 DECIMALS 2,
         delta_pct   TYPE p LENGTH 8 DECIMALS 2,
         latitude    TYPE zsd_latitude,   " ZSD_ZONE_PLANT-LATITUDE - retype once confirmed, P10 -decimals 7
         longitude   TYPE zsd_longitude,  " ZSD_ZONE_PLANT-LONGITUDE - retype once confirmed, P10 -decimals 7
@@ -126,10 +145,15 @@ CLASS zcl_pms_dash_query DEFINITION
       END OF ty_unit_dot,
       ty_unit_dot_tab TYPE STANDARD TABLE OF ty_unit_dot WITH EMPTY KEY,
 
+      " gross_value is the headline; share_pct and delta_pct are both computed FROM it, so
+      " the ranking, the share bar and the growth pill all describe the same measure the
+      " row displays.
       BEGIN OF ty_scheme_row,
         category      TYPE zfi_sales_gl-category,
         cat_desc      TYPE char40,
         net_value     TYPE p LENGTH 15 DECIMALS 2,
+        tax_value     TYPE p LENGTH 15 DECIMALS 2,
+        gross_value   TYPE p LENGTH 15 DECIMALS 2,
         share_pct     TYPE p LENGTH 8 DECIMALS 2,
         invoice_count TYPE i,
         delta_pct     TYPE p LENGTH 8 DECIMALS 2,
@@ -162,11 +186,19 @@ CLASS zcl_pms_dash_query DEFINITION
         sgst              TYPE p LENGTH 15 DECIMALS 2,
         cgst              TYPE p LENGTH 15 DECIMALS 2,
         tcs               TYPE p LENGTH 15 DECIMALS 2,
+        " Unlike every other panel, material tax is not a single source column - it is
+        " assembled from the pricing conditions above. TCS is included (agreed with the
+        " business), so gross_value reconciles with the invoice total the customer pays.
+        tax_value         TYPE p LENGTH 15 DECIMALS 2,
+        gross_value       TYPE p LENGTH 15 DECIMALS 2,
         " Sum of Value across every material in scope, before the top-20
         " cut - denormalised onto each row (mirrors ZCL_GRN_DASH_QUERY's
         " ty_material_row-grand_total) so "% of total" divides by the true
         " scope total, not just the top-20 subset's own sum.
         grand_total_value TYPE p LENGTH 15 DECIMALS 2,
+        " Gross counterpart of grand_total_value, for the panel's own "% of total" now
+        " that gross is the headline. Same denormalisation rationale as above.
+        grand_total_gross TYPE p LENGTH 15 DECIMALS 2,
       END OF ty_material_row,
       ty_material_row_tab TYPE STANDARD TABLE OF ty_material_row WITH EMPTY KEY,
       " Every distinct plant/material billing in the filtered scope, uncapped - feeds the
@@ -402,8 +434,13 @@ CLASS zcl_pms_dash_query DEFINITION
       apply_credit_memo_exclusion
         CHANGING ct_item TYPE ty_item_row_tab,
 
+      "! it_gl is the already-filtered current-year GL row set. Zone, State, Scheme and
+      "! Period exist only on the GL-grain fact - the item fact carries none of them - so
+      "! the material panel can only honour those four by intersecting on the billing
+      "! documents that survived the GL filter. See this method's own body comment.
       get_item_rows
         IMPORTING is_filters     TYPE ty_filters
+                  it_gl          TYPE ty_gl_row_tab
         RETURNING VALUE(rt_item) TYPE ty_item_row_tab,
 
       get_item_tax
@@ -433,6 +470,7 @@ CLASS zcl_pms_dash_query DEFINITION
       "! template used for the old plant dots.
       get_unit_dots
         IMPORTING it_curr        TYPE ty_gl_row_tab
+                  it_prior       TYPE ty_gl_row_tab
         RETURNING VALUE(rt_dots) TYPE ty_unit_dot_tab,
 
       get_scheme_agg
@@ -624,10 +662,11 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
     TYPES: BEGIN OF ty_daily_agg,
              netwr TYPE p LENGTH 15 DECIMALS 2,
+             mwsbk TYPE p LENGTH 15 DECIMALS 2,
              docs  TYPE i,
            END OF ty_daily_agg.
 
-    SELECT SUM( netwr ) AS netwr, COUNT( DISTINCT vbeln ) AS docs
+    SELECT SUM( netwr ) AS netwr, SUM( mwsbk ) AS mwsbk, COUNT( DISTINCT vbeln ) AS docs
       FROM zsdd_pms_gl_cds
       WHERE budat    = @lv_date
         AND alm_zone IN @is_filters-zone
@@ -637,20 +676,25 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       INTO @DATA(ls_curr_agg).
 
     DATA(lv_prior_date) = shift_calendar_year( lv_date ).
-    DATA lv_prior_net TYPE p LENGTH 15 DECIMALS 2.
 
-    SELECT SUM( netwr ) AS netwr
+    SELECT SUM( netwr ) AS netwr, SUM( mwsbk ) AS mwsbk
       FROM zsdd_pms_gl_cds
       WHERE budat    = @lv_prior_date
         AND alm_zone IN @is_filters-zone
         AND regio    IN @is_filters-state
         AND werks    IN @is_filters-plant
         AND category IN @is_filters-scheme
-      INTO @lv_prior_net.
+      INTO @DATA(ls_prior_agg).
 
-    rs_kpi-curr_value  = ls_curr_agg-netwr.
+    " Headline is GROSS, consistent with the map/scheme/material panels; net and tax are
+    " carried separately so the card can print them as a small breakdown line beneath it.
+    " Gross is derived here rather than read from the CDS gross column, exactly as
+    " get_kpis does, so the daily card reconciles with the three totals cards.
+    rs_kpi-net_value   = ls_curr_agg-netwr.
+    rs_kpi-tax_value   = ls_curr_agg-mwsbk.
+    rs_kpi-curr_value  = ls_curr_agg-netwr + ls_curr_agg-mwsbk.
     rs_kpi-doc_count   = ls_curr_agg-docs.
-    rs_kpi-prior_value = lv_prior_net.
+    rs_kpi-prior_value = ls_prior_agg-netwr + ls_prior_agg-mwsbk.
     rs_kpi-delta_pct   = pct( iv_part = rs_kpi-curr_value - rs_kpi-prior_value iv_whole = rs_kpi-prior_value ).
   ENDMETHOD.
 
@@ -868,6 +912,10 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
 
   METHOD get_item_rows.
+    DATA lt_scope    TYPE HASHED TABLE OF vbeln_vf WITH UNIQUE KEY table_line.
+    DATA lt_in_scope TYPE ty_item_row_tab.
+    DATA ls_item     TYPE ty_item_row.
+
     " OD-6: see get_gl_rows' note - iv_fy runs Apr(fy) .. Mar(fy+1).
     DATA(lv_date_from) = COND dats( WHEN is_filters-date_from IS NOT INITIAL THEN is_filters-date_from
                                      ELSE |{ is_filters-fy }0401| ).
@@ -886,11 +934,36 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
     apply_credit_memo_exclusion( CHANGING ct_item = rt_item ).
 
-    " NOTE:Known gap, not built in this pass: the Scheme filter (category) is
-    " NOT applied here - category lives only on the GL-grain fact, not on
-    " VBRP/VBRK. Closing this needs the mirror image of
-    " resolve_material_gl_keys() (GL -> item via the same PRCD_ELEMENTS
-    " bridge); left for a follow-up once that bridge is validated (P0-9).
+    " Zone, State, Scheme and Period live ONLY on the GL-grain fact - the item fact has
+    " none of them - so the SELECT above cannot apply them and the panel used to ignore
+    " all four. Filtering to a zone with no billing therefore still showed every material
+    " in the country, which is what this intersection fixes: it_gl has already had all
+    " nine filters applied, so restricting the items to its billing documents propagates
+    " them. This is document-grain rather than item-grain, which is exact for zone, state
+    " and period (all attributes of the document) and for scheme in the normal case of one
+    " category per document.
+    "
+    " Deliberately gated on those four being set. With none of them active the
+    " intersection would be a no-op in clean data, but would silently drop any item whose
+    " billing document has no GL line at all - a real data gap rather than a filter
+    " decision, and not something this method should start hiding.
+    DATA(lv_gl_only_filters) = lines( is_filters-zone )   + lines( is_filters-state )
+                             + lines( is_filters-scheme ) + lines( is_filters-period ).
+
+    IF lv_gl_only_filters > 0.
+      LOOP AT it_gl ASSIGNING FIELD-SYMBOL(<ls_gl>).
+        " Duplicate vbeln is the norm at GL grain (one document, many G/L lines) - a
+        " failed INSERT just means it is already in scope, so sy-subrc is not checked.
+        INSERT <ls_gl>-vbeln INTO TABLE lt_scope.
+      ENDLOOP.
+
+      LOOP AT rt_item INTO ls_item.
+        IF line_exists( lt_scope[ table_line = ls_item-vbeln ] ).
+          APPEND ls_item TO lt_in_scope.
+        ENDIF.
+      ENDLOOP.
+      rt_item = lt_in_scope.
+    ENDIF.
   ENDMETHOD.
 
 
@@ -1005,6 +1078,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
           INTO TABLE lt_geo ASSIGNING <ls_geo>.
       ENDIF.
       <ls_geo>-net_value += <ls_row>-netwr.
+      <ls_geo>-tax_value += <ls_row>-mwsbk.
 
       READ TABLE lt_seen_werks TRANSPORTING NO FIELDS WITH TABLE KEY regio = <ls_row>-regio werks = <ls_row>-werks.
       IF sy-subrc <> 0.
@@ -1023,10 +1097,16 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
           INTO TABLE lt_geo ASSIGNING <ls_geo>.
       ENDIF.
       <ls_geo>-prior_value += <ls_prior>-netwr.
+      <ls_geo>-prior_gross += <ls_prior>-netwr + <ls_prior>-mwsbk.
     ENDLOOP.
 
     LOOP AT lt_geo ASSIGNING <ls_geo>.
-      <ls_geo>-delta_pct = pct( iv_part = <ls_geo>-net_value - <ls_geo>-prior_value iv_whole = <ls_geo>-prior_value ).
+      " Gross is the panel's headline measure, so the growth pill must compare gross
+      " against gross - comparing a gross figure against a net prior would describe a
+      " different measure from the one on show.
+      <ls_geo>-gross_value = <ls_geo>-net_value + <ls_geo>-tax_value.
+      <ls_geo>-delta_pct = pct( iv_part  = <ls_geo>-gross_value - <ls_geo>-prior_gross
+                                iv_whole = <ls_geo>-prior_gross ).
 
       DATA(lv_pc) = 0.
       LOOP AT lt_seen_werks TRANSPORTING NO FIELDS WHERE regio = <ls_geo>-regio.
@@ -1057,6 +1137,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
              longitude TYPE p LENGTH 9 DECIMALS 6,
              has_coord TYPE abap_bool,
              value     TYPE p LENGTH 15 DECIMALS 2,
+             tax       TYPE p LENGTH 15 DECIMALS 2,
            END OF ty_plant_acc.
     DATA lt_plant TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY.
 
@@ -1076,6 +1157,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
           INTO TABLE lt_plant ASSIGNING <ls_plant>.
       ENDIF.
       <ls_plant>-value += <ls_row>-netwr.
+      <ls_plant>-tax   += <ls_row>-mwsbk.
     ENDLOOP.
 
     " Step 2: roll plants up to units - OD-5 value-weighted centroid.
@@ -1083,12 +1165,32 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
              unit         TYPE char10,
              unit_name    TYPE char40,
              value        TYPE p LENGTH 15 DECIMALS 2,
+             tax          TYPE p LENGTH 15 DECIMALS 2,
              coord_weight TYPE p LENGTH 15 DECIMALS 2,   " sum of value across ONLY plants with coordinates
              lat_weighted TYPE p LENGTH 15 DECIMALS 6,
              lon_weighted TYPE p LENGTH 15 DECIMALS 6,
              plant_count  TYPE i,
            END OF ty_unit_acc.
     DATA lt_unit TYPE STANDARD TABLE OF ty_unit_acc WITH EMPTY KEY.
+
+    " Prior-year gross per Unit, for the dot's own growth figure. Accumulated straight off
+    " the (already Trap-2-truncated) prior rows - no centroid or plant roll-up is needed
+    " here, since only the value is compared.
+    TYPES: BEGIN OF ty_unit_prior,
+             unit        TYPE char10,
+             prior_gross TYPE p LENGTH 15 DECIMALS 2,
+             prior_net   TYPE p LENGTH 15 DECIMALS 2,
+           END OF ty_unit_prior.
+    DATA lt_unit_prior TYPE HASHED TABLE OF ty_unit_prior WITH UNIQUE KEY unit.
+
+    LOOP AT it_prior ASSIGNING FIELD-SYMBOL(<ls_prior>) WHERE unit IS NOT INITIAL.
+      ASSIGN lt_unit_prior[ unit = <ls_prior>-unit ] TO FIELD-SYMBOL(<ls_uprior>).
+      IF sy-subrc <> 0.
+        INSERT VALUE #( unit = <ls_prior>-unit ) INTO TABLE lt_unit_prior ASSIGNING <ls_uprior>.
+      ENDIF.
+      <ls_uprior>-prior_net   += <ls_prior>-netwr.
+      <ls_uprior>-prior_gross += <ls_prior>-netwr + <ls_prior>-mwsbk.
+    ENDLOOP.
 
     LOOP AT lt_plant INTO DATA(ls_plant) WHERE unit IS NOT INITIAL.
       ASSIGN lt_unit[ unit = ls_plant-unit ] TO FIELD-SYMBOL(<ls_unit>).
@@ -1097,6 +1199,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
           INTO TABLE lt_unit ASSIGNING <ls_unit>.
       ENDIF.
       <ls_unit>-value       += ls_plant-value.
+      <ls_unit>-tax         += ls_plant-tax.
       <ls_unit>-plant_count += 1.
       IF ls_plant-has_coord = abap_true.
         <ls_unit>-coord_weight += ls_plant-value.
@@ -1111,9 +1214,19 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       " or none of this unit's plants billed in scope) - omit the dot rather
       " than plotting at a meaningless (0,0).
       CHECK ls_unit-coord_weight > 0.
+
+      DATA(lv_gross) = ls_unit-value + ls_unit-tax.
+      DATA(ls_uprior_row) = VALUE ty_unit_prior( lt_unit_prior[ unit = ls_unit-unit ] OPTIONAL ).
+
       APPEND VALUE #( unit = ls_unit-unit
                        unit_name = ls_unit-unit_name
                        net_value = ls_unit-value
+                       tax_value = ls_unit-tax
+                       gross_value = lv_gross
+                       prior_value = ls_uprior_row-prior_net
+                       prior_gross = ls_uprior_row-prior_gross
+                       delta_pct = pct( iv_part  = lv_gross - ls_uprior_row-prior_gross
+                                        iv_whole = ls_uprior_row-prior_gross )
                        plant_count = ls_unit-plant_count
                        latitude  = ls_unit-lat_weighted / ls_unit-coord_weight
                        longitude = ls_unit-lon_weighted / ls_unit-coord_weight ) TO lt_dots.
@@ -1136,6 +1249,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
           INTO TABLE lt_scheme ASSIGNING <ls_scheme>.
       ENDIF.
       <ls_scheme>-net_value += <ls_row>-netwr.
+      <ls_scheme>-tax_value += <ls_row>-mwsbk.
 
       READ TABLE lt_seen_vbeln TRANSPORTING NO FIELDS WITH TABLE KEY category = <ls_row>-category vbeln = <ls_row>-vbeln.
       IF sy-subrc <> 0.
@@ -1151,10 +1265,16 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
 
-    DATA(lv_grand_total) = REDUCE #( INIT s TYPE wrbtr FOR ls IN lt_scheme NEXT s += ls-net_value ).
+    " Gross is the panel's headline measure, so the share bar, the ranking and the growth
+    " pill are all computed from gross - a share of the net total shown beside a gross
+    " value would not add up for anyone checking it.
+    DATA(lv_grand_total) = REDUCE #( INIT s TYPE wrbtr FOR ls IN lt_scheme
+                                     NEXT s += ls-net_value + ls-tax_value ).
 
     LOOP AT lt_scheme ASSIGNING <ls_scheme>.
-      <ls_scheme>-share_pct = pct( iv_part = <ls_scheme>-net_value iv_whole = lv_grand_total ).
+      <ls_scheme>-gross_value = <ls_scheme>-net_value + <ls_scheme>-tax_value.
+      <ls_scheme>-share_pct   = pct( iv_part  = <ls_scheme>-gross_value
+                                     iv_whole = lv_grand_total ).
 
       DATA(lv_ic) = 0.
       LOOP AT lt_seen_vbeln TRANSPORTING NO FIELDS WHERE category = <ls_scheme>-category.
@@ -1162,9 +1282,11 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       ENDLOOP.
       <ls_scheme>-invoice_count = lv_ic.
 
-      DATA(lv_prior_value) = REDUCE #(
-        INIT s TYPE wrbtr FOR ls_p IN it_prior WHERE ( category = <ls_scheme>-category ) NEXT s += ls_p-netwr ).
-      <ls_scheme>-delta_pct = pct( iv_part = <ls_scheme>-net_value - lv_prior_value iv_whole = lv_prior_value ).
+      DATA(lv_prior_gross) = REDUCE #(
+        INIT s TYPE wrbtr FOR ls_p IN it_prior WHERE ( category = <ls_scheme>-category )
+        NEXT s += ls_p-netwr + ls_p-mwsbk ).
+      <ls_scheme>-delta_pct = pct( iv_part  = <ls_scheme>-gross_value - lv_prior_gross
+                                   iv_whole = lv_prior_gross ).
     ENDLOOP.
 
     rt_scheme = lt_scheme.
@@ -1232,15 +1354,28 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
 
-    DATA(lv_grand_total) = REDUCE #( INIT s TYPE wrbtr FOR ls IN lt_mat NEXT s += ls-value ).
+    LOOP AT lt_mat ASSIGNING FIELD-SYMBOL(<ls_mat_tax>).
+      <ls_mat_tax>-tax_value   = <ls_mat_tax>-igst + <ls_mat_tax>-sgst
+                               + <ls_mat_tax>-cgst + <ls_mat_tax>-tcs.
+      <ls_mat_tax>-gross_value = <ls_mat_tax>-value + <ls_mat_tax>-tax_value.
+    ENDLOOP.
 
-    SORT lt_mat BY value DESCENDING.
+    " Both grand totals are taken across EVERY material in scope, before the top-20 cut,
+    " so the panel's "% of total" divides by the true scope total rather than the subset's
+    " own sum (see ty_material_row).
+    DATA(lv_grand_total) = REDUCE #( INIT s TYPE wrbtr FOR ls IN lt_mat NEXT s += ls-value ).
+    DATA(lv_grand_gross) = REDUCE #( INIT s TYPE wrbtr FOR ls IN lt_mat NEXT s += ls-gross_value ).
+
+    " Ranked by gross, matching the measure the panel now displays - ranking by net while
+    " showing gross would let a high-tax material sit below a lower-grossing one.
+    SORT lt_mat BY gross_value DESCENDING.
     IF lines( lt_mat ) > 20.
       DELETE lt_mat FROM 21 TO lines( lt_mat ).
     ENDIF.
 
     LOOP AT lt_mat ASSIGNING FIELD-SYMBOL(<ls_mat_out>).
       <ls_mat_out>-grand_total_value = lv_grand_total.
+      <ls_mat_out>-grand_total_gross = lv_grand_gross.
     ENDLOOP.
 
     rt_mat = lt_mat.
@@ -1271,12 +1406,16 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
     rs_result-trend         = get_trend( lt_curr ).
     rs_result-geo           = get_geo( it_curr = lt_curr it_prior = lt_prior ).
-    rs_result-unit_dots     = get_unit_dots( lt_curr ).
+    rs_result-unit_dots     = get_unit_dots( it_curr  = lt_curr
+                                             it_prior = lt_prior ).
     rs_result-scheme        = get_scheme_agg( it_curr = lt_curr it_prior = lt_prior ).
     rs_result-plant_top20   = get_plant_top20( lt_curr ).
     rs_result-plant_catalog = get_plant_catalog( lt_curr ).
 
-    DATA(lt_item) = get_item_rows( is_filters ).
+    " lt_curr, not is_filters alone: the item fact carries no zone/state/scheme/period, so
+    " get_item_rows propagates those four by intersecting on lt_curr's billing documents.
+    DATA(lt_item) = get_item_rows( is_filters = is_filters
+                                   it_gl      = lt_curr ).
     DATA(lt_tax)  = get_item_tax( lt_item ).
     rs_result-material_top20   = get_material_top20( it_item = lt_item it_tax = lt_tax ).
     rs_result-material_catalog = get_material_catalog( lt_item ).

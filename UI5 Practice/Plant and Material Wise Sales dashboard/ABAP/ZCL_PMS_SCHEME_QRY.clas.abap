@@ -49,6 +49,8 @@ CLASS zcl_pms_scheme_qry IMPLEMENTATION.
                         category     = ls-category
                         catdesc      = ls-cat_desc
                         netvalue     = ls-net_value
+                        taxvalue     = ls-tax_value
+                        grossvalue   = ls-gross_value
                         sharepct     = ls-share_pct
                         invoicecount = ls-invoice_count
                         deltapct     = ls-delta_pct ) ).

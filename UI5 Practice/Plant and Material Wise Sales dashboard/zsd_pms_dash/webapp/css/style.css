@@ -429,6 +429,23 @@
 	white-space: nowrap;
 }
 
+/*
+ * Second sub-line, used only by the daily card to break its GROSS headline into net and
+ * tax. Deliberately a step smaller and dimmer than .pmsKpiSub so it reads as supporting
+ * detail rather than a second headline, and full-width (not in the flex footer) so the
+ * breakdown never competes with the delta pill for space.
+ */
+.pmsKpiSub2 {
+	font-family: var(--pms-mono);
+	font-size: 9.5px;
+	color: var(--pms-ink3);
+	opacity: 0.85;
+	margin-top: 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .pmsSpark { display: block; width: 74px; height: 26px; flex: none; color: var(--pms-kpi-ink, var(--pms-accent)); }
 .pmsSparkArea { fill: currentColor; fill-opacity: .18; stroke: none; }
 .pmsSparkLine { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }

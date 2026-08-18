@@ -23,7 +23,12 @@ define custom entity ZSD_PMS_SCHEME
 {
   key Category      : abap.char(10);
       CatDesc       : abap.char(40);
+      // GrossValue is the HEADLINE measure. SharePct and DeltaPct are both computed
+      // from it, so the ranking, the share bar and the growth pill all describe the
+      // same measure the row displays. NetValue/TaxValue are the row's own breakdown.
       NetValue      : abap.dec(15,2);
+      TaxValue      : abap.dec(15,2);
+      GrossValue    : abap.dec(15,2);
       SharePct      : abap.dec(8,2);
       InvoiceCount  : abap.int4;
       DeltaPct      : abap.dec(8,2);

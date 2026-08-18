@@ -50,7 +50,10 @@ CLASS zcl_pms_unit_dots_qry IMPLEMENTATION.
                         unitcode   = ls-unit
                         unitname   = ls-unit_name
                         netvalue   = ls-net_value
+                        taxvalue   = ls-tax_value
+                        grossvalue = ls-gross_value
                         priorvalue = ls-prior_value
+                        priorgross = ls-prior_gross
                         deltapct   = ls-delta_pct
                         latitude   = ls-latitude
                         longitude  = ls-longitude

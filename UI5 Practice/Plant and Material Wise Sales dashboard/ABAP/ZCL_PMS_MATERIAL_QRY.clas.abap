@@ -63,7 +63,10 @@ CLASS zcl_pms_material_qry IMPLEMENTATION.
                         sgst            = ls-sgst
                         cgst            = ls-cgst
                         tcs             = ls-tcs
-                        grandtotalvalue = ls-grand_total_value ) ).
+                        taxvalue        = ls-tax_value
+                        grossvalue      = ls-gross_value
+                        grandtotalvalue = ls-grand_total_value
+                        grandtotalgross = ls-grand_total_gross ) ).
 
     io_request->get_sort_elements( ).
 

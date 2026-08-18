@@ -18,7 +18,7 @@ server:
         backend:
           - path: /sap
             url: https://vhafbmedap01.hec.erp.alimco.in
-            client: '120'
+            client: '100'
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:

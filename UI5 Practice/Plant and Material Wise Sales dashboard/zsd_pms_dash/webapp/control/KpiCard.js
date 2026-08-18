@@ -95,6 +95,15 @@ sap.ui.define([
 					type: "string",
 					defaultValue: ""
 				},
+				/**
+				 * Optional second, smaller line under the footer. Used by the daily card, whose
+				 * headline value is GROSS, to break that down into net and tax - the three
+				 * totals cards each already ARE one of those measures and leave this empty.
+				 */
+				sub2: {
+					type: "string",
+					defaultValue: ""
+				},
 				/** net | tax | gross | daily - picks the accent bar and sparkline colour. */
 				accent: {
 					type: "string",
@@ -188,6 +197,11 @@ sap.ui.define([
 				}
 
 				oRm.close("div");
+
+				if (oControl.getSub2()) {
+					oRm.openStart("div").class("pmsKpiSub2").openEnd()
+						.text(oControl.getSub2()).close("div");
+				}
 
 				oRm.close("div");
 			}

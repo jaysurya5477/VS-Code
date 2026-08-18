@@ -67,6 +67,8 @@ CLASS zcl_pms_kpi_qry IMPLEMENTATION.
                         currvalue    = ls-curr_value
                         priorvalue   = ls-prior_value
                         deltapct     = ls-delta_pct
+                        netvalue     = ls-net_value
+                        taxvalue     = ls-tax_value
                         snapshotdate = ls-snapshot_date
                         doccount     = ls-doc_count ) ).
 

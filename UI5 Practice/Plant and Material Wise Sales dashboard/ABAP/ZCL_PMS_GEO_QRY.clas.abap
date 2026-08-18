@@ -52,7 +52,10 @@ CLASS zcl_pms_geo_qry IMPLEMENTATION.
                         statetext    = ls-state_text
                         almzone      = ls-zone
                         netvalue     = ls-net_value
+                        taxvalue     = ls-tax_value
+                        grossvalue   = ls-gross_value
                         priorvalue   = ls-prior_value
+                        priorgross   = ls-prior_gross
                         deltapct     = ls-delta_pct
                         plantcount   = ls-plant_count
                         invoicecount = ls-invoice_count ) ).

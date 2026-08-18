@@ -121,6 +121,8 @@
                 <Property Name="Category" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="CatDesc" Type="Edm.String" Nullable="false" MaxLength="40"/>
                 <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="SharePct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="InvoiceCount" Type="Edm.Int32" Nullable="false"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
@@ -140,7 +142,10 @@
                 <Property Name="Sgst" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="Cgst" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="Tcs" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="GrandTotalValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrandTotalGross" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.MaterialParameters" Nullable="false"/>
             </EntityType>
             <EntityType Name="MaterialCatalogParameters">
@@ -206,7 +211,10 @@
                 <Property Name="StateText" Type="Edm.String" Nullable="false" MaxLength="40"/>
                 <Property Name="AlmZone" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="PriorValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="PriorGross" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="PlantCount" Type="Edm.Int32" Nullable="false"/>
                 <Property Name="InvoiceCount" Type="Edm.Int32" Nullable="false"/>
@@ -284,7 +292,10 @@
                 <Property Name="UnitCode" Type="Edm.String" Nullable="false" MaxLength="10"/>
                 <Property Name="UnitName" Type="Edm.String" Nullable="false" MaxLength="40"/>
                 <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="PriorValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="PriorGross" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="Latitude" Type="Edm.Decimal" Nullable="false" Precision="10" Scale="7"/>
                 <Property Name="Longitude" Type="Edm.Decimal" Nullable="false" Precision="10" Scale="7"/>
@@ -354,6 +365,8 @@
                 <Property Name="CurrValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="PriorValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
+                <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="SnapshotDate" Type="Edm.Date"/>
                 <Property Name="DocCount" Type="Edm.Int32" Nullable="false"/>
                 <NavigationProperty Name="Parameters" Type="com.sap.gateway.srvd_a2x.zsd_pms_dash_o4.v0001.KPIParameters" Nullable="false"/>

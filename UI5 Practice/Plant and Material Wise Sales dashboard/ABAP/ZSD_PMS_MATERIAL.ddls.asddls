@@ -40,5 +40,15 @@ define custom entity ZSD_PMS_MATERIAL
       Sgst            : abap.dec(15,2);
       Cgst            : abap.dec(15,2);
       Tcs             : abap.dec(15,2);
+      // GrossValue is the HEADLINE measure and what the panel ranks by. Unlike every
+      // other entity, TaxValue here is assembled from the pricing conditions above
+      // rather than read from a tax column, and INCLUDES Tcs (agreed with the
+      // business) so GrossValue reconciles with the invoice total the customer pays.
+      TaxValue        : abap.dec(15,2);
+      GrossValue      : abap.dec(15,2);
       GrandTotalValue : abap.dec(15,2);
+      // Gross counterpart of GrandTotalValue - the denominator for "% of total" now
+      // that gross is the headline. Both are taken across EVERY material in scope,
+      // before the top-20 cut.
+      GrandTotalGross : abap.dec(15,2);
 }

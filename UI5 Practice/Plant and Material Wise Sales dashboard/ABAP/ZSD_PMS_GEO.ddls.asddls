@@ -36,8 +36,14 @@ define custom entity ZSD_PMS_GEO
   key Regio         : abap.char(3);
       StateText     : abap.char(40);
       AlmZone       : abap.char(10);   // "Zone" alone is a reserved word, same issue as KPI's "Label"
+      // GrossValue is the choropleth's HEADLINE measure; NetValue/TaxValue ride along
+      // for the hover card. DeltaPct compares GrossValue against PriorGross, so the
+      // growth pill describes the same measure as the number beside it.
       NetValue      : abap.dec(15,2);
+      TaxValue      : abap.dec(15,2);
+      GrossValue    : abap.dec(15,2);
       PriorValue    : abap.dec(15,2);
+      PriorGross    : abap.dec(15,2);
       DeltaPct      : abap.dec(8,2);
       PlantCount    : abap.int4;
       InvoiceCount  : abap.int4;

@@ -175,6 +175,7 @@
 					deltaText="{dash>deltaText}"
 					deltaTone="{dash>deltaTone}"
 					sub="{dash>sub}"
+					sub2="{dash>sub2}"
 					accent="{dash>accent}"
 					spark="{dash>spark}"/>
 			</viz:Box>
@@ -228,6 +229,7 @@
 						topStatesLabel="{i18n>schemeTopStates}"
 						shareLabel="{i18n>schemeShareOfIndia}"
 						invoicesLabel="{i18n>schemeInvoices}"
+						breakdownLabel="{i18n>rowBreakdown}"
 						newLabel="{i18n>deltaNew}"
 						emptyText="{i18n>noDataScheme}"
 						emptyStatesText="{i18n>noDataStates}"

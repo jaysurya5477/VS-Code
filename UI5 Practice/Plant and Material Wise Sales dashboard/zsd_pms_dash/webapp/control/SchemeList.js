@@ -76,7 +76,9 @@ sap.ui.define([
 		metadata: {
 			library: "com.sap.zsdpmsdash",
 			properties: {
-				/** Scheme entity rows {Category, CatDesc, NetValue, SharePct, InvoiceCount, DeltaPct}. */
+				/** Scheme entity rows {Category, CatDesc, NetValue, TaxValue, GrossValue,
+				 *  SharePct, InvoiceCount, DeltaPct}. GrossValue is what the rows display,
+				 *  rank by and size their bars on; SharePct is gross-based server-side. */
 				schemeRows: {
 					type: "object",
 					defaultValue: null
@@ -121,6 +123,13 @@ sap.ui.define([
 					type: "string",
 					defaultValue: "new"
 				},
+				/** Native title-tooltip pattern for a row's gross/net/tax breakdown.
+				 *  {0} = gross, {1} = net, {2} = tax. These rows have no hover card of their
+				 *  own, so this is where the breakdown behind the gross figure lives. */
+				breakdownLabel: {
+					type: "string",
+					defaultValue: "{0}  ·  net {1}  ·  tax {2}"
+				},
 				/** Shown when the selection returned no schemes. */
 				emptyText: {
 					type: "string",
@@ -161,15 +170,17 @@ sap.ui.define([
 		renderer: {
 			apiVersion: 2,
 			render: function (oRm, oControl) {
+				// Gross is the panel's headline measure - it is what the rows display, rank by
+				// and size their bars on. SharePct is already gross-based server-side.
 				var aSchemes = (oControl.getSchemeRows() || []).slice().sort(function (a, b) {
-					return num(b.NetValue) - num(a.NetValue);
+					return num(b.GrossValue) - num(a.GrossValue);
 				});
 				var aSelSchemes = oControl.getSelectedSchemes() || [];
 				var aSelStates = oControl.getSelectedStates() || [];
 				var sNew = oControl.getNewLabel();
 
 				var fMax = aSchemes.reduce(function (m, r) {
-					return Math.max(m, num(r.NetValue));
+					return Math.max(m, num(r.GrossValue));
 				}, 0) || 1;
 
 				oRm.openStart("div", oControl);
@@ -184,7 +195,7 @@ sap.ui.define([
 
 				aSchemes.forEach(function (r, i) {
 					var sColor = cssVar(RAMP[i % RAMP.length]);
-					var fNet = num(r.NetValue);
+					var fGross = num(r.GrossValue);
 					var bSel = aSelSchemes.indexOf(r.Category) >= 0;
 
 					oRm.openStart("button");
@@ -195,6 +206,12 @@ sap.ui.define([
 					oRm.attr("type", "button");
 					oRm.attr("data-pms-scheme", r.Category || "");
 					oRm.attr("aria-pressed", String(bSel));
+					// The rows carry no hover card of their own, so the net/tax breakdown behind
+					// the gross figure rides on the native title tooltip.
+					oRm.attr("title", oControl.getBreakdownLabel()
+						.replace("{0}", formatter.money(fGross))
+						.replace("{1}", formatter.money(r.NetValue))
+						.replace("{2}", formatter.money(r.TaxValue)));
 					oRm.openEnd();
 
 					oRm.openStart("span").class("pmsZTop").openEnd();
@@ -202,12 +219,12 @@ sap.ui.define([
 					oRm.openStart("span").class("pmsZName").openEnd()
 						.text(r.CatDesc || r.Category).close("span");
 					oRm.openStart("span").class("pmsZVal").openEnd()
-						.text(formatter.money(fNet)).close("span");
+						.text(formatter.money(fGross)).close("span");
 					oRm.close("span");
 
 					oRm.openStart("span").class("pmsZBar").openEnd();
 					oRm.openStart("span").class("pmsZBarFill");
-					oRm.style("width", (fNet / fMax * 100).toFixed(1) + "%");
+					oRm.style("width", (fGross / fMax * 100).toFixed(1) + "%");
 					oRm.style("background", sColor);
 					oRm.openEnd();
 					oRm.close("span");
@@ -227,9 +244,9 @@ sap.ui.define([
 
 				/* --- top states ---------------------------------------------------- */
 				var aStates = (oControl.getStateRows() || []).filter(function (r) {
-					return num(r.NetValue) > 0;
+					return num(r.GrossValue) > 0;
 				}).sort(function (a, b) {
-					return num(b.NetValue) - num(a.NetValue);
+					return num(b.GrossValue) - num(a.GrossValue);
 				}).slice(0, oControl.getTopCount());
 
 				oRm.openStart("div").class("pmsDivider").openEnd().close("div");
@@ -252,6 +269,10 @@ sap.ui.define([
 					oRm.attr("type", "button");
 					oRm.attr("data-pms-regio", r.Regio || "");
 					oRm.attr("data-pms-statetext", r.StateText || "");
+					oRm.attr("title", oControl.getBreakdownLabel()
+						.replace("{0}", formatter.money(r.GrossValue))
+						.replace("{1}", formatter.money(r.NetValue))
+						.replace("{2}", formatter.money(r.TaxValue)));
 					oRm.openEnd();
 
 					oRm.openStart("span").class("pmsStRank").openEnd()
@@ -263,7 +284,7 @@ sap.ui.define([
 					oRm.openStart("span").class("pmsStName").openEnd()
 						.text(r.StateText || r.Regio).close("span");
 					oRm.openStart("span").class("pmsStVal").openEnd()
-						.text(formatter.money(r.NetValue)).close("span");
+						.text(formatter.money(r.GrossValue)).close("span");
 					renderDelta(oRm, "pmsStDelta", r.DeltaPct, sNew);
 
 					oRm.close("button");

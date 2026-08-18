@@ -50,6 +50,11 @@ define custom entity ZSD_PMS_KPI
       CurrValue    : abap.dec(15,2);
       PriorValue   : abap.dec(15,2);
       DeltaPct     : abap.dec(8,2);
+      // Breakdown of the daily card's CurrValue, which is GROSS - rendered as a small
+      // line beneath the value. Zero on the NET/TAX/GROSS cards, which each already
+      // ARE one of the three measures.
+      NetValue     : abap.dec(15,2);
+      TaxValue     : abap.dec(15,2);
       SnapshotDate : abap.dats;    // OD-1c: only populated for the "Yesterday Sale" row
       DocCount     : abap.int4;
 }

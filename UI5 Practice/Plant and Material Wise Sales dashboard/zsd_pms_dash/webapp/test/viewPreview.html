@@ -66,14 +66,14 @@ sap.ui.getCore().attachInit(function () {
 			54500000, 58800000, 60100000, 64000000, 59000000, 71200000];
 
 		var GEO = [
-			{Regio: "27", StateText: "Maharashtra", AlmZone: "", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
-			{Regio: "33", StateText: "Tamil Nadu", AlmZone: "south ", NetValue: "61050000", PriorValue: "64200000", DeltaPct: "-4.9", PlantCount: "9", InvoiceCount: "2410"},
-			{Regio: "24", StateText: "Gujarat", AlmZone: "WEST", NetValue: "45300000", PriorValue: "40100000", DeltaPct: "13.0", PlantCount: "7", InvoiceCount: "1877"},
-			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "Z1", NetValue: "31200000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
-			{Regio: "29", StateText: "Karnataka", AlmZone: "10", NetValue: "27800000", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
-			{Regio: "19", StateText: "West Bengal", AlmZone: "", NetValue: "14400000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
-			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "", NetValue: "9800000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
-			{Regio: "18", StateText: "Assam", AlmZone: "", NetValue: "0", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
+			{Regio: "27", StateText: "Maharashtra", AlmZone: "", NetValue: "84210000", TaxValue: "15157800", GrossValue: "99367800", PriorGross: "90978000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
+			{Regio: "33", StateText: "Tamil Nadu", AlmZone: "south ", NetValue: "61050000", TaxValue: "10989000", GrossValue: "72039000", PriorGross: "75756000", PriorValue: "64200000", DeltaPct: "-4.9", PlantCount: "9", InvoiceCount: "2410"},
+			{Regio: "24", StateText: "Gujarat", AlmZone: "WEST", NetValue: "45300000", TaxValue: "8154000", GrossValue: "53454000", PriorGross: "47318000", PriorValue: "40100000", DeltaPct: "13.0", PlantCount: "7", InvoiceCount: "1877"},
+			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "Z1", NetValue: "31200000", TaxValue: "5616000", GrossValue: "36816000", PriorGross: "36462000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
+			{Regio: "29", StateText: "Karnataka", AlmZone: "10", NetValue: "27800000", TaxValue: "5004000", GrossValue: "32804000", PriorGross: "0", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
+			{Regio: "19", StateText: "West Bengal", AlmZone: "", NetValue: "14400000", TaxValue: "2592000", GrossValue: "16992000", PriorGross: "18644000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
+			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "", NetValue: "9800000", TaxValue: "1764000", GrossValue: "11564000", PriorGross: "9794000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
+			{Regio: "18", StateText: "Assam", AlmZone: "", NetValue: "0", TaxValue: "0", GrossValue: "0", PriorGross: "1416000", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
 		];
 		// Hostile AlmZone values throughout - blank, wrong case, trailing space, or a raw
 		// code - to prove the map and scheme panel resolve zones from the state name, not
@@ -86,11 +86,11 @@ sap.ui.getCore().attachInit(function () {
 		// buildCallouts()'s own header). U03/U04/U05 sit in the narrow north/south bands
 		// themselves, so their lines stay short.
 		var DOTS = [
-			{UnitCode: "U01", NetValue: "84210000", PriorValue: "77100000", DeltaPct: "9.2", Latitude: "18.52", Longitude: "73.86", PlantCount: "12"},
-			{UnitCode: "U02", NetValue: "31000000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "22.0", Longitude: "79.0", PlantCount: "6"},
-			{UnitCode: "U03", NetValue: "22000000", PriorValue: "19000000", DeltaPct: "15.8", Latitude: "33.5", Longitude: "75.0", PlantCount: "3"},
-			{UnitCode: "U04", NetValue: "18500000", PriorValue: "17000000", DeltaPct: "8.8", Latitude: "8.5", Longitude: "77.5", PlantCount: "2"},
-			{UnitCode: "U05", NetValue: "9800000", PriorValue: "9100000", DeltaPct: "7.7", Latitude: "9.9", Longitude: "76.3", PlantCount: "2"}
+			{UnitCode: "U01", NetValue: "84210000", TaxValue: "15157800", GrossValue: "99367800", PriorGross: "90978000", PriorValue: "77100000", DeltaPct: "9.2", Latitude: "18.52", Longitude: "73.86", PlantCount: "12"},
+			{UnitCode: "U02", NetValue: "31000000", TaxValue: "5580000", GrossValue: "36580000", PriorGross: "33040000", PriorValue: "28000000", DeltaPct: "10.7", Latitude: "22.0", Longitude: "79.0", PlantCount: "6"},
+			{UnitCode: "U03", NetValue: "22000000", TaxValue: "3960000", GrossValue: "25960000", PriorGross: "22420000", PriorValue: "19000000", DeltaPct: "15.8", Latitude: "33.5", Longitude: "75.0", PlantCount: "3"},
+			{UnitCode: "U04", NetValue: "18500000", TaxValue: "3330000", GrossValue: "21830000", PriorGross: "20060000", PriorValue: "17000000", DeltaPct: "8.8", Latitude: "8.5", Longitude: "77.5", PlantCount: "2"},
+			{UnitCode: "U05", NetValue: "9800000", TaxValue: "1764000", GrossValue: "11564000", PriorGross: "10738000", PriorValue: "9100000", DeltaPct: "7.7", Latitude: "9.9", Longitude: "76.3", PlantCount: "2"}
 		];
 
 		// A production-shaped spread (14 plants, west/south heavy) for eyeballing the callout
@@ -110,17 +110,23 @@ sap.ui.getCore().attachInit(function () {
 				var aNames = ["Jammu", "Ambala", "New Delhi", "Jaipur", "Ahmedabad",
 					"Mumbai Andheri East", "Nagpur", "Bengaluru", "Chennai", "Kochi",
 					"Kanyakumari", "Guwahati", "Bhubaneswar", "Kolkata"];
-				return {UnitCode: a[0], UnitName: aNames[i], NetValue: String(a[1]),
-					PriorValue: "0", DeltaPct: null,
+				// a[1] is net; tax at a flat 18% keeps the mock arithmetic self-consistent.
+				// GrossValue is what the map sizes and labels the dot by, so a fixture row
+				// without it renders no dot at all.
+				var iNet = a[1];
+				var iTax = Math.round(iNet * 0.18);
+				return {UnitCode: a[0], UnitName: aNames[i], NetValue: String(iNet),
+					TaxValue: String(iTax), GrossValue: String(iNet + iTax),
+					PriorValue: "0", PriorGross: "0", DeltaPct: null,
 					Latitude: String(a[2]), Longitude: String(a[3]), PlantCount: "3"};
 			});
 		}
 
 		var SCHEMES = [
-			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
-			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
-			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: null},
-			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
+			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", TaxValue: "15120000", GrossValue: "99120000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
+			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", TaxValue: "8280000", GrossValue: "54280000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
+			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", TaxValue: "6840000", GrossValue: "44840000", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: null},
+			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", TaxValue: "0", GrossValue: "0", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
 		];
 
 		var options = function (aKeys) { return aKeys.map(function (k) { return {key: k, text: k}; }); };
@@ -143,13 +149,14 @@ sap.ui.getCore().attachInit(function () {
 			mapShowDots: true,
 			mapSubtitle: "9 of 36 states billed · click a state to filter",
 			mapTexts: {
-				scaleCap: "Net value", lowest: "lowest", low: "low", high: "high",
-				noBilling: "no billing", dotKey: "dot size = unit net value",
-				netBilled: "Net billed", growth: "Growth", share: "Share of India",
+				scaleCap: "Gross value", lowest: "lowest", low: "low", high: "high",
+				noBilling: "no billing", dotKey: "dot size = unit gross value",
+				grossBilled: "Gross billed", netValue: "Net value", taxValue: "Tax (GST)",
+				growth: "Growth", share: "Share of India",
 				plantsBilling: "Plants billing", invoices: "Invoices",
 				zoneStates: "states", unitPlants: "plants", newLabel: "new"
 			},
-			schemeSubtitle: "Net value by scheme · vs FY 2025",
+			schemeSubtitle: "Gross value by scheme · vs FY 2025",
 			priorFyLabel: "FY 2025",
 			selectedRegios: ["27"],
 			selectedZones: [],
@@ -161,7 +168,10 @@ sap.ui.getCore().attachInit(function () {
 				{label: "Total net value", valueText: "₹6.58 Cr", deltaText: "+9.2%", deltaTone: "up", sub: "₹65,800,000", accent: "net", spark: TREND},
 				{label: "Total tax (GST)", valueText: "₹1.18 Cr", deltaText: "+7.1%", deltaTone: "up", sub: "18.0% avg rate", accent: "tax", spark: TREND},
 				{label: "Total gross value", valueText: "₹7.76 Cr", deltaText: "-2.4%", deltaTone: "down", sub: "₹77,600,000", accent: "gross", spark: TREND},
-				{label: "Yesterday Sale", valueText: "₹12.40 L", deltaText: "+0.0%", deltaTone: "flat", sub: "13 Aug 26 · 143 invoices", accent: "daily", spark: TREND}
+				// The daily card's headline is GROSS, so it carries sub2 - the net/tax breakdown
+				// on a second, smaller line. The three totals cards each already ARE one of
+				// those measures and leave sub2 empty.
+				{label: "Yesterday Sale", valueText: "₹12.40 L", deltaText: "+0.0%", deltaTone: "flat", sub: "13 Aug 26 · 143 invoices", sub2: "net ₹10.51 L · tax ₹1.89 L", accent: "daily", spark: TREND}
 			],
 			geoRows: GEO,
 			dotRows: DOTS,

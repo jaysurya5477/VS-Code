@@ -29,8 +29,14 @@ define custom entity ZSD_PMS_UNIT_DOTS
       // row per Unit (see the GL CDS header), so REMARKS is the Unit's own descriptive name,
       // not a per-plant value - it needs no aggregation, just carrying through.
       UnitName    : abap.char(40);
+      // GrossValue is the HEADLINE measure - it drives the dot radius and the callout
+      // label; NetValue/TaxValue ride along for the hover card. DeltaPct compares
+      // GrossValue against PriorGross, so the growth pill matches the value shown.
       NetValue    : abap.dec(15,2);
+      TaxValue    : abap.dec(15,2);
+      GrossValue  : abap.dec(15,2);
       PriorValue  : abap.dec(15,2);
+      PriorGross  : abap.dec(15,2);
       DeltaPct    : abap.dec(8,2);
       Latitude    : abap.dec(10,7);
       Longitude   : abap.dec(10,7);

@@ -241,7 +241,7 @@ sap.ui.define([
 			return aGroup.map(function (o, i) {
 				var d = o.d;
 				var fY = aY[i];
-				var sLabel = calloutLabel(d.code, d.name, formatter.money(d.net, 1));
+				var sLabel = calloutLabel(d.code, d.name, formatter.money(d.gross, 1));
 				var fWidth = labelWidth(sLabel) + CALLOUT_LINE_GAP;
 
 				return {
@@ -342,12 +342,15 @@ sap.ui.define([
 		metadata: {
 			library: "com.sap.zsdpmsdash",
 			properties: {
-				/** Geo entity rows {Regio, StateText, AlmZone, NetValue, PriorValue, DeltaPct, PlantCount, InvoiceCount}. */
+				/** Geo entity rows {Regio, StateText, AlmZone, NetValue, TaxValue, GrossValue,
+				 *  PriorValue, PriorGross, DeltaPct, PlantCount, InvoiceCount}. GrossValue is
+				 *  the measure this control shades, sizes and ranks by. */
 				geoRows: {
 					type: "object",
 					defaultValue: null
 				},
-				/** UnitDots entity rows {UnitCode, NetValue, PriorValue, DeltaPct, Latitude, Longitude, PlantCount}. */
+				/** UnitDots entity rows {UnitCode, UnitName, NetValue, TaxValue, GrossValue,
+				 *  PriorValue, PriorGross, DeltaPct, Latitude, Longitude, PlantCount}. */
 				dotRows: {
 					type: "object",
 					defaultValue: null
@@ -378,7 +381,7 @@ sap.ui.define([
 				},
 				/**
 				 * Visible strings, so this control stays i18n-free. Keys: scaleCap, lowest,
-				 * low, high, noBilling, dotKey, netBilled, growth, share, plantsBilling,
+				 * low, high, noBilling, dotKey, grossBilled, netValue, taxValue, growth, share, plantsBilling,
 				 * invoices, zoneStates, unitPlants, newLabel.
 				 */
 				texts: {
@@ -619,8 +622,12 @@ sap.ui.define([
 			var fTotal = 0;
 
 			aGeo.forEach(function (r) {
-				var v = num(r.NetValue);
-				var p = num(r.PriorValue);
+				// Gross is the map's headline measure - it drives the shading, the share-of-India
+				// figure and the dot radii. Net and tax are carried through to the hover card
+				// only, and the prior figure compared against is gross too, so the growth row
+				// describes the same measure as the value above it.
+				var v = num(r.GrossValue);
+				var p = num(r.PriorGross);
 				fTotal += v;
 
 				var sCanonical = INDIA.resolveState(r.StateText);
@@ -635,9 +642,11 @@ sap.ui.define([
 					return;
 				}
 				var z = mZone[sZone] || (mZone[sZone] = {
-					key: sZone, net: 0, prior: 0, plants: 0, invoices: 0, states: 0
+					key: sZone, gross: 0, net: 0, tax: 0, prior: 0, plants: 0, invoices: 0, states: 0
 				});
-				z.net += v;
+				z.gross += v;
+				z.net += num(r.NetValue);
+				z.tax += num(r.TaxValue);
 				z.prior += p;
 				z.plants += num(r.PlantCount);
 				z.invoices += num(r.InvoiceCount);
@@ -646,10 +655,10 @@ sap.ui.define([
 
 			var oScale = quantile((bZone ?
 				Object.keys(mZone).map(function (k) {
-					return mZone[k].net;
+					return mZone[k].gross;
 				}) :
 				aStateNames.map(function (s) {
-					return mByState[s] ? num(mByState[s].NetValue) : 0;
+					return mByState[s] ? num(mByState[s].GrossValue) : 0;
 				})
 			).filter(function (v) {
 				return v > 0;
@@ -664,7 +673,7 @@ sap.ui.define([
 				return {
 					key: sState,
 					regio: oRow ? oRow.Regio : "",
-					fill: fill(oRow ? num(oRow.NetValue) : 0),
+					fill: fill(oRow ? num(oRow.GrossValue) : 0),
 					selected: !!(oRow && aSelRegios.indexOf(oRow.Regio) >= 0)
 				};
 			});
@@ -673,32 +682,35 @@ sap.ui.define([
 				var o = mZone[sZone];
 				return {
 					key: sZone,
-					fill: fill(o ? o.net : 0),
+					fill: fill(o ? o.gross : 0),
 					selected: aSelZones.indexOf(sZone) >= 0
 				};
 			});
 
+			// Dot size and the callout's own figure are both gross, matching the choropleth
+			// beneath them - a dot sized on net beside a state shaded on gross would invite
+			// exactly the wrong comparison.
 			var fDotMax = aDots.reduce(function (m, d) {
-				return Math.max(m, num(d.NetValue));
+				return Math.max(m, num(d.GrossValue));
 			}, 0) || 1;
 
 			// Biggest first, so the small dots end up on top and stay clickable/hoverable.
 			var aProjected = aDots.filter(function (d) {
-				return num(d.Latitude) && num(d.Longitude) && num(d.NetValue) > 0;
+				return num(d.Latitude) && num(d.Longitude) && num(d.GrossValue) > 0;
 			}).sort(function (a, b) {
-				return num(b.NetValue) - num(a.NetValue);
+				return num(b.GrossValue) - num(a.GrossValue);
 			}).map(function (d) {
 				var xy = projLL(num(d.Latitude), num(d.Longitude));
 				return {
 					code: d.UnitCode,
-					// Blank until the backend exposes UnitName - see the ZSD_PMS_UNIT_DOTS
-					// change; the label and hover card both degrade to the code alone.
+					// Falls back to the code alone when a Unit has no name maintained
+					// (ZSD_ZONE_PLANT-REMARKS blank).
 					name: d.UnitName || "",
 					x: xy[0].toFixed(1),
 					y: xy[1].toFixed(1),
-					r: ((2.2 + Math.sqrt(num(d.NetValue) / fDotMax) * 6.5) *
+					r: ((2.2 + Math.sqrt(num(d.GrossValue) / fDotMax) * 6.5) *
 						(bShowDots ? GUTTER_SCALE : 1)).toFixed(1),
-					net: num(d.NetValue)
+					gross: num(d.GrossValue)
 				};
 			});
 
@@ -742,10 +754,14 @@ sap.ui.define([
 					return null;
 				}
 				// Full name here, untruncated - the hover card has the room the gutter does not.
+				// Gross leads (it is what the dot is sized on), with net and tax broken out
+				// beneath it and last year's gross for the comparison.
 				return tipHead(t.unitPlants ? formatter.count(d.PlantCount) + " " + t.unitPlants : "",
 						d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
-					tipRow(t.netBilled || "", formatter.money(d.NetValue)) +
-					tipRow(sPrior, formatter.money(d.PriorValue)) +
+					tipRow(t.grossBilled || "", formatter.money(d.GrossValue)) +
+					tipRow(t.netValue || "", formatter.money(d.NetValue)) +
+					tipRow(t.taxValue || "", formatter.money(d.TaxValue)) +
+					tipRow(sPrior, formatter.money(d.PriorGross)) +
 					tipRow(t.growth || "", growth(d.DeltaPct));
 			}
 
@@ -756,10 +772,13 @@ sap.ui.define([
 					return null;
 				}
 				return tipHead(z.states + " " + (t.zoneStates || ""), z.key) +
-					tipRow(t.netBilled || "", formatter.money(z.net)) +
+					tipRow(t.grossBilled || "", formatter.money(z.gross)) +
+					tipRow(t.netValue || "", formatter.money(z.net)) +
+					tipRow(t.taxValue || "", formatter.money(z.tax)) +
 					tipRow(sPrior, formatter.money(z.prior)) +
-					tipRow(t.growth || "", z.prior ? formatter.signedPercent((z.net - z.prior) / z.prior * 100) : sNew) +
-					tipRow(t.share || "", formatter.percent(z.net / oModel.total * 100, 1)) +
+					tipRow(t.growth || "",
+						z.prior ? formatter.signedPercent((z.gross - z.prior) / z.prior * 100) : sNew) +
+					tipRow(t.share || "", formatter.percent(z.gross / oModel.total * 100, 1)) +
 					tipRow(t.plantsBilling || "", formatter.count(z.plants)) +
 					tipRow(t.invoices || "", formatter.count(z.invoices));
 			}
@@ -775,14 +794,16 @@ sap.ui.define([
 				(INDIA.zoneOf[sState] ? " " + formatter.MIDDOT + " " + INDIA.zoneOf[sState] : "");
 
 			if (!r) {
-				return tipHead(sEyebrow, sState) + tipRow(t.netBilled || "", t.noBilling || "");
+				return tipHead(sEyebrow, sState) + tipRow(t.grossBilled || "", t.noBilling || "");
 			}
 
 			return tipHead(sEyebrow, sState) +
-				tipRow(t.netBilled || "", formatter.money(r.NetValue)) +
-				tipRow(sPrior, formatter.money(r.PriorValue)) +
+				tipRow(t.grossBilled || "", formatter.money(r.GrossValue)) +
+				tipRow(t.netValue || "", formatter.money(r.NetValue)) +
+				tipRow(t.taxValue || "", formatter.money(r.TaxValue)) +
+				tipRow(sPrior, formatter.money(r.PriorGross)) +
 				tipRow(t.growth || "", growth(r.DeltaPct)) +
-				tipRow(t.share || "", formatter.percent(num(r.NetValue) / oModel.total * 100, 1)) +
+				tipRow(t.share || "", formatter.percent(num(r.GrossValue) / oModel.total * 100, 1)) +
 				tipRow(t.plantsBilling || "", formatter.count(r.PlantCount)) +
 				tipRow(t.invoices || "", formatter.count(r.InvoiceCount));
 		},
