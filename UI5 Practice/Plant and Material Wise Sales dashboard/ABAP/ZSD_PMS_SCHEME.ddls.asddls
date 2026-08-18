@@ -29,6 +29,9 @@ define custom entity ZSD_PMS_SCHEME
       NetValue      : abap.dec(15,2);
       TaxValue      : abap.dec(15,2);
       GrossValue    : abap.dec(15,2);
+      // The base DeltaPct was computed against, so the frontend can tell a real +100%
+      // from "no prior year at all" - the compute class returns 100 for a zero base.
+      PriorGross    : abap.dec(15,2);
       SharePct      : abap.dec(8,2);
       InvoiceCount  : abap.int4;
       DeltaPct      : abap.dec(8,2);

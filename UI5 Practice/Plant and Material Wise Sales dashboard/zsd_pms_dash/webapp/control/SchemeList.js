@@ -59,9 +59,25 @@ sap.ui.define([
 	 * @param {number|string} vDelta the delta percentage
 	 * @param {string} sNewLabel text shown when the delta is not comparable
 	 */
-	function renderDelta(oRm, sClass, vDelta, sNewLabel) {
+	/**
+	 * The growth pill. vPrior is the base the percentage was computed against, and it is
+	 * what decides whether a percentage is meaningful at all: the backend's pct( ) helper
+	 * returns 100 when the prior base is zero, which reaches here as a confident "+100.0%"
+	 * meaning "doubled" when it actually means "there was nothing last year to compare
+	 * against". A row with no prior base is labelled as new instead.
+	 * @param {sap.ui.core.RenderManager} oRm the render manager
+	 * @param {string} sClass CSS class for the pill
+	 * @param {string|number} vDelta the percentage from the backend
+	 * @param {string} sNewLabel shown when there is no prior base
+	 * @param {string|number} [vPrior] the prior-period value the delta was computed against
+	 */
+	function renderDelta(oRm, sClass, vDelta, sNewLabel, vPrior) {
 		var f = parseFloat(vDelta);
-		var bKnown = isFinite(f);
+		var fPrior = parseFloat(vPrior);
+		// Only suppressed when a prior figure was actually supplied and is zero - a panel
+		// that does not carry one at all keeps the previous behaviour.
+		var bNoBase = arguments.length > 4 && (!isFinite(fPrior) || fPrior === 0);
+		var bKnown = isFinite(f) && !bNoBase;
 
 		oRm.openStart("span");
 		oRm.class(sClass);
@@ -117,6 +133,15 @@ sap.ui.define([
 				invoicesLabel: {
 					type: "string",
 					defaultValue: ""
+				},
+				/**
+				 * Whether to render the growth pills at all. Set false where a year-on-year
+				 * comparison is known to be unsound - see the controller's
+				 * _deltasUnreliable( ).
+				 */
+				deltaVisible: {
+					type: "boolean",
+					defaultValue: true
 				},
 				/** Shown instead of a percentage when there is no prior-year base. */
 				newLabel: {
@@ -236,7 +261,9 @@ sap.ui.define([
 							" " + formatter.MIDDOT + " " + formatter.count(r.InvoiceCount) +
 							" " + oControl.getInvoicesLabel())
 						.close("span");
-					renderDelta(oRm, "pmsZDelta", r.DeltaPct, sNew);
+					if (oControl.getDeltaVisible()) {
+						renderDelta(oRm, "pmsZDelta", r.DeltaPct, sNew, r.PriorGross);
+					}
 					oRm.close("span");
 
 					oRm.close("button");
@@ -285,7 +312,9 @@ sap.ui.define([
 						.text(r.StateText || r.Regio).close("span");
 					oRm.openStart("span").class("pmsStVal").openEnd()
 						.text(formatter.money(r.GrossValue)).close("span");
-					renderDelta(oRm, "pmsStDelta", r.DeltaPct, sNew);
+					if (oControl.getDeltaVisible()) {
+						renderDelta(oRm, "pmsStDelta", r.DeltaPct, sNew, r.PriorGross);
+					}
 
 					oRm.close("button");
 				});

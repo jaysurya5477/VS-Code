@@ -25,6 +25,11 @@ SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
                   s_matnr FOR vbrp-matnr MODIF ID pms,
                   s_regio FOR t001w-regio MODIF ID pms.
   PARAMETERS: p_fy TYPE gjahr.
+  " A plain PARAMETER, not a SELECT-OPTION: ALM_ZONE has no confirmed data
+  " element to reference (see ZCL_PMS_DASH_QUERY's ty_range_zone note), and
+  " one value is enough to reproduce the growth-indicator problem. Type it
+  " exactly as the dashboard's Zone dropdown sends it, e.g. Central.
+  PARAMETERS: p_zone TYPE char10.
 SELECTION-SCREEN END OF BLOCK b1.
 
 * NOTE: S_WERKS/S_MATNR/S_REGIO are declared against VBRP/T001W - standard
@@ -50,6 +55,9 @@ START-OF-SELECTION.
   ENDIF.
   IF s_regio[] IS NOT INITIAL.
     ls_filters-state = CORRESPONDING #( s_regio[] ).
+  ENDIF.
+  IF p_zone IS NOT INITIAL.
+    APPEND VALUE #( sign = 'I' option = 'EQ' low = p_zone ) TO ls_filters-zone.
   ENDIF.
 
   DATA(ls_dash) = zcl_pms_dash_query=>get_dashboard_data( ls_filters ).

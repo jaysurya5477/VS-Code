@@ -18,19 +18,30 @@
 // PRCD_ELEMENTS.sakn1 <-> this view's HKONT - see that class's
 // resolve_material_gl_keys() for the mechanism and its caveats.
 //
-// Geography is plant-based (OD-1, decided) - no KNA1/customer join. Zone,
-// city, Unit (OD-3), and the two new lat/lon fields (OD-5, pending - the
-// user is adding them to ZSD_ZONE_PLANT) all come from that table, LEFT
-// OUTER because production plants have been seen missing a zone row (see
-// CONTEXT_LOG.md sec.3 "zone gap" - re-check via P0-0 before going live).
+// Geography is unit-based - no KNA1/customer join. Zone, city, Unit (OD-3),
+// and the two new lat/lon fields (OD-5, pending - the user is adding them to
+// ZSD_ZONE_PLANT) all come from that table, LEFT OUTER because production
+// plants have been seen missing a zone row (see CONTEXT_LOG.md sec.3
+// "zone gap" - re-check via P0-0 before going live).
 //
 // OD-8, confirmed by user 2026-08-13: the join to ZSD_ZONE_PLANT is on
 // A.VKBUR (sales office), NOT A.WERKS (billing plant) - VKBUR is the real
 // Unit-grouping key, and ZSD_ZONE_PLANT.WERKS (despite its name) holds one
 // row per Unit, not per billing plant. A.VKBUR is therefore not exposed as
 // its own output field below (would just duplicate B.WERKS/"unit").
-// State comes from T001W.regio -> T005U (state text), also LEFT OUTER for
-// the same reason (T001W-REGIO can be blank - see P0-4).
+//
+// OD-9, decided by user 2026-08-18: State comes from the UNIT's own master
+// record (T001W on B.WERKS -> T005U for the text), not from the billing
+// plant. It was C.WERKS = A.WERKS until now, which meant the choropleth was
+// painted from A.WERKS while the map dots, zone and city beside it all came
+// from A.VKBUR. The two keys disagree whenever a document is billed by one
+// plant and sold by another unit - a material billed at 2000 HQ (Uttar
+// Pradesh) but sold through the eastern units shaded UP while its dots sat
+// on Ranchi and Bhubaneswar. One join key now feeds shading, dots and zone
+// alike. Consequence to watch (P0-0): a row whose VKBUR has no
+// ZSD_ZONE_PLANT entry now has no state either, so it drops off the
+// choropleth instead of being shaded at its billing plant. Such a row
+// already had no dot and no zone, but it did previously carry a state.
 //
 // OD-5 field spec: create both new ZSD_ZONE_PLANT fields as DEC(10,7) - one
 // shared domain for both, even though latitude only needs 2 integer digits

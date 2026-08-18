@@ -90,6 +90,17 @@ sap.ui.define([
 					type: "string",
 					defaultValue: "flat"
 				},
+				/**
+				 * Whether to render the growth pill at all. Set false where a year-on-year
+				 * comparison is known to be unsound - see the controller's
+				 * _deltasUnreliable( ). The pill is omitted rather than shown as a neutral
+				 * dash, because a dash reads as "no movement" and this means "not
+				 * comparable".
+				 */
+				deltaVisible: {
+					type: "boolean",
+					defaultValue: true
+				},
 				/** Mono context line on the right of the footer, e.g. the un-abbreviated amount. */
 				sub: {
 					type: "string",
@@ -181,15 +192,17 @@ sap.ui.define([
 				/* --- delta pill + sub -------------------------------------------- */
 				oRm.openStart("div").class("pmsKpiFoot").openEnd();
 
-				oRm.openStart("span").class("pmsDelta").class("pmsDelta--" + sTone).openEnd();
-				if (sTone === "up" || sTone === "down") {
-					oRm.openStart("span").class("pmsDeltaArrow").openEnd()
-						.text(sTone === "up" ? "▲" : "▼").close("span");
-					oRm.text(oControl.getDeltaText());
-				} else {
-					oRm.text("–");
+				if (oControl.getDeltaVisible()) {
+					oRm.openStart("span").class("pmsDelta").class("pmsDelta--" + sTone).openEnd();
+					if (sTone === "up" || sTone === "down") {
+						oRm.openStart("span").class("pmsDeltaArrow").openEnd()
+							.text(sTone === "up" ? "▲" : "▼").close("span");
+						oRm.text(oControl.getDeltaText());
+					} else {
+						oRm.text("–");
+					}
+					oRm.close("span");
 				}
-				oRm.close("span");
 
 				if (oControl.getSub()) {
 					oRm.openStart("span").class("pmsKpiSub").openEnd()

@@ -241,7 +241,11 @@
 	padding: 12px 0 2px;
 }
 
-.pmsField { min-width: 11rem; flex: 1 1 11rem; max-width: 18rem; }
+/* 9rem basis, not 11rem: seven fields plus the button group at 11rem overflowed a 1366px
+   window, wrapping Period onto a second row and pushing the first panel ~50px further
+   down a screen that had none to spare. flex-grow still expands them to fill the row, so
+   a wide window sizes the fields exactly as before - only the wrap point moves. */
+.pmsField { min-width: 9rem; flex: 1 1 9rem; max-width: 18rem; }
 .pmsField--wide { min-width: 15rem; flex: 1 1 15rem; max-width: 22rem; }
 .pmsField--actions { flex: 0 0 auto; max-width: none; }
 
@@ -298,6 +302,24 @@
 
 @media (max-width: 1100px) {
 	.pmsGrid--charts > .pmsCard { grid-column: 1 / -1; }
+}
+
+/*
+ * Short-viewport trim. The panel heights above already track the viewport, but on a laptop
+ * screen it is the fixed vertical chrome stacked ABOVE the first panel row - top bar, filter
+ * bar, hint line, KPI cards - that decides whether that row lands on screen at all. None of
+ * it carries information that needs the extra room, so it tightens rather than making the
+ * panels smaller still. Keyed on height, not width: a 1920x800 window has exactly the same
+ * problem as a 1366x768 one, and a width breakpoint would miss it.
+ */
+@media (max-height: 820px) {
+	.pmsTopBar { padding-top: 10px; }
+	.pmsGrid { gap: 9px; padding-top: 9px; }
+	.pmsGrid--charts { padding-bottom: 10px; }
+	.pmsCard { padding: 11px 14px 8px; }
+	.pmsKpi { padding: 11px 13px 10px; }
+	.pmsKpiValue { font-size: 23px; margin-top: 6px; }
+	.pmsFilterHint { margin-bottom: 2px; }
 }
 
 @media (max-width: 600px) {
@@ -453,7 +475,13 @@
 
 /* -------------------------------------------------------------- india map --- */
 
-.pmsMapWrap { position: relative; display: flex; justify-content: center; width: 100%; }
+/* The view sets height in vh so the map tracks the viewport instead of standing at a fixed
+   35rem that overflowed a laptop screen. The bounds live here rather than in that vh value
+   because sap.ui.core.CSSSize validates against a regex that permits calc() but not
+   clamp() - so min/max-height do the clamping, and being CSS they are not overridden by the
+   inline height the renderer writes. Floor: below ~300px the callout labels collide. */
+.pmsMapWrap { position: relative; display: flex; justify-content: center; width: 100%;
+	min-height: 300px; max-height: 620px; }
 .pmsMapSvg { width: 100%; height: 100%; display: block; }
 
 .pmsMapArea {
@@ -468,6 +496,15 @@
 }
 .pmsMapArea:hover { stroke: var(--pms-ink); stroke-width: 1.4; }
 .pmsMapArea--sel { stroke: var(--pms-ink); stroke-width: 1.7; }
+
+/* A zone is one path made of its member states' subpaths, stroked inline in its own fill so
+   the internal borders disappear. Hover and selection therefore cannot use a stroke - it
+   would outline every one of those subpaths again, undoing exactly what the inline stroke
+   achieves - so they darken the whole region instead. Works on any scale step and in both
+   themes, unlike a fixed highlight colour. */
+.pmsMapArea--zone { transition: filter .12s ease; }
+.pmsMapArea--zone:hover { filter: brightness(.88) saturate(1.15); }
+.pmsMapArea--zone.pmsMapArea--sel { filter: brightness(.78) saturate(1.25); }
 
 .pmsMapZoneDiv {
 	fill: none;
@@ -590,7 +627,14 @@
 
 /* ------------------------------------------------------------ scheme list --- */
 
-.pmsSchemeList { padding-top: 4px; }
+/* Scrolls internally instead of growing the whole row. The scheme card sits beside the map
+   in the same grid row, and with ~7 schemes plus the Top-States list its natural height ran
+   well past the map's - so the row, and the page with it, grew to fit the taller of the two
+   and the panel no longer fit a laptop screen. Bounded to match .pmsMapWrap so the two
+   cards stay the same height at any viewport, with the overflow reachable by scrolling
+   inside the card. */
+.pmsSchemeList { padding-top: 4px; min-height: 300px; max-height: 620px;
+	overflow-y: auto; overscroll-behavior: contain; }
 
 .pmsZRow {
 	display: block;
@@ -740,4 +784,8 @@
 
 /* ------------------------------------------------------------------ charts --- */
 
-.pmsEChart { margin-top: 6px; }
+/* Same vh-plus-bounds arrangement as .pmsMapWrap - see its comment. The floor is higher
+   here because both charts plot 20 categories: under ~320px the bars and their axis labels
+   overlap, and ECharts crops labels rather than shrinking to fit. EChart already registers
+   a ResizeHandler on itself, so a viewport change resizes the canvas with no extra wiring. */
+.pmsEChart { margin-top: 6px; min-height: 320px; max-height: 560px; }

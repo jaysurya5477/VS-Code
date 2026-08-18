@@ -104,6 +104,31 @@ sap.ui.define([], function () {
 		},
 
 		/**
+		 * ZSD_ZONE_PLANT-ALM_ZONE as stored -> the form the dashboard groups and labels by.
+		 *
+		 * ALM_ZONE is a CHAR10 whose contents are maintained by hand, so the same zone can
+		 * arrive padded or in a different case ("south ", "WEST"). Grouping on the raw value
+		 * would split one zone into several swatches, and would stop the Zone filter's own
+		 * "North"/"Central" values from matching what the Geo rows carry. Trimming and
+		 * title-casing folds those together.
+		 *
+		 * A value that is not a recognisable zone name (a code such as "Z1") is passed
+		 * through trimmed rather than blanked, so bad master data shows up on the map as its
+		 * own labelled zone instead of silently vanishing.
+		 * @param {string} v the raw AlmZone
+		 * @returns {string} the canonical zone key, or "" when there is nothing to group by
+		 */
+		zoneKey: function (v) {
+			var s = String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim();
+			if (!s) {
+				return "";
+			}
+			return s.toLowerCase().replace(/\b[a-z]/g, function (c) {
+				return c.toUpperCase();
+			});
+		},
+
+		/**
 		 * FY period (1..12, Apr=1..Mar=12 - OD-6/OD-7 real convention) -> short month label.
 		 * @param {number|string} v FY period
 		 * @returns {string} e.g. "Apr", or the raw value if out of range

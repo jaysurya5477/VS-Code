@@ -13,7 +13,10 @@ sap.ui.define([
 	 *
 	 *   * quantile colour scale, not linear - a handful of large states would otherwise wash
 	 *     the whole map out to the palest step
-	 *   * zone granularity paints the zone union outlines, it does not just recolour states
+	 *   * zone granularity shades each zone's member states, taking the zone from
+	 *     ZSD_ZONE_PLANT-ALM_ZONE (the field the Zone filter itself matches on) rather than
+	 *     from the state's geography - the prototype's preset zone unions cannot express a
+	 *     business zoning, which is free to put Uttar Pradesh in Central
 	 *   * dot radius 2.2 + sqrt(v / max) * 6.5, biggest drawn first so small dots stay on top
 	 *   * hover card with net billed, prior FY, growth, share of India and plants billing
 	 *   * legend labelled with the actual quantile breaks, plus "no billing" and the dot key
@@ -375,6 +378,16 @@ sap.ui.define([
 					defaultValue: null
 				},
 				/** Prior fiscal year, e.g. "FY 2025" - the hover card's comparison row label. */
+				/**
+				 * Whether the hover cards may show a growth row. False where a year-on-year
+				 * comparison is known to be unsound - see the controller's
+				 * _deltasUnreliable( ). The prior-year row itself stays: the FIGURE is real
+				 * and worth seeing, it is only the percentage derived from it that misleads.
+				 */
+				deltaVisible: {
+					type: "boolean",
+					defaultValue: true
+				},
 				priorFyLabel: {
 					type: "string",
 					defaultValue: ""
@@ -444,16 +457,28 @@ sap.ui.define([
 				oRm.openEnd();
 
 				if (bZone) {
-					oModel.zones.forEach(function (o) {
+					// One path per state, filled with its zone's colour - see _buildModel()'s
+					// zoneAreas for why this is no longer one path per preset zone polygon.
+					oModel.zoneAreas.forEach(function (o) {
 						oRm.openStart("path");
 						oRm.class("pmsMapArea");
+						oRm.class("pmsMapArea--zone");
 						if (o.selected) {
 							oRm.class("pmsMapArea--sel");
 						}
-						oRm.attr("data-pms-zone", o.key);
+						if (o.zone) {
+							oRm.attr("data-pms-zone", o.zone);
+						}
 						oRm.attr("fill-rule", "evenodd");
-						oRm.attr("d", INDIA.zones[o.key]);
+						oRm.attr("d", o.d);
 						oRm.style("fill", o.fill);
+						// Stroked in its own fill, so the borders between member states vanish
+						// and the zone reads as one region. Written inline deliberately: an
+						// inline style outranks any selector, which also disables the
+						// .pmsMapArea hover/selected stroke that would otherwise re-draw every
+						// internal seam in ink. Those two states use a filter instead - see
+						// .pmsMapArea--zone in css/style.css.
+						oRm.style("stroke", o.fill);
 						oRm.openEnd();
 						oRm.close("path");
 					});
@@ -473,14 +498,11 @@ sap.ui.define([
 						oRm.close("path");
 					});
 
-					// Zone boundaries drawn over the states, as the prototype does.
-					Object.keys(INDIA.zones).forEach(function (sZone) {
-						oRm.openStart("path");
-						oRm.class("pmsMapZoneDiv");
-						oRm.attr("d", INDIA.zones[sZone]);
-						oRm.openEnd();
-						oRm.close("path");
-					});
+					// The prototype drew its five preset zone outlines over the states here.
+					// They are geographic unions, so they would now contradict the zones the
+					// rest of the panel reports - drawing a boundary that puts UP in North
+					// while the Zone filter and the hover card both call it Central. A
+					// business zoning has no fixed outline to draw, so nothing is drawn.
 				}
 
 				if (oControl.getShowDots()) {
@@ -614,11 +636,17 @@ sap.ui.define([
 			// Matches the renderer's own viewBox choice - no dots, no gutters, no rescale.
 			var bShowDots = this.getShowDots();
 			var aSelRegios = this.getSelectedRegios() || [];
-			var aSelZones = this.getSelectedZones() || [];
+			// Normalised the same way the rows are, so a filter value picked as "North" still
+			// marks a zone the Geo rows happen to carry as "NORTH ".
+			var aSelZones = (this.getSelectedZones() || []).map(formatter.zoneKey);
 
 			var aStateNames = Object.keys(INDIA.paths);
 			var mByState = {};
 			var mZone = {};
+			// canonical state name -> the ALM zone its billing was booked under. Built from
+			// the response rather than from a static table, so zone granularity can shade a
+			// zone's real member states instead of a preset polygon.
+			var mZoneOfState = {};
 			var fTotal = 0;
 
 			aGeo.forEach(function (r) {
@@ -635,11 +663,18 @@ sap.ui.define([
 					mByState[sCanonical] = r;
 				}
 
-				// Zone comes from INDIA.zoneOfState(), not from AlmZone - see this file's own
-				// header comment for why AlmZone cannot be trusted for this.
-				var sZone = INDIA.zoneOfState(r.StateText);
+				// Zone is ZSD_ZONE_PLANT-ALM_ZONE exactly as the backend reports it, NOT a
+				// zone derived from where the state sits on the map. ALIMCO's zones are a
+				// business grouping rather than a geographic one - 2000 HQ (UP+UK) is in
+				// Uttar Pradesh but belongs to Central - so deriving the zone from the state
+				// contradicted the Zone filter, which has always matched on ALM_ZONE
+				// server-side. One field now drives filtering and display alike.
+				var sZone = formatter.zoneKey(r.AlmZone);
 				if (!sZone) {
 					return;
+				}
+				if (sCanonical) {
+					mZoneOfState[sCanonical] = sZone;
 				}
 				var z = mZone[sZone] || (mZone[sZone] = {
 					key: sZone, gross: 0, net: 0, tax: 0, prior: 0, plants: 0, invoices: 0, states: 0
@@ -678,14 +713,69 @@ sap.ui.define([
 				};
 			});
 
-			var aZones = Object.keys(INDIA.zones).map(function (sZone) {
-				var o = mZone[sZone];
+			// Zones come from the data, not from INDIA.zones' five preset polygons. Whatever
+			// ALM_ZONE values are in scope get a swatch - including any sixth zone (North
+			// East billing used to vanish here, because indiaGeo folds its polygon into East).
+			var aZones = Object.keys(mZone).sort().map(function (sZone) {
 				return {
 					key: sZone,
-					fill: fill(o ? o.gross : 0),
+					fill: fill(mZone[sZone].gross),
 					selected: aSelZones.indexOf(sZone) >= 0
 				};
 			});
+
+			// Zone granularity paints each zone's own member states rather than a preset zone
+			// outline: with zones assigned per business rule, a preset geographic union would
+			// draw UP inside North however ALM_ZONE has it. State polygons stay exact, and a
+			// state nobody billed under any zone falls through to the no-data fill.
+			var mZoneFill = aZones.reduce(function (m, o) {
+				m[o.key] = o;
+				return m;
+			}, {});
+			// ONE path per zone, not one per state: the member states' path data is
+			// concatenated into a single multi-subpath "d". Drawing a path per state left
+			// every internal state border stroked, so a zone read as several states that
+			// happened to share a colour rather than as one region - which is the whole
+			// point of the granularity. Stroking each zone in its OWN fill colour then makes
+			// those internal seams disappear, while a boundary against a differently-valued
+			// neighbour still shows as a clean colour change.
+			var mZoneD = {};
+			var aUnzonedD = [];
+			aStateNames.forEach(function (sState) {
+				var sD = INDIA.paths[sState];
+				var sZone = mZoneOfState[sState] || "";
+				if (!sD) {
+					return;
+				}
+				if (mZoneFill[sZone]) {
+					mZoneD[sZone] = (mZoneD[sZone] || "") + sD;
+				} else {
+					aUnzonedD.push(sD);
+				}
+			});
+
+			var aZoneAreas = aZones.map(function (o) {
+				return {
+					key: o.key,
+					zone: o.key,
+					d: mZoneD[o.key] || "",
+					fill: o.fill,
+					selected: o.selected
+				};
+			}).filter(function (o) {
+				return !!o.d;
+			});
+
+			// Everything nobody billed under any zone, as one no-data shape behind them.
+			if (aUnzonedD.length) {
+				aZoneAreas.unshift({
+					key: "",
+					zone: "",
+					d: aUnzonedD.join(""),
+					fill: "var(--pms-nodata)",
+					selected: false
+				});
+			}
 
 			// Dot size and the callout's own figure are both gross, matching the choropleth
 			// beneath them - a dot sized on net beside a state shaded on gross would invite
@@ -718,6 +808,7 @@ sap.ui.define([
 				isZone: bZone,
 				states: aStates,
 				zones: aZones,
+				zoneAreas: aZoneAreas,
 				dots: aProjected,
 				callouts: buildCallouts(aProjected),
 				scale: oScale,
@@ -762,7 +853,7 @@ sap.ui.define([
 					tipRow(t.netValue || "", formatter.money(d.NetValue)) +
 					tipRow(t.taxValue || "", formatter.money(d.TaxValue)) +
 					tipRow(sPrior, formatter.money(d.PriorGross)) +
-					tipRow(t.growth || "", growth(d.DeltaPct));
+					(this.getDeltaVisible() ? tipRow(t.growth || "", growth(d.DeltaPct)) : "");
 			}
 
 			var oZone = oTarget.closest("[data-pms-zone]");
@@ -776,8 +867,8 @@ sap.ui.define([
 					tipRow(t.netValue || "", formatter.money(z.net)) +
 					tipRow(t.taxValue || "", formatter.money(z.tax)) +
 					tipRow(sPrior, formatter.money(z.prior)) +
-					tipRow(t.growth || "",
-						z.prior ? formatter.signedPercent((z.gross - z.prior) / z.prior * 100) : sNew) +
+					(this.getDeltaVisible() ? tipRow(t.growth || "",
+						z.prior ? formatter.signedPercent((z.gross - z.prior) / z.prior * 100) : sNew) : "") +
 					tipRow(t.share || "", formatter.percent(z.gross / oModel.total * 100, 1)) +
 					tipRow(t.plantsBilling || "", formatter.count(z.plants)) +
 					tipRow(t.invoices || "", formatter.count(z.invoices));
@@ -802,7 +893,7 @@ sap.ui.define([
 				tipRow(t.netValue || "", formatter.money(r.NetValue)) +
 				tipRow(t.taxValue || "", formatter.money(r.TaxValue)) +
 				tipRow(sPrior, formatter.money(r.PriorGross)) +
-				tipRow(t.growth || "", growth(r.DeltaPct)) +
+				(this.getDeltaVisible() ? tipRow(t.growth || "", growth(r.DeltaPct)) : "") +
 				tipRow(t.share || "", formatter.percent(num(r.GrossValue) / oModel.total * 100, 1)) +
 				tipRow(t.plantsBilling || "", formatter.count(r.PlantCount)) +
 				tipRow(t.invoices || "", formatter.count(r.InvoiceCount));

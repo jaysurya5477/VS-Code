@@ -174,6 +174,7 @@
 					unit="{dash>unit}"
 					deltaText="{dash>deltaText}"
 					deltaTone="{dash>deltaTone}"
+					deltaVisible="{dash>/deltaVisible}"
 					sub="{dash>sub}"
 					sub2="{dash>sub2}"
 					accent="{dash>accent}"
@@ -211,7 +212,8 @@
 						selectedZones="{dash>/selectedZones}"
 						priorFyLabel="{dash>/priorFyLabel}"
 						texts="{dash>/mapTexts}"
-						height="35rem"
+						deltaVisible="{dash>/deltaVisible}"
+						height="52vh"
 						statePress=".onMapStatePress"
 						zonePress=".onMapZonePress"/>
 				</viz:Card>
@@ -230,6 +232,7 @@
 						shareLabel="{i18n>schemeShareOfIndia}"
 						invoicesLabel="{i18n>schemeInvoices}"
 						breakdownLabel="{i18n>rowBreakdown}"
+						deltaVisible="{dash>/deltaVisible}"
 						newLabel="{i18n>deltaNew}"
 						emptyText="{i18n>noDataScheme}"
 						emptyStatesText="{i18n>noDataStates}"
@@ -247,7 +250,7 @@
 					title="{i18n>chartPlantTitle}"
 					subtitle="{i18n>chartPlantSub}"
 					badge="{i18n>badgeTop20}">
-					<viz:EChart id="chartPlant" option="{dash>/charts/plant}" height="34rem"/>
+					<viz:EChart id="chartPlant" option="{dash>/charts/plant}" height="46vh"/>
 				</viz:Card>
 
 				<viz:Card
@@ -255,7 +258,7 @@
 					title="{i18n>chartMaterialTitle}"
 					subtitle="{i18n>chartMaterialSub}"
 					badge="{i18n>badgeTop20}">
-					<viz:EChart id="chartMaterial" option="{dash>/charts/material}" height="34rem"/>
+					<viz:EChart id="chartMaterial" option="{dash>/charts/material}" height="46vh"/>
 				</viz:Card>
 
 			</viz:Box>

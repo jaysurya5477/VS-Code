@@ -123,6 +123,7 @@
                 <Property Name="NetValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="TaxValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="GrossValue" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
+                <Property Name="PriorGross" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="2"/>
                 <Property Name="SharePct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>
                 <Property Name="InvoiceCount" Type="Edm.Int32" Nullable="false"/>
                 <Property Name="DeltaPct" Type="Edm.Decimal" Nullable="false" Precision="8" Scale="2"/>

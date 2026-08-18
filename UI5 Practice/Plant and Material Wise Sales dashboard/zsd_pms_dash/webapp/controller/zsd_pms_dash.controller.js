@@ -92,6 +92,26 @@ sap.ui.define([
 	var MAX_OPTION_ITEMS = 10000;
 
 	/**
+	 * The first fiscal year in which ALIMCO booked a sales office (VKBUR) on its billing.
+	 *
+	 * Everything the dashboard knows about zones and Units is reached through VKBUR, via
+	 * ZSDD_PMS_GL_CDS's LEFT OUTER join to ZSD_ZONE_PLANT. FY 2026 is the first year the
+	 * concept existed, so FY 2025 rows overwhelmingly carry a blank VKBUR, no zone with it,
+	 * and are excluded outright by "alm_zone IN ..." - which is correct, a row with no zone
+	 * cannot belong to one, but it leaves the prior side of a filtered comparison almost
+	 * empty while the current side survives intact. The result was growth pills reading
+	 * +18285.8%: arithmetically right (prior gross of 2,105,569.94 against 387,125,324.48,
+	 * confirmed in the debugger), and completely meaningless.
+	 *
+	 * FY 2027 onwards compares against FY 2026, which has VKBUR throughout, so this expires
+	 * on its own - it is not a permanent rule.
+	 */
+	var VKBUR_FIRST_FY = 2026;
+
+	/** Filters that narrow the comparison. Fiscal Year is deliberately not one of them. */
+	var SCOPE_FILTERS = ["zone", "state", "plant", "scheme", "material", "period"];
+
+	/**
 	 * KPI Id -> KpiCard accent variant. The variants carry the prototype's own four card
 	 * gradients (see .pmsKpi--* in css/style.css) and the matching sparkline colour; the
 	 * ids are the ones ZCL_PMS_DASH_QUERY emits.
@@ -160,6 +180,7 @@ sap.ui.define([
 					{key: "state", text: this._text("granularityState")},
 					{key: "zone", text: this._text("granularityZone")}
 				],
+				deltaVisible: true,
 				mapGranularity: "state",
 				mapShowDots: true,
 				mapSubtitle: "",
@@ -367,6 +388,28 @@ sap.ui.define([
 		 * @returns {object} filter object
 		 * @private
 		 */
+		/**
+		 * Whether the year-on-year growth indicators can be trusted for the current
+		 * selection, and so whether they should be shown at all.
+		 *
+		 * Suppressed only where the comparison is known to be broken: FY 2026 (whose prior
+		 * year predates VKBUR - see VKBUR_FIRST_FY) AND at least one filter beyond Fiscal
+		 * Year. A fiscal-year-only view keeps its indicators, because with nothing narrowing
+		 * it the totals include the blank-VKBUR rows on both sides and the comparison is
+		 * sound. Any other year keeps them too.
+		 * @returns {boolean} true when every growth pill should be hidden
+		 * @private
+		 */
+		_deltasUnreliable: function () {
+			var o = this._oFilters;
+			if (!o || parseInt(o.fy, 10) !== VKBUR_FIRST_FY) {
+				return false;
+			}
+			return SCOPE_FILTERS.some(function (sKey) {
+				return (o[sKey] || []).length > 0;
+			});
+		},
+
 		_readFilters: function () {
 			var sFy = this._dash().getProperty("/fy");
 			var iFy = parseInt(sFy, 10);
@@ -521,6 +564,11 @@ sap.ui.define([
 			var iPriorFy = parseInt(this._oFilters.fy, 10) - 1;
 			var aGeo = this._maskGeoByZoneFilter(oData.geo || []);
 
+			// Bound by the view onto every control that draws a growth pill, so the KPI
+			// cards, the scheme rows, the top-states rows and the map hover cards all make
+			// the same call rather than each deciding for itself.
+			oModel.setProperty("/deltaVisible", !this._deltasUnreliable());
+
 			oModel.setProperty("/kpis", this._buildKpiCards(oData));
 			oModel.setProperty("/geoRows", aGeo);
 			oModel.setProperty("/dotRows", oData.unitDots || []);
@@ -565,14 +613,21 @@ sap.ui.define([
 		 * The Zone filter is sent to the backend as P_Zone, which ZCL_PMS_DASH_QUERY matches
 		 * against ZSD_ZONE_PLANT-ALM_ZONE - a field its own comment calls "unconfirmed... CHAR10
 		 * placeholder". If that match is looser than it should be (padding, casing, a stale
-		 * code), states outside the selected zone can leak into the Geo response, which is
-		 * exactly what showed up as a picked "South" filter still colouring a North state on
-		 * the choropleth. This re-filters the response down to the selected zone using
-		 * INDIA.zoneOfState(), which derives the zone from StateText instead - the same
-		 * defensive move already applied to the map's own choropleth and legend.
+		 * code), rows outside the selected zone can leak into the Geo response.
+		 *
+		 * This used to re-filter on INDIA.zoneOfState(), i.e. on the zone the STATE sits in
+		 * geographically. That was the wrong test, and it was chosen from a wrong diagnosis:
+		 * the symptom it was written for - picking "South" and still colouring a northern
+		 * state - was not a loose ALM_ZONE match at all. It was ZSDD_PMS_GL_CDS taking the
+		 * zone from the sales office (VKBUR) and the state from the billing plant (WERKS),
+		 * so the two could disagree by design. Testing the geographic zone silently dropped
+		 * every legitimate row whose business zone differs from its map position - selecting
+		 * Central discarded UP entirely - which is a worse failure than the leak it guarded
+		 * against. Both fields now come from the one ZSD_ZONE_PLANT record, so the test is
+		 * simply ALM_ZONE against ALM_ZONE.
 		 * @param {object[]} aGeo the raw Geo entity response
 		 * @returns {object[]} aGeo unchanged if no Zone filter is active, otherwise only the
-		 *   rows whose real zone is one of the selected ones
+		 *   rows whose own AlmZone is one of the selected ones
 		 * @private
 		 */
 		_maskGeoByZoneFilter: function (aGeo) {
@@ -580,8 +635,12 @@ sap.ui.define([
 			if (!aZones.length) {
 				return aGeo;
 			}
+			var mSelected = aZones.reduce(function (m, s) {
+				m[formatter.zoneKey(s)] = true;
+				return m;
+			}, {});
 			return aGeo.filter(function (r) {
-				return aZones.indexOf(INDIA.zoneOfState(r.StateText)) >= 0;
+				return !!mSelected[formatter.zoneKey(r.AlmZone)];
 			});
 		},
 
@@ -626,17 +685,23 @@ sap.ui.define([
 			});
 			var mById = dashboardService.byId(oData.kpi);
 
+			var sNewLabel = this._text("deltaNew");
+
 			return (oData.kpi || []).map(function (oKpi) {
 				var fDelta = parseFloat(oKpi.DeltaPct);
+				// A zero prior base makes the percentage meaningless, and the backend's pct( )
+				// helper returns 100 for it - which would print "+100.0%", i.e. "doubled",
+				// when what actually happened is that there was nothing to compare against.
+				var bNoBase = !parseFloat(oKpi.PriorValue);
 
 				return {
 					id: oKpi.Id,
 					label: oKpi.KpiLabel,
 					unit: "",
 					valueText: formatter.money(oKpi.CurrValue),
-					deltaText: formatter.signedPercent(oKpi.DeltaPct),
+					deltaText: bNoBase ? sNewLabel : formatter.signedPercent(oKpi.DeltaPct),
 					// The prototype treats anything under 0.05% as no movement at all.
-					deltaTone: !isFinite(fDelta) || Math.abs(fDelta) < 0.05 ? "flat" :
+					deltaTone: bNoBase || !isFinite(fDelta) || Math.abs(fDelta) < 0.05 ? "flat" :
 						fDelta > 0 ? "up" : "down",
 					sub: that._kpiSub(oKpi, mById),
 					sub2: that._kpiSub2(oKpi),

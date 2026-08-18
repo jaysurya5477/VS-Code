@@ -101,10 +101,17 @@ CLASS zcl_pms_dash_query DEFINITION
       END OF ty_trend,
       ty_trend_tab TYPE STANDARD TABLE OF ty_trend WITH EMPTY KEY,
 
-      " India choropleth, state grain (OD-1: plant-based geography). Zone
-      " is carried as an attribute so the frontend/UI5 can roll this up to
-      " zone granularity by summing - assumes each state belongs to exactly
-      " one zone, which holds for the 5 zones seen so far (P0-0).
+      " India choropleth, state grain (OD-9: unit-based geography - the state
+      " is the UNIT's own, via ZSD_ZONE_PLANT/VKBUR, not the billing plant's;
+      " see ZSDD_PMS_GL_CDS's header). Zone is carried as an attribute so the
+      " frontend can roll this up to zone granularity by summing.
+      " Both state and zone now derive from the one unit master record, so a
+      " state splits across zones only where two units share a state but sit
+      " in different ALM zones. get_geo keys purely on regio and keeps the
+      " FIRST zone it sees for that state, so if that ever happens the whole
+      " state's value lands in one of the two zones (P0-0 - re-check against
+      " live ZSD_ZONE_PLANT; before OD-9 this was far likelier, state and zone
+      " having come from two unrelated keys).
       " gross_value is the panel's HEADLINE measure (net and tax are carried alongside it
       " for the hover card only). prior_gross is what delta_pct compares against - a gross
       " headline must not be growth-compared against a net prior, or the percentage
@@ -154,6 +161,10 @@ CLASS zcl_pms_dash_query DEFINITION
         net_value     TYPE p LENGTH 15 DECIMALS 2,
         tax_value     TYPE p LENGTH 15 DECIMALS 2,
         gross_value   TYPE p LENGTH 15 DECIMALS 2,
+        " The base delta_pct was computed against. Carried so the frontend can tell "no
+        " prior year at all" from a real +100% - pct( ) returns 100 for a zero base, which
+        " otherwise reaches the growth pill as a confident "doubled".
+        prior_gross   TYPE p LENGTH 15 DECIMALS 2,
         share_pct     TYPE p LENGTH 8 DECIMALS 2,
         invoice_count TYPE i,
         delta_pct     TYPE p LENGTH 8 DECIMALS 2,
@@ -1285,8 +1296,9 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       DATA(lv_prior_gross) = REDUCE #(
         INIT s TYPE wrbtr FOR ls_p IN it_prior WHERE ( category = <ls_scheme>-category )
         NEXT s += ls_p-netwr + ls_p-mwsbk ).
-      <ls_scheme>-delta_pct = pct( iv_part  = <ls_scheme>-gross_value - lv_prior_gross
-                                   iv_whole = lv_prior_gross ).
+      <ls_scheme>-prior_gross = lv_prior_gross.
+      <ls_scheme>-delta_pct   = pct( iv_part  = <ls_scheme>-gross_value - lv_prior_gross
+                                     iv_whole = lv_prior_gross ).
     ENDLOOP.
 
     rt_scheme = lt_scheme.

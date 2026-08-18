@@ -66,18 +66,25 @@ sap.ui.getCore().attachInit(function () {
 			54500000, 58800000, 60100000, 64000000, 59000000, 71200000];
 
 		var GEO = [
-			{Regio: "27", StateText: "Maharashtra", AlmZone: "", NetValue: "84210000", TaxValue: "15157800", GrossValue: "99367800", PriorGross: "90978000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
+			{Regio: "27", StateText: "Maharashtra", AlmZone: "West", NetValue: "84210000", TaxValue: "15157800", GrossValue: "99367800", PriorGross: "90978000", PriorValue: "77100000", DeltaPct: "9.2", PlantCount: "12", InvoiceCount: "3211"},
 			{Regio: "33", StateText: "Tamil Nadu", AlmZone: "south ", NetValue: "61050000", TaxValue: "10989000", GrossValue: "72039000", PriorGross: "75756000", PriorValue: "64200000", DeltaPct: "-4.9", PlantCount: "9", InvoiceCount: "2410"},
 			{Regio: "24", StateText: "Gujarat", AlmZone: "WEST", NetValue: "45300000", TaxValue: "8154000", GrossValue: "53454000", PriorGross: "47318000", PriorValue: "40100000", DeltaPct: "13.0", PlantCount: "7", InvoiceCount: "1877"},
-			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "Z1", NetValue: "31200000", TaxValue: "5616000", GrossValue: "36816000", PriorGross: "36462000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
-			{Regio: "29", StateText: "Karnataka", AlmZone: "10", NetValue: "27800000", TaxValue: "5004000", GrossValue: "32804000", PriorGross: "0", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
-			{Regio: "19", StateText: "West Bengal", AlmZone: "", NetValue: "14400000", TaxValue: "2592000", GrossValue: "16992000", PriorGross: "18644000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
-			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "", NetValue: "9800000", TaxValue: "1764000", GrossValue: "11564000", PriorGross: "9794000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
-			{Regio: "18", StateText: "Assam", AlmZone: "", NetValue: "0", TaxValue: "0", GrossValue: "0", PriorGross: "1416000", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
+			{Regio: "09", StateText: "Uttar Pradesh", AlmZone: "Central", NetValue: "31200000", TaxValue: "5616000", GrossValue: "36816000", PriorGross: "36462000", PriorValue: "30900000", DeltaPct: "1.0", PlantCount: "5", InvoiceCount: "1402"},
+			{Regio: "29", StateText: "Karnataka", AlmZone: "South", NetValue: "27800000", TaxValue: "5004000", GrossValue: "32804000", PriorGross: "0", PriorValue: "0", DeltaPct: null, PlantCount: "4", InvoiceCount: "1190"},
+			{Regio: "19", StateText: "West Bengal", AlmZone: "East", NetValue: "14400000", TaxValue: "2592000", GrossValue: "16992000", PriorGross: "18644000", PriorValue: "15800000", DeltaPct: "-8.9", PlantCount: "3", InvoiceCount: "760"},
+			{Regio: "23", StateText: "Madhya Pradesh", AlmZone: "Central", NetValue: "9800000", TaxValue: "1764000", GrossValue: "11564000", PriorGross: "9794000", PriorValue: "8300000", DeltaPct: "18.1", PlantCount: "2", InvoiceCount: "540"},
+			{Regio: "18", StateText: "Assam", AlmZone: "North East", NetValue: "0", TaxValue: "0", GrossValue: "0", PriorGross: "1416000", PriorValue: "1200000", DeltaPct: "-100.0", PlantCount: "0", InvoiceCount: "0"}
 		];
-		// Hostile AlmZone values throughout - blank, wrong case, trailing space, or a raw
-		// code - to prove the map and scheme panel resolve zones from the state name, not
-		// from this unreliable backend field. See control/IndiaMap.js's own header comment.
+		// AlmZone now drives the map's zone grouping, so these mirror real ZSD_ZONE_PLANT
+		// assignments rather than the hostile placeholders they used to be. Two deliberate
+		// cases remain to exercise formatter.zoneKey(): Tamil Nadu's trailing space and
+		// Gujarat's upper case must both fold onto the same zone as their neighbours.
+		//
+		// Uttar Pradesh is the case that matters most: it is Central here, not North, which
+		// is ALIMCO's real assignment for 2000 HQ (Kanpur). It is what proves a business
+		// zone can reach a state that sits nowhere near the other Central states - the very
+		// thing the old preset zone polygons could not express. Assam covers the sixth zone
+		// that used to be unreachable, indiaGeo having folded its polygon into East.
 
 		// U01 (Mumbai) sits right on the west coast, so its leader line is short even though
 		// its own latitude band is otherwise wide. U02 is deep inland (Madhya Pradesh, no
@@ -123,10 +130,10 @@ sap.ui.getCore().attachInit(function () {
 		}
 
 		var SCHEMES = [
-			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", TaxValue: "15120000", GrossValue: "99120000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
-			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", TaxValue: "8280000", GrossValue: "54280000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
-			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", TaxValue: "6840000", GrossValue: "44840000", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: null},
-			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", TaxValue: "0", GrossValue: "0", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
+			{Category: "ADIP", CatDesc: "ADIP Sale", NetValue: "84000000", TaxValue: "15120000", GrossValue: "99120000", PriorGross: "91439000", SharePct: "31.4", InvoiceCount: "3120", DeltaPct: "8.4"},
+			{Category: "ADIPSSA", CatDesc: "ADIP SSA", NetValue: "46000000", TaxValue: "8280000", GrossValue: "54280000", PriorGross: "56016000", SharePct: "17.2", InvoiceCount: "1980", DeltaPct: "-3.1"},
+			{Category: "ATM", CatDesc: "AT-Mart", NetValue: "38000000", TaxValue: "6840000", GrossValue: "44840000", PriorGross: "0", SharePct: "14.2", InvoiceCount: "1544", DeltaPct: "100.0"},
+			{Category: "NICRC", CatDesc: "N.I. CRC", NetValue: "0", TaxValue: "0", GrossValue: "0", PriorGross: "12000000", SharePct: "0.0", InvoiceCount: "0", DeltaPct: "-100.0"}
 		];
 
 		var options = function (aKeys) { return aKeys.map(function (k) { return {key: k, text: k}; }); };
@@ -145,7 +152,7 @@ sap.ui.getCore().attachInit(function () {
 			themeMode: sTheme,
 			themeOptions: [{key: "auto", text: "Auto"}, {key: "light", text: "Light"}, {key: "dark", text: "Dark"}],
 			granularityOptions: [{key: "state", text: "State"}, {key: "zone", text: "Zone"}],
-			mapGranularity: "state",
+			mapGranularity: /gran=zone/.test(location.search) ? "zone" : "state",
 			mapShowDots: true,
 			mapSubtitle: "9 of 36 states billed · click a state to filter",
 			mapTexts: {
@@ -156,6 +163,10 @@ sap.ui.getCore().attachInit(function () {
 				plantsBilling: "Plants billing", invoices: "Invoices",
 				zoneStates: "states", unitPlants: "plants", newLabel: "new"
 			},
+			// ?deltas=off mirrors the controller's _deltasUnreliable( ) verdict: FY 2026
+			// with a filter beyond Fiscal Year, where the prior year predates VKBUR and the
+			// comparison cannot be trusted. Every growth pill should disappear.
+			deltaVisible: !/deltas=off/.test(location.search),
 			schemeSubtitle: "Gross value by scheme · vs FY 2025",
 			priorFyLabel: "FY 2025",
 			selectedRegios: ["27"],

@@ -51,7 +51,7 @@ sap.ui.define([
 		},
 		scheme: {
 			set: "Scheme",
-			select: "Category,CatDesc,NetValue,TaxValue,GrossValue,SharePct,InvoiceCount,DeltaPct",
+			select: "Category,CatDesc,NetValue,TaxValue,GrossValue,PriorGross,SharePct,InvoiceCount,DeltaPct",
 			orderby: "GrossValue desc"
 		},
 		plant: {
