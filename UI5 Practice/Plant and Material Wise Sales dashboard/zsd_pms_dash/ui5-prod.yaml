@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+#
+# Runs the LOCAL build against the PRODUCTION backend (MEP). Read-only: the dashboard
+# only ever issues GET/$batch reads, it has no write path at all.
+#
+# Why this exists
+# ---------------
+# Production painted East-zone billing across the wrong states - Uttar Pradesh and
+# Karnataka shaded as East, and a Zone = East filter colouring half the country - while
+# dev (MED) looked correct on effectively the same ZSD_ZONE_PLANT data.
+#
+# The first hypothesis was that MEP simply ran an older build of the UI5 app, since
+# ui5-deploy.yaml has only ever targeted vhafbmedap01. This config was built to test that,
+# by pairing the LOCAL (new) frontend with production data:
+#
+#   new frontend + MEP data -> zones correct  => MEP just needs the app deployed
+#   new frontend + MEP data -> still wrong    => the cause is backend/data in MEP
+#
+# It came out the second way, on 2026-08-18. The hypothesis was WRONG and the config
+# earned its keep by disproving it. The real cause was in the CDS: ZSDD_PMS_GL_CDS took
+# the state from the BILLING plant (A.WERKS) while zone, Unit, city and the map dot all
+# came from the SALES OFFICE (A.VKBUR). Those keys are independent, so East's 5 units drew
+# on 38 billing plants across 14 states. Fixed under OD-10 - see that view's header and
+# CONTEXT_LOG.md sec.6.
+#
+# Keep this config. It is the only way to reproduce a production-only data problem against
+# a frontend you can put a breakpoint in, and the next one will not be the last.
+#
+# It is deliberately NOT ui5-mock.yaml. That config's purpose is the mock server, and a
+# file named "mock" quietly pointing at production is how someone later runs a test they
+# think is offline.
+#
+# Run it:
+#   npm run start-prod          (port 8098)
+#   npx ui5 serve --config ui5-prod.yaml --port 8098
+#
+# fiori-tools-proxy asks for the username and password on the first backend request -
+# credentials are NOT read from this file, and must never be written into it. It is
+# committed; .env is not.
+#
+# HOST/CLIENT: taken from the SE16 status bar in the production screenshot
+# (system MEP, client 300, host vhafbmepap01). Correct them here if the real FQDN differs.
+specVersion: "4.0"
+metadata:
+  name: com.sap.zsdpmsdash
+type: application
+server:
+  customMiddleware:
+    - name: fiori-tools-proxy
+      afterMiddleware: compression
+      configuration:
+        ignoreCertErrors: false
+        ui5:
+          path:
+            - /resources
+            - /test-resources
+          url: https://ui5.sap.com
+        backend:
+          - path: /sap
+            url: https://vhafbmepap01.hec.erp.alimco.in
+            client: '300'
+    - name: fiori-tools-appreload
+      afterMiddleware: compression
+      configuration:
+        port: 35731
+        path: webapp
+        delay: 300
+    - name: fiori-tools-preview
+      afterMiddleware: fiori-tools-appreload
+      configuration:
+        flp:
+          theme: sap_horizon

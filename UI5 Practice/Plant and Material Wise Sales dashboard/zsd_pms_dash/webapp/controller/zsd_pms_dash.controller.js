@@ -186,7 +186,6 @@ sap.ui.define([
 				mapSubtitle: "",
 				mapTexts: this._mapTexts(),
 				schemeSubtitle: "",
-				priorFyLabel: "",
 				selectedRegios: [],
 				selectedZones: [],
 				selectedSchemes: [],
@@ -564,9 +563,10 @@ sap.ui.define([
 			var iPriorFy = parseInt(this._oFilters.fy, 10) - 1;
 			var aGeo = this._maskGeoByZoneFilter(oData.geo || []);
 
-			// Bound by the view onto every control that draws a growth pill, so the KPI
-			// cards, the scheme rows, the top-states rows and the map hover cards all make
-			// the same call rather than each deciding for itself.
+			// Bound by the view onto every control that still draws a growth pill: the KPI
+			// cards, the scheme rows and the top-states rows. They make one call rather
+			// than each deciding for itself. The map is no longer among them - its hover
+			// card shows gross/net/tax only (OD-12), so it has no pill to hide.
 			oModel.setProperty("/deltaVisible", !this._deltasUnreliable());
 
 			oModel.setProperty("/kpis", this._buildKpiCards(oData));
@@ -580,7 +580,6 @@ sap.ui.define([
 			oModel.setProperty("/scopeText", this._buildScopeText());
 			oModel.setProperty("/mapSubtitle", this._buildMapHint(aGeo));
 			oModel.setProperty("/schemeSubtitle", this._text("schemeVsFy", [String(iPriorFy)]));
-			oModel.setProperty("/priorFyLabel", this._text("fyShort", [String(iPriorFy)]));
 			oModel.setProperty("/lastRefreshedText",
 				this._text("lastRefreshed", [new Date().toLocaleTimeString()]));
 
@@ -686,6 +685,7 @@ sap.ui.define([
 			var mById = dashboardService.byId(oData.kpi);
 
 			var sNewLabel = this._text("deltaNew");
+			var bDeltasOk = !this._deltasUnreliable();
 
 			return (oData.kpi || []).map(function (oKpi) {
 				var fDelta = parseFloat(oKpi.DeltaPct);
@@ -706,7 +706,21 @@ sap.ui.define([
 					sub: that._kpiSub(oKpi, mById),
 					sub2: that._kpiSub2(oKpi),
 					accent: KPI_ACCENT[oKpi.Id] || "net",
-					spark: aSpark
+					spark: aSpark,
+					/*
+					 * Per card, not per screen. The daily card NEVER shows a growth pill: its
+					 * value is one single day, compared against the same calendar date a year
+					 * earlier (get_daily_kpi -> shift_calendar_year). That puts a Tuesday
+					 * against a Wednesday, a working day against a holiday, and any posting
+					 * lag straight into the percentage - so the figure swings wildly for
+					 * reasons that have nothing to do with performance, in every fiscal year
+					 * rather than only the ones VKBUR affects. The date and invoice count
+					 * beneath the value carry the useful context instead.
+					 *
+					 * The other three cards are period totals, so they keep their pill unless
+					 * the comparison is unsound for the current selection.
+					 */
+					deltaVisible: oKpi.Id !== "DAILY_SALE" && bDeltasOk
 				};
 			});
 		},
@@ -881,12 +895,15 @@ sap.ui.define([
 		_mapTexts: function () {
 			var that = this;
 			var o = {};
-			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey", "grossBilled", "netValue",
-				"taxValue", "growth", "share", "plantsBilling", "invoices", "zoneStates", "unitPlants"
+			// Legend and scale texts, then the three the hover cards still show. growth,
+			// share, plantsBilling, invoices, zoneStates and unitPlants were dropped when the
+			// cards were cut back to gross/net/tax - their i18n entries are left in place,
+			// unreferenced, rather than deleted, so restoring a row stays a one-line change.
+			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey",
+				"grossBilled", "netValue", "taxValue"
 			].forEach(function (sKey) {
 				o[sKey] = that._text("map" + sKey.charAt(0).toUpperCase() + sKey.slice(1));
 			});
-			o.newLabel = this._text("deltaNew");
 			return o;
 		},
 

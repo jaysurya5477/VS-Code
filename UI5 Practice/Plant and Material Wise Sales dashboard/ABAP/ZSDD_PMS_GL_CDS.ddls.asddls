@@ -30,18 +30,34 @@
 // row per Unit, not per billing plant. A.VKBUR is therefore not exposed as
 // its own output field below (would just duplicate B.WERKS/"unit").
 //
-// OD-9, decided by user 2026-08-18: State comes from the UNIT's own master
-// record (T001W on B.WERKS -> T005U for the text), not from the billing
-// plant. It was C.WERKS = A.WERKS until now, which meant the choropleth was
-// painted from A.WERKS while the map dots, zone and city beside it all came
-// from A.VKBUR. The two keys disagree whenever a document is billed by one
-// plant and sold by another unit - a material billed at 2000 HQ (Uttar
-// Pradesh) but sold through the eastern units shaded UP while its dots sat
-// on Ranchi and Bhubaneswar. One join key now feeds shading, dots and zone
-// alike. Consequence to watch (P0-0): a row whose VKBUR has no
-// ZSD_ZONE_PLANT entry now has no state either, so it drops off the
-// choropleth instead of being shaded at its billing plant. Such a row
-// already had no dot and no zone, but it did previously carry a state.
+// (Numbered OD-10, not OD-9: OD-9 was already taken by the Trap-2 truncation
+// cutoff decision of 2026-08-13 - see CONTEXT_LOG.md sec.6.)
+//
+// OD-10, decided by user 2026-08-18, revised the same day: State is the
+// UNIT's own (T001W on B.WERKS -> T005U for the text), falling back to the
+// BILLING plant's (T001W on A.WERKS) when the unit has no state of its own.
+//
+// Why it is not simply the billing plant. Zone, Unit, city and the map dot
+// all come from A.VKBUR; only the state came from A.WERKS. Those two keys
+// are independent, so a document billed by one plant and sold by another
+// unit lands a state in a zone it has nothing to do with. Measured in
+// production 2026-08-18: the East zone reported 38 billing plants across 14
+// states for its 5 units, which painted Uttar Pradesh and Karnataka as East
+// on the choropleth and made a Zone = East filter shade half the country.
+//
+// Why the fallback. Taking the unit's state alone was tried first and
+// reverted, correctly: VKBUR only began this fiscal year, so FY 2025 rows
+// mostly carry a blank one. Those rows would have lost their state entirely
+// and dropped off the map, taking every prior-year state comparison with
+// them. COALESCE keeps them exactly where they are today - shaded at their
+// billing plant - while FY 2026 rows, which do have VKBUR, become
+// consistent with the zone and the dot beside them.
+//
+// It also de-risks the join itself. If ZSD_ZONE_PLANT-WERKS turns out not
+// to resolve in T001W at all (its column name is misleading - it holds one
+// row per Unit), C.REGIO is simply always null and every row falls back to
+// the billing plant, i.e. exactly the behaviour before this change. The
+// failure mode is "no improvement", not "empty choropleth".
 //
 // OD-5 field spec: create both new ZSD_ZONE_PLANT fields as DEC(10,7) - one
 // shared domain for both, even though latitude only needs 2 integer digits
@@ -64,8 +80,13 @@ define view ZSDD_PMS_GL_CDS as
 
 select from zsd_sale_all as a
   left outer join zsd_zone_plant as b on b.werks = a.vkbur
-  left outer join t001w          as c on c.werks = a.werks
+  // The UNIT's own plant master (preferred), then the BILLING plant's (fallback).
+  // Both are plain field-to-field joins so the coalesce below sits only in the
+  // SELECT list - no expression in an ON condition.
+  left outer join t001w          as c on c.werks = b.werks
+  left outer join t001w          as e on e.werks = a.werks
   left outer join t005u          as d on d.land1 = 'IN' and d.bland = c.regio and d.spras = 'E'
+  left outer join t005u          as f on f.land1 = 'IN' and f.bland = e.regio and f.spras = 'E'
 
 {
   key a.belnr        as belnr,
@@ -99,7 +120,9 @@ select from zsd_sale_all as a
       b.latitude     as latitude,      // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
       b.longitude    as longitude,     // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
 
-      c.regio        as regio,
-      d.bezei        as state_text
+      // OD-10 (revised): the UNIT's state, falling back to the billing plant's when the
+      // unit has none. See the header - the fallback is what makes this safe to activate.
+      coalesce(c.regio, e.regio) as regio,
+      coalesce(d.bezei, f.bezei) as state_text
 
 }

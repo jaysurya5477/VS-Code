@@ -101,7 +101,7 @@ CLASS zcl_pms_dash_query DEFINITION
       END OF ty_trend,
       ty_trend_tab TYPE STANDARD TABLE OF ty_trend WITH EMPTY KEY,
 
-      " India choropleth, state grain (OD-9: unit-based geography - the state
+      " India choropleth, state grain (OD-10: unit-based geography - the state
       " is the UNIT's own, via ZSD_ZONE_PLANT/VKBUR, not the billing plant's;
       " see ZSDD_PMS_GL_CDS's header). Zone is carried as an attribute so the
       " frontend can roll this up to zone granularity by summing.
@@ -110,13 +110,18 @@ CLASS zcl_pms_dash_query DEFINITION
       " in different ALM zones. get_geo keys purely on regio and keeps the
       " FIRST zone it sees for that state, so if that ever happens the whole
       " state's value lands in one of the two zones (P0-0 - re-check against
-      " live ZSD_ZONE_PLANT; before OD-9 this was far likelier, state and zone
+      " live ZSD_ZONE_PLANT; before OD-10 this was far likelier, state and zone
       " having come from two unrelated keys).
       " gross_value is the panel's HEADLINE measure (net and tax are carried alongside it
       " for the hover card only). prior_gross is what delta_pct compares against - a gross
       " headline must not be growth-compared against a net prior, or the percentage
-      " describes a different measure from the number above it. prior_value (net) is kept
-      " because the hover card shows last year's figure on its own row.
+      " describes a different measure from the number above it.
+      " prior_gross and delta_pct no longer reach the MAP: since 2026-08-18 the hover
+      " card shows gross/net/tax only (OD-12). They are still read from this entity by
+      " the frontend, for the Top-states rows under the Scheme panel, which do show a
+      " growth pill. prior_value (net) is still in the frontend $select but is now read
+      " by nothing - it fed the hover card's "last year" row and can be dropped from
+      " dashboardService.js when that select is next touched.
       BEGIN OF ty_geo_row,
         regio         TYPE regio,
         state_text    TYPE char40,

@@ -18,7 +18,7 @@ sap.ui.define([
 	 *     from the state's geography - the prototype's preset zone unions cannot express a
 	 *     business zoning, which is free to put Uttar Pradesh in Central
 	 *   * dot radius 2.2 + sqrt(v / max) * 6.5, biggest drawn first so small dots stay on top
-	 *   * hover card with net billed, prior FY, growth, share of India and plants billing
+	 *   * hover card kept to three rows - gross, then the net and tax it is made of
 	 *   * legend labelled with the actual quantile breaks, plus "no billing" and the dot key
 	 *
 	 * The base geometry (state paths, zone unions, projection constants, state abbreviations)
@@ -336,7 +336,10 @@ sap.ui.define([
 	}
 
 	function tipHead(sEyebrow, sName) {
-		return "<span class=\"pmsTipHead\">" + encodeXML(sEyebrow) + "</span>" +
+		// The eyebrow span is omitted rather than left empty: it is display:block, so an
+		// empty one still takes a line and opens a gap above the name. Unit and zone cards
+		// pass no eyebrow now that their plant and state counts are gone.
+		return (sEyebrow ? "<span class=\"pmsTipHead\">" + encodeXML(sEyebrow) + "</span>" : "") +
 			"<span class=\"pmsTipName\">" + encodeXML(sName) + "</span>";
 	}
 
@@ -377,25 +380,16 @@ sap.ui.define([
 					type: "object",
 					defaultValue: null
 				},
-				/** Prior fiscal year, e.g. "FY 2025" - the hover card's comparison row label. */
-				/**
-				 * Whether the hover cards may show a growth row. False where a year-on-year
-				 * comparison is known to be unsound - see the controller's
-				 * _deltasUnreliable( ). The prior-year row itself stays: the FIGURE is real
-				 * and worth seeing, it is only the percentage derived from it that misleads.
-				 */
-				deltaVisible: {
-					type: "boolean",
-					defaultValue: true
-				},
-				priorFyLabel: {
-					type: "string",
-					defaultValue: ""
-				},
 				/**
 				 * Visible strings, so this control stays i18n-free. Keys: scaleCap, lowest,
-				 * low, high, noBilling, dotKey, grossBilled, netValue, taxValue, growth, share, plantsBilling,
-				 * invoices, zoneStates, unitPlants, newLabel.
+				 * low, high, noBilling, dotKey, grossBilled, netValue, taxValue.
+				 *
+				 * The hover card carries gross, net and tax only (OD-12, 2026-08-18). The
+				 * growth, share-of-India, plants-billing and invoice rows it used to carry
+				 * are gone, and with them the growth/share/plantsBilling/invoices/zoneStates/
+				 * unitPlants/newLabel keys and the priorFyLabel property. The i18n entries
+				 * themselves are deliberately still in the bundle, so restoring a row stays a
+				 * one-line change.
 				 */
 				texts: {
 					type: "object",
@@ -647,7 +641,6 @@ sap.ui.define([
 			// the response rather than from a static table, so zone granularity can shade a
 			// zone's real member states instead of a preset polygon.
 			var mZoneOfState = {};
-			var fTotal = 0;
 
 			aGeo.forEach(function (r) {
 				// Gross is the map's headline measure - it drives the shading, the share-of-India
@@ -655,8 +648,6 @@ sap.ui.define([
 				// only, and the prior figure compared against is gross too, so the growth row
 				// describes the same measure as the value above it.
 				var v = num(r.GrossValue);
-				var p = num(r.PriorGross);
-				fTotal += v;
 
 				var sCanonical = INDIA.resolveState(r.StateText);
 				if (sCanonical) {
@@ -676,16 +667,12 @@ sap.ui.define([
 				if (sCanonical) {
 					mZoneOfState[sCanonical] = sZone;
 				}
-				var z = mZone[sZone] || (mZone[sZone] = {
-					key: sZone, gross: 0, net: 0, tax: 0, prior: 0, plants: 0, invoices: 0, states: 0
-				});
+				// Only the three measures the hover card shows. Prior-year, plant and invoice
+				// totals were accumulated here for rows the card no longer has.
+				var z = mZone[sZone] || (mZone[sZone] = {key: sZone, gross: 0, net: 0, tax: 0});
 				z.gross += v;
 				z.net += num(r.NetValue);
 				z.tax += num(r.TaxValue);
-				z.prior += p;
-				z.plants += num(r.PlantCount);
-				z.invoices += num(r.InvoiceCount);
-				z.states += 1;
 			});
 
 			var oScale = quantile((bZone ?
@@ -817,8 +804,7 @@ sap.ui.define([
 				byUnit: aDots.reduce(function (m, d) {
 					m[d.UnitCode] = d;
 					return m;
-				}, {}),
-				total: fTotal || 1
+				}, {})
 			};
 		},
 
@@ -830,14 +816,14 @@ sap.ui.define([
 		_tipFor: function (oTarget) {
 			var t = this.getTexts() || {};
 			var oModel = this._model();
-			var sPrior = this.getPriorFyLabel();
-			var sNew = t.newLabel || "new";
 
-			var growth = function (v) {
-				var f = parseFloat(v);
-				return isFinite(f) ? formatter.signedPercent(f) : sNew;
-			};
-
+			/*
+			 * Three rows, the same three everywhere: gross, then the net and tax it is made
+			 * of. Prior-year value, growth, share of India, plants billing and invoice counts
+			 * were all dropped on request - each was another number to read past before
+			 * reaching the one the card exists to show, and several of them (growth above
+			 * all) were unreliable for reasons documented in the controller.
+			 */
 			var oUnit = oTarget.closest("[data-pms-unit]");
 			if (oUnit) {
 				var d = oModel.byUnit[oUnit.getAttribute("data-pms-unit")];
@@ -847,13 +833,11 @@ sap.ui.define([
 				// Full name here, untruncated - the hover card has the room the gutter does not.
 				// Gross leads (it is what the dot is sized on), with net and tax broken out
 				// beneath it and last year's gross for the comparison.
-				return tipHead(t.unitPlants ? formatter.count(d.PlantCount) + " " + t.unitPlants : "",
-						d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
+				// Full name here, untruncated - the hover card has the room the gutter does not.
+				return tipHead("", d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
 					tipRow(t.grossBilled || "", formatter.money(d.GrossValue)) +
 					tipRow(t.netValue || "", formatter.money(d.NetValue)) +
-					tipRow(t.taxValue || "", formatter.money(d.TaxValue)) +
-					tipRow(sPrior, formatter.money(d.PriorGross)) +
-					(this.getDeltaVisible() ? tipRow(t.growth || "", growth(d.DeltaPct)) : "");
+					tipRow(t.taxValue || "", formatter.money(d.TaxValue));
 			}
 
 			var oZone = oTarget.closest("[data-pms-zone]");
@@ -862,16 +846,10 @@ sap.ui.define([
 				if (!z) {
 					return null;
 				}
-				return tipHead(z.states + " " + (t.zoneStates || ""), z.key) +
+				return tipHead("", z.key) +
 					tipRow(t.grossBilled || "", formatter.money(z.gross)) +
 					tipRow(t.netValue || "", formatter.money(z.net)) +
-					tipRow(t.taxValue || "", formatter.money(z.tax)) +
-					tipRow(sPrior, formatter.money(z.prior)) +
-					(this.getDeltaVisible() ? tipRow(t.growth || "",
-						z.prior ? formatter.signedPercent((z.gross - z.prior) / z.prior * 100) : sNew) : "") +
-					tipRow(t.share || "", formatter.percent(z.gross / oModel.total * 100, 1)) +
-					tipRow(t.plantsBilling || "", formatter.count(z.plants)) +
-					tipRow(t.invoices || "", formatter.count(z.invoices));
+					tipRow(t.taxValue || "", formatter.money(z.tax));
 			}
 
 			var oState = oTarget.closest("[data-pms-state]");
@@ -881,8 +859,13 @@ sap.ui.define([
 
 			var sState = oState.getAttribute("data-pms-state");
 			var r = oModel.byState[sState];
+			// The zone here is the row's OWN AlmZone, not INDIA.zoneOf[] - that table is
+			// geographic and would label Uttar Pradesh "North" beside a panel that has just
+			// shaded it Central. A state nobody billed has no zone to name, so it shows the
+			// abbreviation alone.
+			var sZone = r ? formatter.zoneKey(r.AlmZone) : "";
 			var sEyebrow = (INDIA.abbr[sState] || "") +
-				(INDIA.zoneOf[sState] ? " " + formatter.MIDDOT + " " + INDIA.zoneOf[sState] : "");
+				(sZone ? " " + formatter.MIDDOT + " " + sZone : "");
 
 			if (!r) {
 				return tipHead(sEyebrow, sState) + tipRow(t.grossBilled || "", t.noBilling || "");
@@ -891,12 +874,7 @@ sap.ui.define([
 			return tipHead(sEyebrow, sState) +
 				tipRow(t.grossBilled || "", formatter.money(r.GrossValue)) +
 				tipRow(t.netValue || "", formatter.money(r.NetValue)) +
-				tipRow(t.taxValue || "", formatter.money(r.TaxValue)) +
-				tipRow(sPrior, formatter.money(r.PriorGross)) +
-				(this.getDeltaVisible() ? tipRow(t.growth || "", growth(r.DeltaPct)) : "") +
-				tipRow(t.share || "", formatter.percent(num(r.GrossValue) / oModel.total * 100, 1)) +
-				tipRow(t.plantsBilling || "", formatter.count(r.PlantCount)) +
-				tipRow(t.invoices || "", formatter.count(r.InvoiceCount));
+				tipRow(t.taxValue || "", formatter.money(r.TaxValue));
 		},
 
 		/* ================================================================== */

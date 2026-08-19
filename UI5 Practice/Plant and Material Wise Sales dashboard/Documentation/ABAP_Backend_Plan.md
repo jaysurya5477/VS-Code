@@ -356,5 +356,28 @@ Port template V8 panel-by-panel. Notes that matter for the backend contract:
   classes + 1 service definition exist under `../ABAP/`, built against the now-tested Phase 1
   engine — see Part C's Phase 2 section for the build order and the two deliberate deviations from
   the original 10-entity sketch (Unit dots split out, value-help entities deferred).
+- **State is the UNIT's own, with the billing plant as a fallback (OD-10, 2026-08-18).** Every
+  geography field but one came from `A.VKBUR`; `REGIO` alone came from `A.WERKS`, and the two keys
+  are independent. Production showed the East zone carrying **38 billing plants across 14 states
+  for its 5 units**, painting Uttar Pradesh and Karnataka as East. `T001W`/`T005U` are now joined
+  twice — on `B.WERKS` (Unit) and on `A.WERKS` (billing plant) — with `coalesce( )` in the SELECT
+  list, both joins plain field-to-field so no expression sits in an ON condition. The fallback is
+  what makes it safe: `VKBUR` only began in FY 2026, so FY 2025 rows keep their existing state
+  rather than dropping off the map. ⚠ **Not yet activated** — until it is, the production
+  choropleth stays wrong. Numbered 10 because OD-9 was already the Trap-2 cutoff.
+- **Zone on the map comes from `ALM_ZONE`, not geography (OD-11, 2026-08-18).** Frontend-only, but
+  it is what the backend's `alm_zone` column is *for* — see `CONTEXT_LOG.md` §6.
+- **Growth indicators are suppressed for FY 2026 under any scope filter (OD-12, 2026-08-18).**
+  Because `VKBUR` starts in FY 2026, prior-year rows carry a blank zone and are excluded by any
+  `ALM_ZONE IN` predicate, so a zone-filtered comparison divides a full year by an almost-empty
+  one. `pct( )` itself was verified correct against the debugger — the arithmetic was never the
+  problem. The rule expires on its own in FY 2027. See `CONTEXT_LOG.md` §6 for the exact
+  condition and for what it means for `ZSD_PMS_GEO`'s `prior_gross` / `prior_value` fields.
+- **`PriorGross` added to `ZSD_PMS_SCHEME` (2026-08-18).** The Scheme panel's headline is gross, so
+  its growth pill must divide by a gross prior. Touches `ty_scheme_row`, `get_scheme_agg`,
+  `ZSD_PMS_SCHEME`, `ZCL_PMS_SCHEME_QRY` and the frontend `$select`. ⚠ **Not yet activated.**
+- **`ZSD_PMS_ZONE_DIAG` (new, 2026-08-18)** — read-only diagnostic for the zone gap: current vs
+  prior gross with and without a zone filter, `VKBUR` values missing from `ZSD_ZONE_PLANT` per
+  year, zones present per year. Standalone; nothing calls it.
 - **The real work is not the SQL — it is moving the aggregation server-side.** The template is an
   in-browser data engine; the product must be a set of parameterised aggregate reads.

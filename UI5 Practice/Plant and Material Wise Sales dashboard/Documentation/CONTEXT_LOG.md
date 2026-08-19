@@ -340,6 +340,61 @@ data (`recompute()`, template ~line 608). Replicate this, don't just compare ful
     day-of-month (clamped to the real last day, so it doubles as `period_end_date` with
     `iv_day = 31`), since the existing helper only ever computed a month's *last* day.
 
+- **OD-10 — State is the UNIT's own, falling back to the billing plant's.** ✅ *Decided 2026-08-18,
+  revised the same day after production evidence.* Numbered **10, not 9** — OD-9 above is already
+  the Trap-2 cutoff decision; both were briefly labelled OD-9 in the ABAP comments and that has
+  been corrected. Every geography field on `ZSDD_PMS_GL_CDS` except one came from `A.VKBUR` (zone,
+  Unit, city, dot lat/lon); `REGIO` alone came from `A.WERKS`. Those two keys are independent
+  (**OD-8**'s corollary: plant↔unit is many-to-many), so a document billed by one plant and sold
+  through another Unit landed its state in a zone it had nothing to do with. **Measured in
+  production 2026-08-18: the East zone reported 38 billing plants across 14 states for its 5
+  units** — which painted Uttar Pradesh and Karnataka as East on the choropleth and made a
+  `Zone = East` filter shade half the country.
+  - **Taking the unit's state *alone* was tried first and reverted by the user — correctly.**
+    `VKBUR` only began this fiscal year (see **OD-12**), so FY 2025 rows mostly carry a blank one.
+    Those rows would have lost their state outright and dropped off the map, taking every
+    prior-year state comparison with them.
+  - **The shipped form is a COALESCE fallback**: `T001W`/`T005U` are joined twice, once on
+    `B.WERKS` (the Unit) and once on `A.WERKS` (the billing plant), and the SELECT list takes
+    `coalesce(c.regio, e.regio)` / `coalesce(d.bezei, f.bezei)`. Both joins are plain
+    field-to-field so no expression sits in an ON condition. FY 2026 rows become consistent with
+    the zone and dot beside them; FY 2025 rows stay exactly where they are today.
+  - **It also de-risks the join itself.** `ZSD_ZONE_PLANT-WERKS` is misleadingly named — it holds
+    one row per *Unit*. If it turns out not to resolve in `T001W` at all, `C.REGIO` is simply
+    always null and every row falls back to the billing plant, i.e. the behaviour before this
+    change. The failure mode is "no improvement", not "empty choropleth".
+- **OD-11 — Map zone comes from `ALM_ZONE`, not from a geographic table.** ✅ *Decided 2026-08-18.*
+  The map took each state's zone from a hardcoded geographic lookup in `IndiaMap.js`, so ALIMCO's
+  own `ALM_ZONE` — the field the Zone *filter* has always matched on — could not reach the screen.
+  2000 HQ sits in Kanpur but is assigned to Central; the map insisted on North. Zone now comes from
+  the row's own `AlmZone`, so filter and display agree. `formatter.zoneKey( )` trims and title-cases
+  it, folding hand-typed variants (`"WEST"`, `"south "`) onto one key while passing an unrecognised
+  code such as `"Z1"` through as its own labelled zone rather than blanking it. Zone granularity now
+  draws **one path per zone** — its member states' subpaths concatenated, stroked in its own fill —
+  so a zone reads as one region; the prototype's five preset zone outlines are gone, being
+  geographic unions that cannot describe a Central reaching to Uttar Pradesh.
+- **OD-12 — Growth indicators are suppressed for FY 2026 under any scope filter, and removed
+  outright from the Yesterday card and the map hover.** ✅ *Root cause found by the user,
+  2026-08-18.* The sales-office (`VKBUR`) concept only started in FY 2026, so most FY 2025 rows
+  carry a blank one → a null zone → excluded by any `ALM_ZONE IN` predicate. Filtering by zone
+  therefore compared a nearly-full current year against a nearly-empty prior one, producing
+  five-digit percentages. `pct( )` itself was verified correct against the ABAP debugger
+  (`IV_PART = 385,019,754.54`, `IV_WHOLE = 2,105,569.94` → +18285.8%) — the arithmetic was fine,
+  the prior base was not.
+  - **The rule** (`_deltasUnreliable( )`, `VKBUR_FIRST_FY = 2026`): hide every pill when the
+    selected FY **is 2026** *and* at least one of `zone / state / plant / scheme / material /
+    period` is set. Fiscal Year is deliberately **not** one of those — an FY-only view totals both
+    sides including the blank-`VKBUR` rows, so its comparison is sound. **This expires on its own**:
+    FY 2027 compares against FY 2026, which has `VKBUR` throughout.
+  - **The Yesterday Sale card never shows a pill at all**, in any year — a single day against a
+    single day a year earlier is noise, not a trend.
+  - **The map hover card was cut to gross / net / tax**, dropping its growth, share-of-India,
+    plants-billing, invoice and prior-FY rows, and the plant/state counts in its header. This made
+    `IndiaMap`'s `deltaVisible` and `priorFyLabel` properties dead; both were removed along with
+    the per-zone `prior`/`plants`/`invoices`/`states` accumulators and the share denominator.
+    `deltaVisible` still does real work on `KpiCard` and `SchemeList`. The i18n entries for the
+    removed rows are deliberately left in the bundle so restoring one stays a one-line change.
+
 ## 7. How to point the ADT MCP at another client / system
 
 Config lives in `~/.claude.json` under `mcpServers → mcp-abap-adt → env`:
@@ -357,7 +412,7 @@ receive `env` at launch, so a mid-session edit does nothing.
 
 ✅ **Resolved, 2026-08-13: client-100 access now works.** The user live-debugged
 `ZCL_PMS_DASH_QUERY` directly in ADT (screenshot confirmed) and ran `ZSD_PMS_DASH_TEST` against
-real data — see §6 OD-6 through OD-9. The `mcp-abap-adt` tools are also now listed as available in
+real data — see §6 OD-6 through OD-12. The `mcp-abap-adt` tools are also now listed as available in
 this session. The `unit`/`VKBUR` facts in §3 and §6 (OD-3, OD-8) are therefore now **live-confirmed**,
 not just the user's word.
 
@@ -417,3 +472,44 @@ Dashboard made for its own equivalent filters) since they're new, untested query
 wrapper over `get_dashboard_data`. Two new DDIC data elements (`ZSD_PMS_DATE`, `ZSD_PMS_FLT`) must
 be created before the entities import — see that section for why, and note `ZSD_PMS_FLT` is
 `CHAR(1000)`, not the Part B sketch's original 255 guess.
+
+**2026-08-14 to 2026-08-18: Phase 3 (UI5 app) built, live-tested against production, and hardened.**
+`zsd_pms_dash/` is a working app on the real service — filter bar, 4 KPI cards, India map, scheme
+roll-up, plant and material charts. What live use surfaced, beyond the OD-10/11/12 decisions in §6:
+
+- **Two independent 100-row caps sat in series on the Plant and Material filters.** SAP Gateway
+  pages at 100 server-side, *and* `sap.ui.model.Model` defaults `sizeLimit` to 100 and applies it
+  when an aggregation binding builds its contexts. Fixing either alone still showed
+  `Select All (0 of 100)`. The frontend was wrongly ruled out early because the search was for
+  control settings (`growing`, `setLimit`) — `setSizeLimit` is a **Model** API, not a control one.
+  Paging now issues a fresh binding per page and stops on an **empty** page, never a short one:
+  `ODataListBinding` marks length final on a short read, after which `requestContexts` is answered
+  from cache and simply returns nothing more.
+- **Gross / net / tax are shown throughout**, and `PriorGross` was added to `ZSD_PMS_SCHEME` (plus
+  `ty_scheme_row`, `ZCL_PMS_SCHEME_QRY`, the mock `metadata.xml` and the frontend `$select`) so a
+  gross headline is compared against a gross prior rather than a net one.
+- **Panels are sized to the viewport, not fixed.** The map card was 682px on a 629px usable
+  viewport — taller than the screen. `sap.ui.core.CSSSize` accepts `calc( )` but **not** `clamp( )`,
+  so the floors and ceilings live in CSS `min-height`/`max-height` beside a `vh` height.
+- **A production-only zone bug was reproduced locally** by adding `ui5-prod.yaml` (proxy to
+  `vhafbmepap01.hec.erp.alimco.in`, client 300) and an `npm run start-prod` script on port 8098.
+  The config carries **no credentials** — `fiori-tools-proxy` prompts interactively, and `.env`
+  (dev creds only) is git-ignored and untracked. An early hypothesis that production merely ran an
+  older build was **wrong**: the new local build against the production backend reproduced it, which
+  is what led to OD-10.
+- **`ZSD_PMS_ZONE_DIAG`** (new, read-only) reports current-vs-prior gross with and without a zone
+  filter, `VKBUR` values missing from `ZSD_ZONE_PLANT` per year, and zones present per year. It is
+  standalone — nothing else calls it.
+
+**Open at the close of 2026-08-18:**
+- **ABAP not yet activated/transported.** Order: `ZSDD_PMS_GL_CDS` (the OD-10 COALESCE revision) →
+  `ZCL_PMS_DASH_QUERY` → `ZSD_PMS_SCHEME` → `ZCL_PMS_SCHEME_QRY` → republish `ZSD_PMS_DASH_O4`.
+  Also `ZSD_PMS_DASH_TEST` (gained a `p_zone` parameter) and `ZSD_PMS_ZONE_DIAG` (new). Needed in
+  **both MED and MEP** — until `ZSDD_PMS_GL_CDS` is active in MEP, Uttar Pradesh and Karnataka will
+  keep appearing under East.
+- **The app has never been deployed to production.** `ui5-deploy.yaml` only ever targeted
+  `vhafbmedap01`; there is no MEP deploy target.
+- **Plant 4700 (RMC Jaipur) is zoned differently per system** — NORTH in MEP 300, CENTRAL in MED
+  100. A master-data question for the business, not a code one.
+- **ADT MCP returns 401 on every call**, so a live object-by-object comparison against the systems
+  could not be run; the server is configured outside this repo (see §7).

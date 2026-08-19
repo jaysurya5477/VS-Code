@@ -247,8 +247,7 @@ sap.ui.define([
 							"IGST " + formatter.money(r.Igst) + " " + formatter.MIDDOT +
 							" SGST " + formatter.money(r.Sgst) + " " + formatter.MIDDOT +
 							" CGST " + formatter.money(r.Cgst) + " " + formatter.MIDDOT +
-							" TCS " + formatter.money(r.Tcs) + "<br/>" +
-							"Grand total " + formatter.money(r.GrandTotalGross);
+							" TCS " + formatter.money(r.Tcs);
 					}
 				}, tooltipStyle(pal)),
 				xAxis: axis(pal, {

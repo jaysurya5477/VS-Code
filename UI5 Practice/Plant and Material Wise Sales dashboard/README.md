@@ -31,8 +31,9 @@ approximate it in ECharts:
   inline SVG sparkline on one row, delta pill + mono sub-line on the next. The sub-line differs
   per card as V8 has it (un-abbreviated amount / effective GST rate / snapshot date + invoices).
 - **India map** — quantile colour scale (not linear), zone granularity paints the zone unions
-  rather than recolouring states, V8's dot-radius formula, a hover card with share-of-India and
-  plants-billing, and a legend labelled with the real quantile breaks.
+  rather than recolouring states, V8's dot-radius formula, a hover card, and a legend labelled with
+  the real quantile breaks. *(The hover card carried share-of-India, plants-billing, invoices and
+  growth until 2026-08-18; it now shows gross, net and tax only — see OD-12.)*
 - **Scheme performance** — no longer a bar chart. It is V8's ranked list (colour chip, value,
   progress bar, share + invoice count, growth) plus the Top-states roll-up under a divider, with
   every row click-to-filter.
@@ -41,6 +42,27 @@ Sales trend, Sales by plant and Sales by material stay on ECharts, and the filte
 switch are unchanged. Both light and dark palettes were re-tuned at the same time — see the
 `--pms-scale-*` / `--pms-dot` / `--pms-zonediv` tokens and the font-stack note in
 [`webapp/css/style.css`](zsd_pms_dash/webapp/css/style.css).
+
+**Live against production, and what that surfaced (2026-08-17 → 2026-08-18).** The app now runs
+against the real service and has been driven by the business. Four things came out of it, all
+recorded in full in `CONTEXT_LOG.md` §6:
+
+- **OD-10 — state is the Unit's own, with the billing plant as a fallback.** Every geography field
+  but one came from `VKBUR`; `REGIO` alone came from `WERKS`. In production the East zone carried
+  38 billing plants across 14 states for its 5 units, so Uttar Pradesh and Karnataka rendered as
+  East. `ZSDD_PMS_GL_CDS` now joins `T001W`/`T005U` twice and `coalesce( )`s the result.
+  ⚠ **Not yet activated — the production choropleth stays wrong until it is.**
+- **OD-11 — the map's zone comes from `ALM_ZONE`, not a geographic lookup**, so the Zone filter and
+  the shading finally agree (2000 HQ is in Kanpur but belongs to Central).
+- **OD-12 — growth indicators are hidden for FY 2026 whenever a filter beyond Fiscal Year is set.**
+  `VKBUR` began in FY 2026, so prior-year rows have a blank zone and are excluded by any zone
+  predicate, which made a filtered comparison divide by an almost-empty base. The rule expires on
+  its own in FY 2027. The Yesterday Sale card shows no pill in any year.
+- **Both filter caps lifted.** Gateway pages at 100 *and* `sap.ui.model.Model` defaults `sizeLimit`
+  to 100 — two independent caps in series, either of which alone still showed `(0 of 100)`.
+
+`npm run start-prod` (port 8098, `ui5-prod.yaml`) points a local build at the production backend for
+exactly this kind of diagnosis. It holds **no credentials** — the proxy prompts.
 
 ## Where things are
 
