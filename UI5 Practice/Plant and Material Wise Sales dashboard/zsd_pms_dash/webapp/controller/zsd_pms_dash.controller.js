@@ -108,9 +108,6 @@ sap.ui.define([
 	 */
 	var VKBUR_FIRST_FY = 2026;
 
-	/** Filters that narrow the comparison. Fiscal Year is deliberately not one of them. */
-	var SCOPE_FILTERS = ["zone", "state", "plant", "scheme", "material", "period"];
-
 	/**
 	 * KPI Id -> KpiCard accent variant. The variants carry the prototype's own four card
 	 * gradients (see .pmsKpi--* in css/style.css) and the matching sparkline colour; the
@@ -369,10 +366,17 @@ sap.ui.define([
 			return d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
 		},
 
-		/** @returns {object[]} the last 3 fiscal years, most recent first @private */
+		/**
+		 * @returns {object[]} the last 3 fiscal years, most recent first, floored at
+		 * VKBUR_FIRST_FY - anything earlier has no sales office (VKBUR) on its billing,
+		 * so zone/state/plant filtering and grouping silently break for it.
+		 * @private
+		 */
 		_fyOptions: function () {
 			var iCurr = this._currentFy();
-			return [iCurr, iCurr - 1, iCurr - 2].map(function (fy) {
+			return [iCurr, iCurr - 1, iCurr - 2].filter(function (fy) {
+				return fy >= VKBUR_FIRST_FY;
+			}).map(function (fy) {
 				return {
 					key: String(fy),
 					text: "FY " + fy + "-" + String(fy + 1).slice(2)
@@ -391,22 +395,17 @@ sap.ui.define([
 		 * Whether the year-on-year growth indicators can be trusted for the current
 		 * selection, and so whether they should be shown at all.
 		 *
-		 * Suppressed only where the comparison is known to be broken: FY 2026 (whose prior
-		 * year predates VKBUR - see VKBUR_FIRST_FY) AND at least one filter beyond Fiscal
-		 * Year. A fiscal-year-only view keeps its indicators, because with nothing narrowing
-		 * it the totals include the blank-VKBUR rows on both sides and the comparison is
-		 * sound. Any other year keeps them too.
+		 * Suppressed outright for FY 2026 (VKBUR_FIRST_FY) - its prior year, FY 2025,
+		 * predates VKBUR, so every comparison against it (filtered or not) is measuring
+		 * against data that is mostly missing the field the whole dashboard groups by.
+		 * FY 2027 onwards compares against FY 2026, which has VKBUR throughout, so growth
+		 * indicators are reliable there and shown normally.
 		 * @returns {boolean} true when every growth pill should be hidden
 		 * @private
 		 */
 		_deltasUnreliable: function () {
 			var o = this._oFilters;
-			if (!o || parseInt(o.fy, 10) !== VKBUR_FIRST_FY) {
-				return false;
-			}
-			return SCOPE_FILTERS.some(function (sKey) {
-				return (o[sKey] || []).length > 0;
-			});
+			return !!o && parseInt(o.fy, 10) === VKBUR_FIRST_FY;
 		},
 
 		_readFilters: function () {
@@ -579,7 +578,8 @@ sap.ui.define([
 			}));
 			oModel.setProperty("/scopeText", this._buildScopeText());
 			oModel.setProperty("/mapSubtitle", this._buildMapHint(aGeo));
-			oModel.setProperty("/schemeSubtitle", this._text("schemeVsFy", [String(iPriorFy)]));
+			oModel.setProperty("/schemeSubtitle", this._deltasUnreliable() ?
+				this._text("schemeNoVs") : this._text("schemeVsFy", [String(iPriorFy)]));
 			oModel.setProperty("/lastRefreshedText",
 				this._text("lastRefreshed", [new Date().toLocaleTimeString()]));
 

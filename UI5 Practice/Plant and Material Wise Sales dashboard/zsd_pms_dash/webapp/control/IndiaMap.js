@@ -13,10 +13,9 @@ sap.ui.define([
 	 *
 	 *   * quantile colour scale, not linear - a handful of large states would otherwise wash
 	 *     the whole map out to the palest step
-	 *   * zone granularity shades each zone's member states, taking the zone from
-	 *     ZSD_ZONE_PLANT-ALM_ZONE (the field the Zone filter itself matches on) rather than
-	 *     from the state's geography - the prototype's preset zone unions cannot express a
-	 *     business zoning, which is free to put Uttar Pradesh in Central
+	 *   * zone granularity shades each zone's member states, taking the zone from the
+	 *     hardcoded ZONE_OF_STATE table below rather than from ZSD_ZONE_PLANT-ALM_ZONE or
+	 *     the state's geography - see ZONE_OF_STATE's own comment for why
 	 *   * dot radius 2.2 + sqrt(v / max) * 6.5, biggest drawn first so small dots stay on top
 	 *   * hover card kept to three rows - gross, then the net and tax it is made of
 	 *   * legend labelled with the actual quantile breaks, plus "no billing" and the dot key
@@ -32,6 +31,39 @@ sap.ui.define([
 
 	var STEPS = 5; // colour steps in the sequential ramp (--pms-scale-0 .. --pms-scale-4)
 	var PJ = INDIA.proj;
+
+	/**
+	 * Hardcoded state -> zone table for THIS control's own zone view (2026-08-22). Production
+	 * billing keeps surfacing states under the wrong zone - Karnataka and Uttar Pradesh
+	 * reporting under East being one confirmed case - despite earlier CDS-level fixes, so
+	 * ZSD_ZONE_PLANT-ALM_ZONE can no longer be trusted to grain the choropleth. This map now
+	 * fixes each state's zone on the frontend instead. The Zone filter, KPI totals and every
+	 * other panel are untouched - they still match on ALM_ZONE server-side; only this
+	 * control's zone shading, zone hover totals and state-view zone eyebrow read from here.
+	 *
+	 * Grouping mirrors ALIMCO's real zones, confirmed against a reference zonal map: Gujarat,
+	 * Maharashtra and Goa are their own West zone rather than folding into Central, and North
+	 * East billing keeps its own states rather than merging into East (see indiaGeo.js's own
+	 * merge, which this table deliberately does not repeat).
+	 */
+	var ZONE_OF_STATE = {
+		"Jammu and Kashmir": "North", "Ladakh": "North", "Himachal Pradesh": "North",
+		"Punjab": "North", "Uttarakhand": "North", "Haryana": "North", "Delhi": "North",
+		"Uttar Pradesh": "North", "Rajasthan": "North", "Chandigarh": "North",
+
+		"Gujarat": "West", "Maharashtra": "West", "Goa": "West",
+		"Dadra and Nagar Haveli and Daman and Diu": "West",
+
+		"Madhya Pradesh": "Central", "Chhattisgarh": "Central",
+
+		"Bihar": "East", "Jharkhand": "East", "West Bengal": "East", "Odisha": "East",
+		"Sikkim": "East", "Assam": "East", "Meghalaya": "East", "Arunachal Pradesh": "East",
+		"Nagaland": "East", "Manipur": "East", "Mizoram": "East", "Tripura": "East",
+
+		"Telangana": "South", "Andhra Pradesh": "South", "Karnataka": "South",
+		"Tamil Nadu": "South", "Kerala": "South", "Puducherry": "South",
+		"Lakshadweep": "South", "Andaman and Nicobar Islands": "South"
+	};
 
 	/** Shared hover card. One map on the page, so one element, created on first hover. */
 	var oTip = null;
@@ -637,10 +669,6 @@ sap.ui.define([
 			var aStateNames = Object.keys(INDIA.paths);
 			var mByState = {};
 			var mZone = {};
-			// canonical state name -> the ALM zone its billing was booked under. Built from
-			// the response rather than from a static table, so zone granularity can shade a
-			// zone's real member states instead of a preset polygon.
-			var mZoneOfState = {};
 
 			aGeo.forEach(function (r) {
 				// Gross is the map's headline measure - it drives the shading, the share-of-India
@@ -654,18 +682,14 @@ sap.ui.define([
 					mByState[sCanonical] = r;
 				}
 
-				// Zone is ZSD_ZONE_PLANT-ALM_ZONE exactly as the backend reports it, NOT a
-				// zone derived from where the state sits on the map. ALIMCO's zones are a
-				// business grouping rather than a geographic one - 2000 HQ (UP+UK) is in
-				// Uttar Pradesh but belongs to Central - so deriving the zone from the state
-				// contradicted the Zone filter, which has always matched on ALM_ZONE
-				// server-side. One field now drives filtering and display alike.
-				var sZone = formatter.zoneKey(r.AlmZone);
+				// Zone comes from the hardcoded ZONE_OF_STATE table, not ZSD_ZONE_PLANT-
+				// ALM_ZONE - see that table's own comment for why. A row whose state text
+				// didn't resolve to anything on the map (sCanonical falsy) has nowhere to
+				// paint it, so it is excluded from the zone view exactly as it already is
+				// from the state view.
+				var sZone = sCanonical ? (ZONE_OF_STATE[sCanonical] || "") : "";
 				if (!sZone) {
 					return;
-				}
-				if (sCanonical) {
-					mZoneOfState[sCanonical] = sZone;
 				}
 				// Only the three measures the hover card shows. Prior-year, plant and invoice
 				// totals were accumulated here for rows the card no longer has.
@@ -700,9 +724,9 @@ sap.ui.define([
 				};
 			});
 
-			// Zones come from the data, not from INDIA.zones' five preset polygons. Whatever
-			// ALM_ZONE values are in scope get a swatch - including any sixth zone (North
-			// East billing used to vanish here, because indiaGeo folds its polygon into East).
+			// Zones are whichever of ZONE_OF_STATE's five keys actually have billed states in
+			// this response, not INDIA.zones' preset polygons - so a zone nobody billed under
+			// simply gets no swatch and no shape, rather than an empty one.
 			var aZones = Object.keys(mZone).sort().map(function (sZone) {
 				return {
 					key: sZone,
@@ -712,9 +736,10 @@ sap.ui.define([
 			});
 
 			// Zone granularity paints each zone's own member states rather than a preset zone
-			// outline: with zones assigned per business rule, a preset geographic union would
-			// draw UP inside North however ALM_ZONE has it. State polygons stay exact, and a
-			// state nobody billed under any zone falls through to the no-data fill.
+			// outline: INDIA.zones' geographic unions disagree with ZONE_OF_STATE (Gujarat/
+			// Maharashtra/Goa are West here, not folded into a geographic Central/West split).
+			// State polygons stay exact, and a state nobody billed under any zone falls
+			// through to the no-data fill.
 			var mZoneFill = aZones.reduce(function (m, o) {
 				m[o.key] = o;
 				return m;
@@ -730,7 +755,12 @@ sap.ui.define([
 			var aUnzonedD = [];
 			aStateNames.forEach(function (sState) {
 				var sD = INDIA.paths[sState];
-				var sZone = mZoneOfState[sState] || "";
+				// ZONE_OF_STATE directly, not a response-built map: a state with zero
+				// billing this period still belongs to its zone and must still be painted
+				// as part of it, not fall through to the no-data fill just because it sent
+				// no row - only a zone with NO billing anywhere (absent from mZoneFill)
+				// leaves its member states unzoned.
+				var sZone = ZONE_OF_STATE[sState] || "";
 				if (!sD) {
 					return;
 				}
@@ -859,11 +889,10 @@ sap.ui.define([
 
 			var sState = oState.getAttribute("data-pms-state");
 			var r = oModel.byState[sState];
-			// The zone here is the row's OWN AlmZone, not INDIA.zoneOf[] - that table is
-			// geographic and would label Uttar Pradesh "North" beside a panel that has just
-			// shaded it Central. A state nobody billed has no zone to name, so it shows the
-			// abbreviation alone.
-			var sZone = r ? formatter.zoneKey(r.AlmZone) : "";
+			// The zone here is ZONE_OF_STATE's, not the row's own AlmZone - see that table's
+			// comment for why. It is a property of the state, not of its billing, so it shows
+			// even for a state nobody billed.
+			var sZone = ZONE_OF_STATE[sState] || "";
 			var sEyebrow = (INDIA.abbr[sState] || "") +
 				(sZone ? " " + formatter.MIDDOT + " " + sZone : "");
 

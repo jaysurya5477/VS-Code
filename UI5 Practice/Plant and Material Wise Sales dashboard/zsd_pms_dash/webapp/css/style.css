@@ -49,14 +49,18 @@
 
 	/* Sequential ramp for the choropleth, plus the "nothing billed" fill and the zone
 	   boundary stroke. Emitted as var() references by control/IndiaMap.js, so switching
-	   light/dark re-colours the map with no redraw. Light values are the prototype's own
-	   SCALE_VALUE/NO_DATA. */
-	--pms-scale-0: #f7fbff;
+	   light/dark re-colours the map with no redraw. Light values started as the
+	   prototype's own SCALE_VALUE/NO_DATA (#f7fbff/#f2f5f6), but both sat within a few
+	   points of the white panel behind them - a state with the smallest billed value and
+	   a state with none at all both read as blank. Deepened just enough to stay
+	   readable as "small"/"no billing" rather than "missing", on both the state and the
+	   zone choropleth (same tokens drive both). */
+	--pms-scale-0: #e5f0fb;
 	--pms-scale-1: #deebf7;
 	--pms-scale-2: #9ecae1;
 	--pms-scale-3: #4292c6;
 	--pms-scale-4: #084594;
-	--pms-nodata: #f2f5f6;
+	--pms-nodata: #e3e8ea;
 	--pms-zonediv: rgba(13, 36, 48, .28);
 	--pms-dot: #e4162a;
 
