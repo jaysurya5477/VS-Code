@@ -56,7 +56,7 @@ sap.ui.define([
 		},
 		plant: {
 			set: "Plant",
-			select: "Werks,City,NetValue,TaxValue,GrossValue",
+			select: "Werks,City,PlantName,NetValue,TaxValue,GrossValue",
 			orderby: "NetValue desc"
 		},
 		material: {

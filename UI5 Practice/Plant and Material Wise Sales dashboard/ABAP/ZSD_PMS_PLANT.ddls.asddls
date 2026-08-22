@@ -24,6 +24,7 @@ define custom entity ZSD_PMS_PLANT
 {
   key Werks       : abap.char(4);
       City        : abap.char(40);
+      PlantName   : abap.char(40);
       NetValue    : abap.dec(15,2);
       TaxValue    : abap.dec(15,2);
       GrossValue  : abap.dec(15,2);

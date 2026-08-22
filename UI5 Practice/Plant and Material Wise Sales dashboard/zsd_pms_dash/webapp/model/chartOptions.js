@@ -159,7 +159,8 @@ sap.ui.define([
 					},
 					formatter: function (aParams) {
 						var r = aData[aParams[0].dataIndex] || {};
-						return "<b>" + r.Werks + (r.City ? " " + formatter.MIDDOT + " " + r.City : "") + "</b><br/>" +
+						var sName = r.PlantName || r.City || "";
+						return "<b>" + r.Werks + (sName ? " " + formatter.MIDDOT + " " + sName : "") + "</b><br/>" +
 							"Net " + formatter.money(r.NetValue) + "<br/>" +
 							"Tax " + formatter.money(r.TaxValue) + "<br/>" +
 							"Gross " + formatter.money(r.GrossValue);
@@ -174,7 +175,8 @@ sap.ui.define([
 				yAxis: axis(pal, {
 					type: "category",
 					data: aData.map(function (r) {
-						return r.Werks + (r.City ? " " + r.City : "");
+						var sName = r.PlantName || r.City || "";
+						return r.Werks + (sName ? " " + sName : "");
 					}),
 					splitLine: {
 						show: false

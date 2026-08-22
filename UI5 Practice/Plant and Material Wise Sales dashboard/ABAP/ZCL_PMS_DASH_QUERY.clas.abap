@@ -181,6 +181,7 @@ CLASS zcl_pms_dash_query DEFINITION
       BEGIN OF ty_plant_row,
         werks       TYPE werks_d,
         city        TYPE char40,
+        plant_name  TYPE name1,
         net_value   TYPE p LENGTH 15 DECIMALS 2,
         tax_value   TYPE p LENGTH 15 DECIMALS 2,
         gross_value TYPE p LENGTH 15 DECIMALS 2,
@@ -940,11 +941,12 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
     SELECT vbeln, posnr, aubel, matnr, arktx, werks, fkimg, vrkme, netwr,
            knumv_ana, fkart, fkdat, gjahr, matkl, bismt
-      FROM zsdd_pms_item_cds
+      FROM zsdd_pms_item_cds AS a
       WHERE gjahr = @is_filters-fy
-        AND fkdat BETWEEN @lv_date_from AND @lv_date_to
+        AND budat BETWEEN @lv_date_from AND @lv_date_to
         AND werks IN @is_filters-plant
         AND matnr IN @is_filters-material
+        AND EXISTS ( SELECT vbeln FROM zsd_sale_all WHERE vbeln = a~vbeln )
       ORDER BY vbeln, posnr
       INTO CORRESPONDING FIELDS OF TABLE @rt_item.
 
@@ -1146,17 +1148,23 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     " lat/lon/unit) - a unit's centroid is weighted by ITS PLANTS' values,
     " not by raw GL line count.
     TYPES: BEGIN OF ty_plant_acc,
-             werks     TYPE werks_d,
-             unit      TYPE char10,
-             unit_name TYPE char40,
-             latitude  TYPE p LENGTH 9 DECIMALS 6,
-             longitude TYPE p LENGTH 9 DECIMALS 6,
-             has_coord TYPE abap_bool,
-             value     TYPE p LENGTH 15 DECIMALS 2,
-             tax       TYPE p LENGTH 15 DECIMALS 2,
+             werks      TYPE werks_d,
+             plant_name TYPE name1,
+             unit       TYPE char10,
+             unit_name  TYPE char40,
+             latitude   TYPE p LENGTH 9 DECIMALS 6,
+             longitude  TYPE p LENGTH 9 DECIMALS 6,
+             has_coord  TYPE abap_bool,
+             value      TYPE p LENGTH 15 DECIMALS 2,
+             tax        TYPE p LENGTH 15 DECIMALS 2,
            END OF ty_plant_acc.
-    DATA lt_plant TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY.
+    DATA: lt_plant TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY,
+          lt_t001w TYPE HASHED TABLE OF t001w WITH UNIQUE KEY werks.
 
+    IF NOT it_curr[] IS INITIAL.      	
+      SELECT werks, name1 FROM t001w INTO TABLE @lt_t001w
+        FOR ALL ENTRIES IN @it_curr WHERE werks = @it_curr-werks.
+    ENDIF.
     " Key on WERKS+UNIT together, not WERKS alone - one plant can bill
     " under more than one sales office (OD-8: the real unit-join key is
     " VKBUR, not WERKS), so the same plant can legitimately feed more than
@@ -1166,7 +1174,10 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     LOOP AT it_curr ASSIGNING FIELD-SYMBOL(<ls_row>).
       ASSIGN lt_plant[ werks = <ls_row>-werks unit = <ls_row>-unit ] TO FIELD-SYMBOL(<ls_plant>).
       IF sy-subrc <> 0.
-        INSERT VALUE #( werks = <ls_row>-werks unit = <ls_row>-unit
+        INSERT VALUE #( werks = <ls_row>-werks
+                         plant_name = COND #( WHEN line_exists( lt_t001w[ werks = <ls_row>-werks ] )
+											   THEN lt_t001w[ werks = <ls_row>-werks ]-name1 )
+                         unit = <ls_row>-unit
                          unit_name = <ls_row>-city
                          latitude = <ls_row>-latitude longitude = <ls_row>-longitude
                          has_coord = xsdbool( <ls_row>-latitude IS NOT INITIAL AND <ls_row>-longitude IS NOT INITIAL ) )
@@ -1312,11 +1323,21 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
   METHOD get_plant_top20.
     DATA lt_plant TYPE ty_plant_row_tab.
+    DATA lt_t001w TYPE HASHED TABLE OF t001w WITH UNIQUE KEY werks.
+
+    IF it_curr IS NOT INITIAL.
+      SELECT werks, name1 FROM t001w INTO TABLE lt_t001w
+        FOR ALL ENTRIES IN it_curr WHERE werks = it_curr-werks.
+    ENDIF.
 
     LOOP AT it_curr ASSIGNING FIELD-SYMBOL(<ls_row>).
       ASSIGN lt_plant[ werks = <ls_row>-werks ] TO FIELD-SYMBOL(<ls_plant>).
       IF sy-subrc <> 0.
-        INSERT VALUE #( werks = <ls_row>-werks city = <ls_row>-city ) INTO TABLE lt_plant ASSIGNING <ls_plant>.
+        INSERT VALUE #( werks = <ls_row>-werks
+                         city = <ls_row>-city
+                         plant_name = COND #( WHEN line_exists( lt_t001w[ werks = <ls_row>-werks ] )
+                                              THEN lt_t001w[ werks = <ls_row>-werks ]-name1 ) )
+          INTO TABLE lt_plant ASSIGNING <ls_plant>.
       ENDIF.
       <ls_plant>-net_value += <ls_row>-netwr.
       <ls_plant>-tax_value += <ls_row>-mwsbk.
@@ -1359,11 +1380,19 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
                          bismt = <ls_item>-bismt uom = <ls_item>-vrkme )
           INTO TABLE lt_mat ASSIGNING <ls_mat>.
       ENDIF.
+
       <ls_mat>-value += <ls_item>-netwr.
       <ls_mat>-qty   += <ls_item>-fkimg.
 
       READ TABLE it_tax INTO DATA(ls_tax) WITH TABLE KEY vbeln = <ls_item>-vbeln posnr = <ls_item>-posnr.
       IF sy-subrc = 0.
+        IF <ls_item>-fkart = 'ZMRN' OR <ls_item>-fkart = 'ZCRN' OR <ls_item>-fkart = 'ZS1'.
+          ls_tax-igst *= -1.
+          ls_tax-sgst *= -1.
+          ls_tax-cgst *= -1.
+          ls_tax-tcs  *= -1.
+        ENDIF.
+
         <ls_mat>-igst += ls_tax-igst.
         <ls_mat>-sgst += ls_tax-sgst.
         <ls_mat>-cgst += ls_tax-cgst.

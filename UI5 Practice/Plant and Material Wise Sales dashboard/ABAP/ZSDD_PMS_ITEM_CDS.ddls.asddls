@@ -29,32 +29,45 @@
 // verify against live DDIC before activation. KNUMV_ANA is carried through
 // specifically so ZCL_PMS_DASH_QUERY can join PRCD_ELEMENTS on it without a
 // second round-trip to VBRP.
-define view ZSDD_PMS_ITEM_CDS as
-
-select from vbrp as a
-  inner join vbrk as b on b.vbeln = a.vbeln
-  left outer join mara as c on c.matnr = a.matnr
+define view ZSDD_PMS_ITEM_CDS
+  as select from vbrp as a
+    inner join   vbrk as b on b.vbeln = a.vbeln
+    inner join   bkpf as d on  d.belnr = b.belnr
+                           and d.gjahr = b.gjahr
+    inner join   mara as c on c.matnr = a.matnr
+    association [1..*] to zsd_sale_all as s on s.vbeln = a.vbeln
 
 {
-  key a.vbeln        as vbeln,
-  key a.posnr        as posnr,
+  key a.vbeln     as vbeln,
+  key a.posnr     as posnr,
 
-      a.aubel        as aubel,       // sales order reference
-      a.matnr        as matnr,
-      a.arktx        as arktx,       // material description as billed
-      a.werks        as werks,
-      a.fkimg        as fkimg,       // billed quantity
-      a.vrkme        as vrkme,       // sales unit
-      a.netwr        as netwr,       // item net value (pre-tax) - confirm this is the right field via P0-1
-      a.knumv_ana    as knumv_ana,   // pricing/condition doc number - the join key into PRCD_ELEMENTS (OD-4)
+      a.aubel     as aubel,     // sales order reference
+      a.matnr     as matnr,
+      a.arktx     as arktx,     // material description as billed
+      a.werks     as werks,
+      a.fkimg     as fkimg,     // billed quantity
+      a.vrkme     as vrkme,     // sales unit
 
-      b.fkart        as fkart,       // billing type - credit-memo exclusion, mirrors template's F2/G2 (P0-2)
-      b.fkdat        as fkdat,       // billing date
-      b.gjahr        as gjahr,       // fiscal year the item belongs to - confirm source (derived from fkdat vs. stored)
+      @Semantics.amount.currencyCode: 'waerk'
+      case when b.fkart = 'ZMRN' or b.fkart = 'ZCRN' or b.fkart = 'ZS1'
+      then a.netwr * -1
+      else a.netwr
+      end         as netwr, // item net value (pre-tax) - confirm this is the right field via P0-1
+      a.waerk     as waerk, // currency of netwr
 
-      c.matkl        as matkl,      // material group
-      c.bismt        as bismt       // old material number (MARA-BISMT) - lets users find a
-                                     // material by its legacy code in the Material filter
+      a.knumv_ana as knumv_ana, // pricing/condition doc number - the join key into PRCD_ELEMENTS (OD-4)
 
+      b.fkart     as fkart,     // billing type - credit-memo exclusion, mirrors template's F2/G2 (P0-2)
+      b.fkdat     as fkdat,     // billing date
+      b.belnr     as belnr,
+      b.gjahr     as gjahr,     // fiscal year the item belongs to - confirm source (derived from fkdat vs. stored)
+
+      c.matkl     as matkl,     // material group
+      c.bismt     as bismt,     // old material number (MARA-BISMT) - lets users find a
+                                // material by its legacy code in the Material filter
+      d.budat     as budat,     // Posting date of the accounting document (BKPF-BUDAT)
+      d.cpudt     as cpudt      // Creation date of the accounting document (BKPF-CPUDT)
 }
-where a.matnr <> ' '
+where
+      a.matnr <> ' '
+  and s.isInitial = 0

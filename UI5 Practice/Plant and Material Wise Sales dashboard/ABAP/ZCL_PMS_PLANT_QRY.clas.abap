@@ -51,6 +51,7 @@ CLASS zcl_pms_plant_qry IMPLEMENTATION.
     lt_out = VALUE #( FOR ls IN ls_dash-plant_top20 (
                         werks      = ls-werks
                         city       = ls-city
+                        plantname  = ls-plant_name
                         netvalue   = ls-net_value
                         taxvalue   = ls-tax_value
                         grossvalue = ls-gross_value ) ).
