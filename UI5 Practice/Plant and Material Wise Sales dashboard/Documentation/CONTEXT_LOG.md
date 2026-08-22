@@ -430,6 +430,50 @@ data (`recompute()`, template ~line 608). Replicate this, don't just compare ful
   three rows (gross/net/tax) are unchanged. The choropleth's lightest colour step and "no billing"
   fill (`--pms-scale-0`, `--pms-nodata`) were also darkened slightly in the same change, so both
   stay visibly distinct from the white panel background in light theme; dark theme was untouched.
+- **OD-16 — the map's zone table is driven by each PLANT's own `ALM_ZONE`, and a state whose
+  plants disagree is SPLIT rather than painted whole in one zone.** ✅ *Decided 2026-08-22.*
+  OD-15's hardcoded `ZONE_OF_STATE` is now only a baseline (`ZONE_OF_STATE_BASELINE`): a state
+  hosting plants takes the zone those plants carry on `ZSD_ZONE_PLANT-ALM_ZONE`, read off each
+  Unit dot's own `AlmZone` (`ZSD_PMS_UNIT_DOTS`, one value per Unit — unambiguous, unlike the
+  state-grain Geo row's `AlmZone` that OD-15 abandoned), with `PLANT_STATES` in `IndiaMap.js`
+  mapping each plant to the state(s) it covers. Madhya Pradesh then broke the last assumption:
+  it hosts **3300 RMC Ujjain (WEST)** and **3100 AAPC Jabalpur (CENTRAL)**, so no single zone is
+  right for it, and painting the whole state Central contradicted the table's own WEST for
+  Ujjain. `deriveStatePieces()` now returns one or more *pieces* per state — a state whose plants
+  agree (or that has none) stays one whole-state piece, byte-identical to its `indiaGeo.js` path,
+  while a state whose plants disagree is cut into each plant's Voronoi cell (Sutherland-Hodgman
+  clip against the perpendicular bisector between the plants, on the projected coordinates the
+  dots already carry) and the cells merged per zone. So West now reaches into MP as far as
+  Ujjain's own half — Ujjain/Indore/Bhopal West, Jabalpur/Gwalior/Rewa Central — and the split
+  disappears by itself if both plants are ever maintained into one zone. Each piece also carries
+  the `share` of the state's own billing its plants account for in that response, so the zone
+  hover totals move with the colour (MP's ₹16.28 Cr Ujjain billing counts under West, its
+  ₹5.6 Cr Jabalpur billing under Central) and the five zone totals still sum exactly to the Geo
+  rows' total. Still scoped to this control: the Zone filter, KPI totals and every other panel
+  match on `ALM_ZONE` server-side, untouched, and the state-granularity view is unchanged except
+  that a split state's hover eyebrow now names both zones ("MP · West / Central").
+
+- **OD-17 — the zone view is a base map with zone-coloured dots, not a second choropleth.**
+  ✅ *Decided 2026-08-22.* Zone granularity used to shade each zone's region by value, the same
+  way the state view shades states, which put two encodings of the same zoning on top of each
+  other and made the map answer "how much" twice instead of answering "which zone" once. It is
+  now one flat land colour (`--pms-land`) with its state borders drawn, and the **Unit dots**
+  carry the colour — one hue per zone (`ZONE_COLORS` in `IndiaMap.js` → `--pms-zone-*`) — with
+  a legend below the map naming each colour. Dot SIZE still means gross value, as in the state
+  view. Each dot's callout label reads `code · zone · value` there (the unit name moves to the
+  hover card, which also gained a zone eyebrow), and the hidden-dots case tints the regions in
+  the same five colours instead, so the toggle never lands on a map with nothing on it. A zone
+  picked in the Zone filter is tinted in its own colour so a filtered map still shows where the
+  filter applies. **The state view is untouched.** Palette: the five hues are NOT the chart ramp
+  (`--pms-c1..c8`) — no five of those eight survive as five marks that can sit side by side on
+  one map (worst pair ΔE 3.0 under deuteranopia, OKLab ×100, floor 6). The five chosen are the
+  best-separated five available, measured in both themes: light passes every gate (worst pair
+  15.6 normal-vision, 6.9 colour-vision), dark clears colour-vision at 6.5 but leaves
+  **West↔East at 11.9 normal-vision, under the 15 floor** — five simultaneously-visible
+  categories is past what any documented palette carries, so the residual is covered by naming
+  the zone on every dot's own label, in the hover card and in the legend rather than by colour
+  alone. Tightening it further means fewer colours (group two zones) or a second channel
+  (dot shape per zone).
 
 ## 7. How to point the ADT MCP at another client / system
 

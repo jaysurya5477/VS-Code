@@ -13,13 +13,21 @@ sap.ui.define([
 	 *
 	 *   * quantile colour scale, not linear - a handful of large states would otherwise wash
 	 *     the whole map out to the palest step
-	 *   * zone granularity shades each zone's member states, taking the zone from
-	 *     deriveZoneOfState() below - live off each Unit dot's own AlmZone (ZSD_ZONE_PLANT),
-	 *     not from the state-grain Geo entity's AlmZone or the state's geography - see that
-	 *     function's own comment for why
 	 *   * dot radius 2.2 + sqrt(v / max) * 6.5, biggest drawn first so small dots stay on top
 	 *   * hover card kept to three rows - gross, then the net and tax it is made of
 	 *   * legend labelled with the actual quantile breaks, plus "no billing" and the dot key
+	 *
+	 * The zone view departs from the prototype, which shaded each zone's states by value the
+	 * same way the state view shades states. Here it is a BASE MAP instead: every region takes
+	 * one flat land colour with its borders drawn, and the Unit dots carry the colour, one hue
+	 * per zone (ZONE_COLORS), with the legend below the map naming each one - so the panel
+	 * answers "which zone is this unit in" without two encodings of the same zoning competing.
+	 * Hide the dots and the regions take the zoning back, tinted in the same zone colours.
+	 * Which zone a region belongs to comes from deriveStatePieces() below - live off each Unit
+	 * dot's own AlmZone (ZSD_ZONE_PLANT), not from the state-grain Geo entity's AlmZone or the
+	 * state's geography - see that function's own comment for why, and for how a state whose
+	 * own two plants sit in different zones (Madhya Pradesh: Ujjain West, Jabalpur Central) is
+	 * split between them instead of painted whole in one.
 	 *
 	 * The base geometry (state paths, zone unions, projection constants, state abbreviations)
 	 * is model/indiaGeo.js, ported verbatim from the prototype. Everything data-driven is
@@ -33,6 +41,33 @@ sap.ui.define([
 
 	var STEPS = 5; // colour steps in the sequential ramp (--pms-scale-0 .. --pms-scale-4)
 	var PJ = INDIA.proj;
+
+	/**
+	 * Zone -> its own colour token, for the zone view: there the map is one flat land colour
+	 * with its borders drawn and the Unit DOTS carry the colour, one hue per zone, with the
+	 * legend below the map naming each one. Keyed by formatter.zoneKey()'s Title Case, and
+	 * listed in the order the legend shows - North to South, the order the business names its
+	 * zones in, not by value, so a zone keeps its colour and its place when the numbers move.
+	 * The hues themselves and why they are these five and not the chart ramp: css/style.css's
+	 * --pms-zone-* block. A zone name this table does not know (a sixth zone maintained on
+	 * ZSD_ZONE_PLANT) falls back to the choropleth's own dot colour rather than borrowing
+	 * another zone's identity.
+	 */
+	var ZONE_COLORS = [
+		{zone: "North", token: "--pms-zone-north"},
+		{zone: "West", token: "--pms-zone-west"},
+		{zone: "Central", token: "--pms-zone-central"},
+		{zone: "East", token: "--pms-zone-east"},
+		{zone: "South", token: "--pms-zone-south"}
+	];
+
+	/** @returns {string} the CSS colour reference for one zone's dots and legend chip */
+	function zoneColor(sZone) {
+		var oHit = ZONE_COLORS.filter(function (o) {
+			return o.zone === sZone;
+		})[0];
+		return "var(" + (oHit ? oHit.token : "--pms-dot") + ")";
+	}
 
 	/**
 	 * Baseline geographic zone per state - the "standard" Indian zonal classification (see
@@ -69,7 +104,7 @@ sap.ui.define([
 	 * has no state column - only Plant/Zone/Unit/Lat/Long (see ZCL_PMS_DASH_QUERY=>
 	 * get_unit_dots and ZSD_PMS_UNIT_DOTS-AlmZone, 2026-08-22) - so this mapping stays a
 	 * hardcoded, manually-maintained fact rather than something read live. Add a plant here
-	 * (matching the SAP screen's Plant column) for deriveZoneOfState() below to pick it up.
+	 * (matching the SAP screen's Plant column) for deriveStatePieces() below to pick it up.
 	 */
 	var PLANT_STATES = {
 		"2000": ["Uttar Pradesh", "Uttarakhand"],           // HQ (UP+UK), physically Kanpur
@@ -92,51 +127,229 @@ sap.ui.define([
 		"4902": ["Bihar"]                                    // RMC Patna
 	};
 
+	/* ------------------------------------------------------------------ */
+	/* Sub-state geometry, for a state whose own plants sit in two zones  */
+	/* ------------------------------------------------------------------ */
+
 	/**
-	 * Derives the state -> zone table this control's zone view paints from, live off
-	 * ZSD_ZONE_PLANT-ALM_ZONE (2026-08-22) instead of a hardcoded plant-zone snapshot.
-	 * mZoneOfPlant is {plant code -> zone}, read off each Unit dot's own AlmZone (see
-	 * ZCL_PMS_DASH_QUERY=>get_unit_dots and ZSD_PMS_UNIT_DOTS-AlmZone) - unambiguous at that
-	 * grain (one join, one value per Unit), unlike ZSD_PMS_GEO's state-grain AlmZone, which
-	 * disagreed with itself when a state hosted units in more than one zone.
-	 *
-	 * Starts from ZONE_OF_STATE_BASELINE (the standard geographic classification), then for
-	 * each state PLANT_STATES says has a plant with a KNOWN live zone, overrides it to that
-	 * zone - PROVIDED every one of that state's own plants agrees. Madhya Pradesh hosts both
-	 * 3100 (Central) and 3300 (West), so it keeps its baseline rather than being arbitrarily
-	 * flipped to one of the two; Uttar Pradesh and Uttarakhand have only plant 2000 between
-	 * them, so both resolve cleanly to whatever ZSD_ZONE_PLANT currently says for it.
-	 *
-	 * The Zone filter, KPI totals and every other panel are untouched - they still match on
-	 * ALM_ZONE server-side; only this control's zone shading, zone hover totals and
-	 * state-view zone eyebrow read from here.
-	 * @param {object} mZoneOfPlant plant code -> zone, as currently known
-	 * @returns {object} canonical state name -> zone
+	 * Splits one state's path data into its rings. Every path in indiaGeo.js is polygonal -
+	 * "M x y L x y ... Z" subpaths, no curves - so a ring is simply its point list, and a
+	 * state with islands or exclaves is several rings.
+	 * @param {string} sD state path data
+	 * @returns {number[][][]} one array of [x, y] points per ring
 	 * @private
 	 */
-	function deriveZoneOfState(mZoneOfPlant) {
+	function parseRings(sD) {
+		return String(sD || "").split("M").reduce(function (aRings, sPart) {
+			var aNums = (sPart.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+			var aRing = [];
+			for (var i = 0; i + 1 < aNums.length; i += 2) {
+				aRing.push([aNums[i], aNums[i + 1]]);
+			}
+			if (aRing.length >= 3) {
+				aRings.push(aRing);
+			}
+			return aRings;
+		}, []);
+	}
+
+	/**
+	 * @param {number[][]} aRing points of one ring
+	 * @returns {string} that ring as closed path data, at the source geometry's own precision
+	 * @private
+	 */
+	function ringPath(aRing) {
+		return "M" + aRing.map(function (p, i) {
+			return (i ? "L" : "") + p[0].toFixed(1) + " " + p[1].toFixed(1);
+		}).join("") + "Z";
+	}
+
+	/**
+	 * Sutherland-Hodgman clip of one ring to the half-plane fA*x + fB*y + fC <= 0.
+	 *
+	 * A concave ring whose kept part falls in more than one piece comes back as ONE ring, its
+	 * pieces joined by zero-width seams running along the clip line. That is the algorithm's
+	 * known behaviour and it is harmless here: the filled area is still exactly the kept
+	 * part, which is all a choropleth polygon has to be.
+	 * @param {number[][]} aRing points of one ring
+	 * @param {number} fA half-plane x coefficient
+	 * @param {number} fB half-plane y coefficient
+	 * @param {number} fC half-plane constant
+	 * @returns {number[][]|null} the kept ring, or null if nothing of it survived
+	 * @private
+	 */
+	function clipRing(aRing, fA, fB, fC) {
+		var aOut = [];
+		aRing.forEach(function (p, i) {
+			var q = aRing[(i + 1) % aRing.length];
+			var fP = fA * p[0] + fB * p[1] + fC;
+			var fQ = fA * q[0] + fB * q[1] + fC;
+			if (fP <= 0) {
+				aOut.push(p);
+			}
+			if ((fP < 0 && fQ > 0) || (fP > 0 && fQ < 0)) {
+				var t = fP / (fP - fQ);
+				aOut.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
+			}
+		});
+		return aOut.length >= 3 ? aOut : null;
+	}
+
+	/**
+	 * The part of a state that belongs to one of its plants rather than to any of the others:
+	 * every point of the state nearer to that plant than to the rest - its Voronoi cell,
+	 * clipped to the state's own outline. Built by clipping the state's rings against one
+	 * perpendicular-bisector half-plane per other plant, so no Voronoi library is needed for
+	 * what is, in the only case that occurs today, a single straight cut.
+	 * @param {string} sState canonical state name
+	 * @param {number[]} aXY the plant's projected [x, y]
+	 * @param {number[][]} aOthers the other plants' projected [x, y]
+	 * @returns {string} path data, possibly several subpaths, "" if the cell is empty
+	 * @private
+	 */
+	function plantCellPath(sState, aXY, aOthers) {
+		return parseRings(INDIA.paths[sState]).map(function (aRing) {
+			var aKept = aRing;
+			aOthers.forEach(function (o) {
+				// |X - aXY|^2 - |X - o|^2 <= 0, i.e. at least as near to aXY as to o.
+				aKept = aKept && clipRing(aKept,
+					2 * (o[0] - aXY[0]),
+					2 * (o[1] - aXY[1]),
+					aXY[0] * aXY[0] + aXY[1] * aXY[1] - o[0] * o[0] - o[1] * o[1]);
+			});
+			return aKept ? ringPath(aKept) : "";
+		}).join("");
+	}
+
+	/**
+	 * Derives what this control's zone view paints, live off ZSD_ZONE_PLANT-ALM_ZONE
+	 * (2026-08-22) instead of a hardcoded plant-zone snapshot. mZoneOfPlant is {plant code ->
+	 * zone}, read off each Unit dot's own AlmZone (see ZCL_PMS_DASH_QUERY=>get_unit_dots and
+	 * ZSD_PMS_UNIT_DOTS-AlmZone) - unambiguous at that grain (one join, one value per Unit),
+	 * unlike ZSD_PMS_GEO's state-grain AlmZone, which disagreed with itself when a state
+	 * hosted units in more than one zone.
+	 *
+	 * Every state comes back as one or more PIECES - {zone, d, share} - and both the zone
+	 * shading and the zone hover totals are built from them:
+	 *
+	 *   * a state with no plant of its own keeps ZONE_OF_STATE_BASELINE's geographic zone, as
+	 *     one whole-state piece;
+	 *   * a state whose plants all agree takes that zone, again as one whole-state piece - so
+	 *     Uttar Pradesh and Uttarakhand both follow plant 2000 wherever ZSD_ZONE_PLANT
+	 *     currently puts it;
+	 *   * a state whose plants DISAGREE is SPLIT between them rather than flipped to one zone
+	 *     or left on its baseline. Madhya Pradesh hosts 3100 Jabalpur (Central) and 3300
+	 *     Ujjain (West), so its western part - Ujjain's own, out to the halfway line between
+	 *     the two plants - paints West and Jabalpur's part stays Central, instead of the
+	 *     whole state reading Central while the table says 3300 is West. Maintain both plants
+	 *     into one zone in ZSD_ZONE_PLANT and the state goes back to a single whole polygon
+	 *     of that zone by itself: the split lasts only as long as the table disagrees with
+	 *     itself, and no other state is touched while its own plants agree.
+	 *
+	 * `share` is what fraction of that state's own billing the piece carries, taken from what
+	 * its plants each billed in THIS response (mPlantGross). The state grain is unit-based
+	 * (OD-10 - ZSD_PMS_GEO's state is the UNIT's own state, and get_geo is a straight roll-up
+	 * of units by regio), so a state's value IS the sum of its plants' and this apportionment
+	 * is exact rather than an estimate. Shares always total 1 per state, so no value is
+	 * created or lost, and an unsplit state's single piece carries all of it.
+	 * @param {object} mZoneOfPlant plant code -> zone, as currently known
+	 * @param {object} mPlantXY plant code -> projected [x, y], as currently known
+	 * @param {object} mPlantGross plant code -> gross billed in this response
+	 * @returns {object} canonical state name -> [{zone, d, share}], highest share first
+	 * @private
+	 */
+	function deriveStatePieces(mZoneOfPlant, mPlantXY, mPlantGross) {
 		var mPlantsByState = {};
 		Object.keys(PLANT_STATES).forEach(function (sPlant) {
-			var sZone = mZoneOfPlant[sPlant];
-			if (!sZone) {
+			if (!mZoneOfPlant[sPlant]) {
 				return; // this plant's zone isn't known yet - nothing to override its state(s) with
 			}
 			PLANT_STATES[sPlant].forEach(function (sState) {
-				(mPlantsByState[sState] || (mPlantsByState[sState] = [])).push(sZone);
+				(mPlantsByState[sState] || (mPlantsByState[sState] = [])).push(sPlant);
 			});
 		});
 
-		var mResolved = Object.assign({}, ZONE_OF_STATE_BASELINE);
-		Object.keys(mPlantsByState).forEach(function (sState) {
-			var aZones = mPlantsByState[sState];
-			var bUnanimous = aZones.every(function (sZone) {
-				return sZone === aZones[0];
+		function distinctZones(aPlants) {
+			return aPlants.map(function (sPlant) {
+				return mZoneOfPlant[sPlant];
+			}).filter(function (sZone, i, a) {
+				return a.indexOf(sZone) === i;
 			});
-			if (bUnanimous) {
-				mResolved[sState] = aZones[0];
+		}
+
+		var mPieces = {};
+		Object.keys(INDIA.paths).forEach(function (sState) {
+			var aPlants = mPlantsByState[sState] || [];
+			var aZones = distinctZones(aPlants);
+
+			function whole(sZone) {
+				mPieces[sState] = [{
+					zone: sZone,
+					d: INDIA.paths[sState] || "",
+					share: 1
+				}];
 			}
+
+			if (aZones.length <= 1) {
+				whole(aZones[0] || ZONE_OF_STATE_BASELINE[sState] || "");
+				return;
+			}
+
+			// A split needs every disagreeing zone to have a plant with a known map position
+			// to cut around; short of that the state falls back to its baseline zone rather
+			// than handing the whole of itself to whichever plant happens to be placed.
+			var aPlaced = aPlants.filter(function (sPlant) {
+				return !!mPlantXY[sPlant];
+			});
+			if (aPlaced.length < 2 || distinctZones(aPlaced).length < aZones.length) {
+				whole(ZONE_OF_STATE_BASELINE[sState] || "");
+				return;
+			}
+
+			var mByZone = {};
+			aPlaced.forEach(function (sPlant) {
+				var sZone = mZoneOfPlant[sPlant];
+				var o = mByZone[sZone] || (mByZone[sZone] = {d: "", gross: 0});
+				// Cells are cut against ALL the other plants and only then merged by zone: a
+				// zone's region is the UNION of its own plants' cells, which is not the same
+				// shape as the state clipped against the other zones' plants.
+				o.d += plantCellPath(sState, mPlantXY[sPlant], aPlaced.filter(function (p) {
+					return p !== sPlant;
+				}).map(function (p) {
+					return mPlantXY[p];
+				}));
+				o.gross += num(mPlantGross[sPlant]);
+			});
+
+			// A zone whose cells all came back empty (its plant sits outside this state -
+			// possible for a plant that covers more than one) takes no area, so its share is
+			// redistributed over the zones that did take some, keeping the state whole.
+			var aKept = Object.keys(mByZone).filter(function (sZone) {
+				return !!mByZone[sZone].d;
+			});
+			if (!aKept.length) {
+				whole(ZONE_OF_STATE_BASELINE[sState] || "");
+				return;
+			}
+
+			var fTotal = aKept.reduce(function (fSum, sZone) {
+				return fSum + mByZone[sZone].gross;
+			}, 0);
+			mPieces[sState] = aKept.map(function (sZone) {
+				return {
+					zone: sZone,
+					d: mByZone[sZone].d,
+					// Nothing billed anywhere in the state this period - no weights to go on,
+					// and nothing to distribute either, so an even split is as good as any
+					// and keeps the shares summing to 1.
+					share: fTotal > 0 ? mByZone[sZone].gross / fTotal : 1 / aKept.length
+				};
+			}).sort(function (a, b) {
+				return b.share - a.share;
+			});
 		});
-		return mResolved;
+
+		return mPieces;
 	}
 
 	/** Shared hover card. One map on the page, so one element, created on first hover. */
@@ -232,13 +445,26 @@ sap.ui.define([
 	 * value are what the label exists for, so they are never shortened, and a unit whose name
 	 * is long (or absent, on a backend that does not yet return one) simply shows less of it
 	 * rather than overflowing the column or pushing into the map.
+	 *
+	 * In the zone view the label reads "<code> · <zone> · <value>" instead: there the dot's
+	 * colour IS its zone, and a colour needs a written form beside it - naming the zone on
+	 * the dot's own label is what keeps that identity readable for anyone who cannot separate
+	 * two of the five hues (see css/style.css's --pms-zone-* block for the measurements). The
+	 * zone takes the name's place rather than being squeezed in beside it: the gutter fits
+	 * about 26 characters, and code + zone + value already spend most of them, so keeping
+	 * both would leave the name as two letters and an ellipsis. The full name is still on the
+	 * dot's hover card, which has the room this column does not.
 	 * @param {string} sCode unit code
 	 * @param {string} sName unit name, may be empty
 	 * @param {string} sValue the pre-formatted money string
+	 * @param {string} [sZone] the unit's zone - shown in place of the name when given
 	 * @returns {string} the label
 	 */
-	function calloutLabel(sCode, sName, sValue) {
+	function calloutLabel(sCode, sName, sValue, sZone) {
 		var sTail = " " + formatter.MIDDOT + " " + sValue;
+		if (sZone) {
+			return sCode + " " + formatter.MIDDOT + " " + sZone + sTail;
+		}
 		if (!sName) {
 			return sCode + sTail;
 		}
@@ -302,7 +528,7 @@ sap.ui.define([
 	 * heavily west), so once a side holds more rows than the panel height can take at
 	 * CALLOUT_ROW_HEIGHT, the dots nearest the map's centre line - the ones with the least
 	 * detour to lose - move across to the emptier side.
-	 * @param {object[]} aProjected dots from _buildModel's own map step: {code, x, y, r, net}
+	 * @param {object[]} aProjected dots from _buildModel's own map step: {code, x, y, r, zone}
 	 * @returns {object[]} {code, x1, y1, xm, ym, x2, y2, textX, textY, anchor, label}
 	 */
 	function buildCallouts(aProjected) {
@@ -350,7 +576,7 @@ sap.ui.define([
 			return aGroup.map(function (o, i) {
 				var d = o.d;
 				var fY = aY[i];
-				var sLabel = calloutLabel(d.code, d.name, formatter.money(d.gross, 1));
+				var sLabel = calloutLabel(d.code, d.name, formatter.money(d.gross, 1), d.zone);
 				var fWidth = labelWidth(sLabel) + CALLOUT_LINE_GAP;
 
 				return {
@@ -572,13 +798,11 @@ sap.ui.define([
 						oRm.attr("fill-rule", "evenodd");
 						oRm.attr("d", o.d);
 						oRm.style("fill", o.fill);
-						// Stroked in its own fill, so the borders between member states vanish
-						// and the zone reads as one region. Written inline deliberately: an
-						// inline style outranks any selector, which also disables the
-						// .pmsMapArea hover/selected stroke that would otherwise re-draw every
-						// internal seam in ink. Those two states use a filter instead - see
-						// .pmsMapArea--zone in css/style.css.
-						oRm.style("stroke", o.fill);
+						// No inline stroke: the zone view is a base map now, so its borders are
+						// meant to show, and .pmsMapArea's own border stroke (plus its hover and
+						// selected strokes) is exactly what draws them. This used to be stroked
+						// in the region's own fill, to hide the member states' seams when the
+						// region itself was the value channel.
 						oRm.openEnd();
 						oRm.close("path");
 					});
@@ -613,6 +837,13 @@ sap.ui.define([
 						oRm.attr("cx", o.x);
 						oRm.attr("cy", o.y);
 						oRm.attr("r", o.r);
+						// Zone view only: one hue per zone, the map's only colour there. The
+						// class holds it more opaque than the choropleth's dots - see
+						// .pmsMapDot--zone.
+						if (o.fill) {
+							oRm.class("pmsMapDot--zone");
+							oRm.style("fill", o.fill);
+						}
 						oRm.openEnd();
 						oRm.close("circle");
 					});
@@ -660,6 +891,14 @@ sap.ui.define([
 			var aBins = oModel.scale.bins;
 			var bLabelled = aBins.length === STEPS - 1;
 
+			// The zone view shades nothing by value, so a value ramp under it would label a
+			// scale the map does not use. It gets the zone key instead - which colour is
+			// which zone - and keeps the dot-size key, since the dots still carry the values.
+			if (oModel.isZone) {
+				this._renderZoneKey(oRm, oModel);
+				return;
+			}
+
 			oRm.openStart("div").class("pmsMapScale").openEnd();
 			oRm.openStart("span").class("pmsScaleCap").openEnd().text(t.scaleCap || "").close("span");
 
@@ -699,6 +938,43 @@ sap.ui.define([
 				oRm.openStart("span").class("pmsMapDotKey").openEnd();
 				oRm.openStart("span").class("pmsMapDotKeyChip").openEnd().close("span");
 				oRm.text(t.dotKey || "");
+				oRm.close("span");
+			}
+
+			oRm.close("div");
+		},
+
+		/**
+		 * The zone view's own legend: one round chip per zone, in that zone's colour, with the
+		 * zone named beside it - the written half of the dots' colour coding, and the reason
+		 * the colour is never the only thing carrying a zone's identity.
+		 *
+		 * Only the zones this response actually has are listed, in the fixed North..South
+		 * order aZones is sorted into, so the key never claims a colour the map is not using
+		 * and never renumbers itself when the values move. With the dots hidden the same
+		 * colours are on the regions instead, so the key reads the same either way.
+		 * @param {sap.ui.core.RenderManager} oRm the render manager
+		 * @param {object} oModel the view model built by _model()
+		 * @private
+		 */
+		_renderZoneKey: function (oRm, oModel) {
+			var t = this.getTexts() || {};
+
+			oRm.openStart("div").class("pmsMapScale").openEnd();
+			oRm.openStart("span").class("pmsScaleCap").openEnd().text(t.zoneCap || "").close("span");
+
+			oModel.zones.forEach(function (o) {
+				oRm.openStart("span").class("pmsZoneKey").openEnd();
+				oRm.openStart("span").class("pmsZoneKeyChip").style("background", o.color).openEnd().close("span");
+				oRm.text(o.key);
+				oRm.close("span");
+			});
+
+			if (this.getShowDots()) {
+				oRm.openStart("span").class("pmsMapDotKey").openEnd();
+				oRm.openStart("span").class("pmsMapDotKeyChip").class("pmsMapDotKeyChip--neutral")
+					.openEnd().close("span");
+				oRm.text(t.dotKeyZone || t.dotKey || "");
 				oRm.close("span");
 			}
 
@@ -746,14 +1022,30 @@ sap.ui.define([
 			// keeps whatever live zone an earlier, less-filtered response already taught us,
 			// rather than the state it feeds falling back to the geographic baseline and
 			// then flipping back once the filter clears.
+			//
+			// Each plant's own map position accumulates the same way and for the same reason -
+			// it is master data, not billing, so a response that happens not to mention a
+			// plant must not un-place it and undo a split state's geometry mid-filter.
 			this._mZoneOfPlant = this._mZoneOfPlant || {};
+			this._mPlantXY = this._mPlantXY || {};
+			// Gross is deliberately NOT accumulated: it is what this response's own filters
+			// returned, and it is what a split state's value is apportioned by, so it has to
+			// describe exactly the same billing the Geo rows beside it do.
+			var mPlantGross = {};
 			aDots.forEach(function (d) {
 				var sZone = formatter.zoneKey(d.AlmZone);
-				if (d.UnitCode && sZone) {
+				if (!d.UnitCode) {
+					return;
+				}
+				if (sZone) {
 					this._mZoneOfPlant[d.UnitCode] = sZone;
 				}
+				if (num(d.Latitude) && num(d.Longitude)) {
+					this._mPlantXY[d.UnitCode] = projLL(num(d.Latitude), num(d.Longitude));
+				}
+				mPlantGross[d.UnitCode] = num(d.GrossValue);
 			}, this);
-			var mZoneOfState = deriveZoneOfState(this._mZoneOfPlant);
+			var mStatePieces = deriveStatePieces(this._mZoneOfPlant, this._mPlantXY, mPlantGross);
 
 			var aStateNames = Object.keys(INDIA.paths);
 			var mByState = {};
@@ -771,21 +1063,28 @@ sap.ui.define([
 					mByState[sCanonical] = r;
 				}
 
-				// Zone comes from mZoneOfState (deriveZoneOfState(), live off ZSD_ZONE_PLANT via
+				// Zone comes from mStatePieces (deriveStatePieces(), live off ZSD_ZONE_PLANT via
 				// the Unit dots), not ZSD_ZONE_PLANT-ALM_ZONE on the state-grain Geo row itself -
-				// see deriveZoneOfState()'s own comment for why. A row whose state text didn't
-				// resolve to anything on the map (sCanonical falsy) has nowhere to paint it, so
-				// it is excluded from the zone view exactly as it already is from the state view.
-				var sZone = sCanonical ? (mZoneOfState[sCanonical] || "") : "";
-				if (!sZone) {
-					return;
-				}
-				// Only the three measures the hover card shows. Prior-year, plant and invoice
-				// totals were accumulated here for rows the card no longer has.
-				var z = mZone[sZone] || (mZone[sZone] = {key: sZone, gross: 0, net: 0, tax: 0});
-				z.gross += v;
-				z.net += num(r.NetValue);
-				z.tax += num(r.TaxValue);
+				// see that function's own comment for why. A row whose state text didn't resolve
+				// to anything on the map (sCanonical falsy) has nowhere to paint it, so it is
+				// excluded from the zone view exactly as it already is from the state view.
+				//
+				// Normally one piece carrying the whole state; a state split between two zones
+				// (Madhya Pradesh today) contributes to each in proportion to what its own
+				// plants billed, so the zone whose colour covers Ujjain is the zone Ujjain's
+				// billing counts towards.
+				(sCanonical ? mStatePieces[sCanonical] || [] : []).forEach(function (oPiece) {
+					if (!oPiece.zone) {
+						return;
+					}
+					// Only the three measures the hover card shows. Prior-year, plant and invoice
+					// totals were accumulated here for rows the card no longer has.
+					var z = mZone[oPiece.zone] ||
+						(mZone[oPiece.zone] = {key: oPiece.zone, gross: 0, net: 0, tax: 0});
+					z.gross += v * oPiece.share;
+					z.net += num(r.NetValue) * oPiece.share;
+					z.tax += num(r.TaxValue) * oPiece.share;
+				});
 			});
 
 			var oScale = quantile((bZone ?
@@ -813,22 +1112,35 @@ sap.ui.define([
 				};
 			});
 
-			// Zones are whichever of mZoneOfState's five keys actually have billed states in
-			// this response, not INDIA.zones' preset polygons - so a zone nobody billed under
-			// simply gets no swatch and no shape, rather than an empty one.
-			var aZones = Object.keys(mZone).sort().map(function (sZone) {
+			// Zones are whichever of mStatePieces' five zone names actually have billed states
+			// in this response, not INDIA.zones' preset polygons - so a zone nobody billed
+			// under simply gets no swatch and no shape, rather than an empty one.
+			var aZones = Object.keys(mZone).sort(function (a, b) {
+				// North..South, the order the business names its zones in and the order the
+				// zone legend lists them - not alphabetical, which put Central before East
+				// before North and read as no order at all. Anything unknown to ZONE_COLORS
+				// (a sixth zone on ZSD_ZONE_PLANT) sorts last, alphabetically among its like.
+				function rank(s) {
+					var i = ZONE_COLORS.map(function (o) {
+						return o.zone;
+					}).indexOf(s);
+					return i < 0 ? ZONE_COLORS.length : i;
+				}
+				return rank(a) - rank(b) || (a < b ? -1 : 1);
+			}).map(function (sZone) {
 				return {
 					key: sZone,
-					fill: fill(mZone[sZone].gross),
+					color: zoneColor(sZone),
 					selected: aSelZones.indexOf(sZone) >= 0
 				};
 			});
 
 			// Zone granularity paints each zone's own member states rather than a preset zone
-			// outline: INDIA.zones' geographic unions disagree with mZoneOfState (Gujarat/
+			// outline: INDIA.zones' geographic unions disagree with mStatePieces (Gujarat/
 			// Maharashtra/Goa are West here, not folded into a geographic Central/West split).
-			// State polygons stay exact, and a state nobody billed under any zone falls
-			// through to the no-data fill.
+			// State outlines stay exact - the only cut ever made inside one is the halfway
+			// line between two of its own plants in different zones (deriveStatePieces()) -
+			// and a state nobody billed under any zone falls through to the no-data fill.
 			var mZoneFill = aZones.reduce(function (m, o) {
 				m[o.key] = o;
 				return m;
@@ -843,42 +1155,76 @@ sap.ui.define([
 			var mZoneD = {};
 			var aUnzonedD = [];
 			aStateNames.forEach(function (sState) {
-				var sD = INDIA.paths[sState];
-				// mZoneOfState directly, not a response-built map: a state with zero
-				// billing this period still belongs to its zone and must still be painted
-				// as part of it, not fall through to the no-data fill just because it sent
-				// no row - only a zone with NO billing anywhere (absent from mZoneFill)
-				// leaves its member states unzoned.
-				var sZone = mZoneOfState[sState] || "";
-				if (!sD) {
-					return;
-				}
-				if (mZoneFill[sZone]) {
-					mZoneD[sZone] = (mZoneD[sZone] || "") + sD;
-				} else {
-					aUnzonedD.push(sD);
-				}
+				// mStatePieces directly, not a response-built map: a state with zero billing
+				// this period still belongs to its zone and must still be painted as part of
+				// it, not fall through to the no-data fill just because it sent no row - only
+				// a zone with NO billing anywhere (absent from mZoneFill) leaves the states,
+				// or the parts of states, that belong to it unzoned.
+				(mStatePieces[sState] || []).forEach(function (oPiece) {
+					if (!oPiece.d) {
+						return;
+					}
+					if (mZoneFill[oPiece.zone]) {
+						mZoneD[oPiece.zone] = (mZoneD[oPiece.zone] || "") + oPiece.d;
+					} else {
+						aUnzonedD.push(oPiece.d);
+					}
+				});
 			});
+
+			/*
+			 * What a zone region is filled with.
+			 *
+			 * With the Unit dots shown, the zone view is a BASE MAP: every region takes the
+			 * same flat --pms-land with its borders drawn (see .pmsMapArea--zone), and the
+			 * dots alone carry colour, one hue per zone, named in the legend below the map.
+			 * Two encodings of the same zoning - a shaded region and a coloured dot on top of
+			 * it - only compete with each other, and the region is the weaker of the two: it
+			 * is the dots that name the units, carry the values and can be hovered.
+			 *
+			 * A zone picked in the Zone filter is tinted in its own colour rather than left
+			 * flat, so a filtered map still shows WHERE the filter applies - it reads as the
+			 * legend's colour, not as a value.
+			 *
+			 * With the dots hidden there is nothing left to carry the zoning, so the regions
+			 * take it back: each is tinted in its own zone colour, the same colour the legend
+			 * still names. Flat per zone - identity, not a value ramp.
+			 *
+			 * Nothing here is shaded by value any more, so the value-muting the Zone filter
+			 * used to do (every unpicked zone dropped to the no-billing fill, so a filtered
+			 * choropleth did not keep shading zones the filter excluded) has nothing left to
+			 * mute: an unpicked zone is simply land, which is what it looks like unfiltered.
+			 */
+			function mapFill(oZone) {
+				if (!bShowDots) {
+					return "color-mix(in srgb, " + oZone.color + " 26%, var(--pms-land))";
+				}
+				return oZone.selected ?
+					"color-mix(in srgb, " + oZone.color + " 22%, var(--pms-land))" :
+					"var(--pms-land)";
+			}
 
 			var aZoneAreas = aZones.map(function (o) {
 				return {
 					key: o.key,
 					zone: o.key,
 					d: mZoneD[o.key] || "",
-					fill: o.fill,
+					fill: mapFill(o),
 					selected: o.selected
 				};
 			}).filter(function (o) {
 				return !!o.d;
 			});
 
-			// Everything nobody billed under any zone, as one no-data shape behind them.
+			// Everything nobody billed under any zone - part of the same land, since no region
+			// here carries a value to be missing. It keeps no zone colour and no hover card,
+			// so it reads as the map's own background rather than as a zone.
 			if (aUnzonedD.length) {
 				aZoneAreas.unshift({
 					key: "",
 					zone: "",
 					d: aUnzonedD.join(""),
-					fill: "var(--pms-nodata)",
+					fill: "var(--pms-land)",
 					selected: false
 				});
 			}
@@ -897,11 +1243,17 @@ sap.ui.define([
 				return num(b.GrossValue) - num(a.GrossValue);
 			}).map(function (d) {
 				var xy = projLL(num(d.Latitude), num(d.Longitude));
+				// The Unit's own zone, straight off its AlmZone. Carried only in the zone view:
+				// there it is what colours and labels the dot, while the state view keeps every
+				// dot in one colour so nothing competes with the choropleth beneath it.
+				var sZone = bZone ? formatter.zoneKey(d.AlmZone) : "";
 				return {
 					code: d.UnitCode,
 					// Falls back to the code alone when a Unit has no name maintained
 					// (ZSD_ZONE_PLANT-REMARKS blank).
 					name: d.UnitName || "",
+					zone: sZone,
+					fill: sZone ? zoneColor(sZone) : "",
 					x: xy[0].toFixed(1),
 					y: xy[1].toFixed(1),
 					r: ((2.2 + Math.sqrt(num(d.GrossValue) / fDotMax) * 6.5) *
@@ -912,7 +1264,7 @@ sap.ui.define([
 
 			return {
 				isZone: bZone,
-				zoneOfState: mZoneOfState,
+				statePieces: mStatePieces,
 				states: aStates,
 				zones: aZones,
 				zoneAreas: aZoneAreas,
@@ -952,9 +1304,11 @@ sap.ui.define([
 				}
 				// Full name here, untruncated - the hover card has the room the gutter does not.
 				// Gross leads (it is what the dot is sized on), with net and tax broken out
-				// beneath it and last year's gross for the comparison.
-				// Full name here, untruncated - the hover card has the room the gutter does not.
-				return tipHead("", d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
+				// beneath it. The eyebrow names the Unit's own zone (ZSD_ZONE_PLANT-ALM_ZONE):
+				// in the zone view that is what the dot's colour means, and a colour always
+				// needs a written form somewhere.
+				return tipHead(formatter.zoneKey(d.AlmZone),
+						d.UnitCode + (d.UnitName ? " " + formatter.MIDDOT + " " + d.UnitName : "")) +
 					tipRow(t.grossBilled || "", formatter.money(d.GrossValue)) +
 					tipRow(t.netValue || "", formatter.money(d.NetValue)) +
 					tipRow(t.taxValue || "", formatter.money(d.TaxValue));
@@ -979,11 +1333,14 @@ sap.ui.define([
 
 			var sState = oState.getAttribute("data-pms-state");
 			var r = oModel.byState[sState];
-			// The zone here is oModel.zoneOfState's (deriveZoneOfState(), live off
+			// The zone here is oModel.statePieces' (deriveStatePieces(), live off
 			// ZSD_ZONE_PLANT), not the row's own AlmZone - see that function's comment for
 			// why. It is a property of the state, not of its billing, so it shows even for a
-			// state nobody billed.
-			var sZone = oModel.zoneOfState[sState] || "";
+			// state nobody billed. A state split between two zones names both, biggest share
+			// first, rather than picking one and contradicting its own zone-view colouring.
+			var sZone = (oModel.statePieces[sState] || []).map(function (oPiece) {
+				return oPiece.zone;
+			}).filter(Boolean).join(" / ");
 			var sEyebrow = (INDIA.abbr[sState] || "") +
 				(sZone ? " " + formatter.MIDDOT + " " + sZone : "");
 

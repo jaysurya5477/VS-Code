@@ -65,6 +65,30 @@
 	--pms-dot: #e4162a;
 
 	/*
+	 * Zone identities, for the zone view: there the map is one flat land colour with its
+	 * borders drawn (--pms-land) and the Unit dots carry the colour, one hue per zone, with
+	 * the legend below the map naming each one.
+	 *
+	 * Identity, not magnitude - so five distinct hues rather than one hue's steps, and NOT
+	 * the chart ramp (--pms-c1..c8): that ramp is a narrow teal-to-magenta sweep, and no five
+	 * of its eight hold up as five marks that can all sit side by side on one map (worst pair
+	 * 3.0 under deuteranopia, OKLab dE x100, against a floor of 6 - measured, not eyeballed).
+	 * These five are the best-separated five available, and they are assigned to zones so
+	 * that the two closest pairs - West/East and North/South - are the zone pairs whose
+	 * plants sit furthest apart on the map, where two dots are least likely to be compared
+	 * side by side. Colour is still never the only cue: every dot's own callout label names
+	 * its zone, the hover card repeats it, and the legend names every colour.
+	 */
+	--pms-zone-north: #eda100;
+	--pms-zone-west: #1baf7a;
+	--pms-zone-central: #2a78d6;
+	--pms-zone-east: #008300;
+	--pms-zone-south: #e34948;
+	/* The zone view's land fill - one colour, since nothing there is shaded by value. Sits
+	   between the panel and the border stroke so the map still reads as a map. */
+	--pms-land: #eef2f5;
+
+	/*
 	 * IBM Plex and Archivo are the prototype's fonts but cannot be fetched here - public CDNs
 	 * are blocked in this landscape (see the sibling GRN Dashboard's own libs_README.md) and
 	 * neither family ships with Windows or with UI5. The stacks below therefore lead with the
@@ -102,6 +126,15 @@
 	--pms-nodata: #1a212a;
 	--pms-zonediv: rgba(232, 236, 241, .3);
 	--pms-dot: #ff5f68;
+
+	/* Dark steps of the same five zone hues (see the light block for the reasoning and the
+	   measurements) - selected for the dark surface, not an automatic flip of the light set. */
+	--pms-zone-north: #c98500;
+	--pms-zone-west: #199e70;
+	--pms-zone-central: #3987e5;
+	--pms-zone-east: #008300;
+	--pms-zone-south: #e66767;
+	--pms-land: #1c242e;
 
 	--pms-c1: #39a6af;
 	--pms-c2: #5c9ae8;
@@ -144,6 +177,15 @@
 		--pms-nodata: #1a212a;
 		--pms-zonediv: rgba(232, 236, 241, .3);
 		--pms-dot: #ff5f68;
+
+		/* Dark steps of the same five zone hues (see the light block for the reasoning and the
+		   measurements) - selected for the dark surface, not an automatic flip of the light set. */
+		--pms-zone-north: #c98500;
+		--pms-zone-west: #199e70;
+		--pms-zone-central: #3987e5;
+		--pms-zone-east: #008300;
+		--pms-zone-south: #e66767;
+		--pms-land: #1c242e;
 		--pms-accent-soft: #16283a;
 		--pms-pos: #3fbf9c;
 		--pms-pos-soft: #12291f;
@@ -501,14 +543,15 @@
 .pmsMapArea:hover { stroke: var(--pms-ink); stroke-width: 1.4; }
 .pmsMapArea--sel { stroke: var(--pms-ink); stroke-width: 1.7; }
 
-/* A zone is one path made of its member states' subpaths, stroked inline in its own fill so
-   the internal borders disappear. Hover and selection therefore cannot use a stroke - it
-   would outline every one of those subpaths again, undoing exactly what the inline stroke
-   achieves - so they darken the whole region instead. Works on any scale step and in both
-   themes, unlike a fixed highlight colour. */
+/* A zone is one path made of its member states' subpaths. In the zone view every region is
+   the same flat --pms-land (the dots carry the zone colour there), so unlike the choropleth
+   this WANTS its borders drawn: the stroke is left to .pmsMapArea above, which outlines each
+   member state and so keeps the map legible as a map. Hover/selection darken the region as
+   well as the stroke - a filter rather than a fill, since the fill is written inline and
+   would outrank any selector here. */
 .pmsMapArea--zone { transition: filter .12s ease; }
-.pmsMapArea--zone:hover { filter: brightness(.88) saturate(1.15); }
-.pmsMapArea--zone.pmsMapArea--sel { filter: brightness(.78) saturate(1.25); }
+.pmsMapArea--zone:hover { filter: brightness(.94) saturate(1.15); }
+.pmsMapArea--zone.pmsMapArea--sel { filter: brightness(.88) saturate(1.25); }
 
 .pmsMapZoneDiv {
 	fill: none;
@@ -530,6 +573,11 @@
 	transition: stroke-width .1s;
 }
 .pmsMapDot:hover { stroke: var(--pms-ink); stroke-width: 2; }
+/* Zone view: the dot's own fill is written inline, one hue per zone (--pms-zone-*), and it
+   is the only colour on the map. Held more opaque than the choropleth's dots - at .66 over
+   the land fill the five hues drift towards each other, which is the one thing they exist
+   not to do - while still letting an overlapped dot show through. */
+.pmsMapDot--zone { fill-opacity: .88; }
 
 /* Leader-line callouts for every map dot, routed to whichever open margin (north/south) is
    nearest - see control/IndiaMap.js's buildCallouts() for the placement logic. */
@@ -599,6 +647,30 @@
 	color: var(--pms-ink3);
 }
 .pmsMapDotKeyChip { width: 9px; height: 9px; border-radius: 50%; background: var(--pms-dot); }
+/* In the zone view the dots are not one colour, so the size key's own chip must not claim
+   they are - it stands for the dot's SIZE there, and the zone chips beside it for its hue. */
+.pmsMapDotKeyChip--neutral { background: var(--pms-ink3); }
+
+/* Zone key: the legend the zone view shows instead of the value ramp - one round chip per
+   zone, in the same colour and shape as that zone's dots, with the zone NAMED beside it so
+   the mapping is readable without relying on telling two hues apart. Sits in the same
+   .pmsMapScale row, so it inherits its divider, spacing and wrapping. */
+.pmsZoneKey {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-right: 16px;
+	font-size: 10.5px;
+	color: var(--pms-ink2);
+}
+.pmsZoneKeyChip {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	flex: 0 0 auto;
+	/* The same white rim the dots carry, for the same reason - see .pmsMapDot. */
+	box-shadow: 0 0 0 1px #fff, 0 0 0 1.6px var(--pms-line);
+}
 
 /* Hover card. Lives on <body>, so it is never clipped by a panel's overflow. */
 .pmsTip {

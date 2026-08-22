@@ -84,6 +84,24 @@ more decisions, all recorded in `CONTEXT_LOG.md` §6:
   zones. Scoped to this control alone: the Zone filter dropdown, KPI totals and every other panel
   still match on `ALM_ZONE` server-side, unchanged; zone hover totals still aggregate live from
   the same Geo rows, just grouped by `ZONE_OF_STATE`.
+- **OD-16 — the map's zone table follows each *plant's* `ALM_ZONE`, and a state whose plants
+  disagree is split between them (extends OD-15).** OD-15's table is now only a baseline: a state
+  with plants of its own takes the zone those plants carry on `ZSD_ZONE_PLANT` (read live off the
+  Unit dots' `AlmZone`), and Madhya Pradesh — 3300 RMC Ujjain **WEST**, 3100 AAPC Jabalpur
+  **CENTRAL** — is cut between the two rather than painted Central whole while the table says
+  Ujjain is West. Each plant takes the part of the state nearer to it than to the other, so West
+  reaches in as far as Ujjain's own half and Jabalpur's half stays Central; maintain both plants
+  into one zone and the state goes back to a single polygon by itself. The state's billing is
+  apportioned to the two zones by what its plants each billed, so the hover totals agree with the
+  colours. Every other state is untouched — its whole outline, one zone, exactly as before.
+- **OD-17 — the zone view is a base map with zone-coloured dots.** Zone granularity no longer
+  shades regions by value: the map is one flat land colour with its borders drawn, the Unit dots
+  carry one hue per zone, and a legend below the map names each colour (dot size still means
+  gross value). Each dot's label names its zone too, so the colour is never the only cue, and
+  hiding the dots tints the regions in the same five colours instead. The state view is
+  unchanged. The five hues come from a validated categorical palette, not the chart ramp — see
+  `CONTEXT_LOG.md` §6 OD-17 for the measurements and the one pair (West/East in dark theme)
+  that stays under the separation floor.
 - The choropleth's lightest colour step and "no billing" fill (`--pms-scale-0`, `--pms-nodata`)
   were also darkened slightly, so low-value and no-billing states stay visibly distinct from the
   white panel background in light theme. Dark theme untouched.

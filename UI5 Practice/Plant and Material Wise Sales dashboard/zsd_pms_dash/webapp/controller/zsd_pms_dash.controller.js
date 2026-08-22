@@ -899,7 +899,10 @@ sap.ui.define([
 			// share, plantsBilling, invoices, zoneStates and unitPlants were dropped when the
 			// cards were cut back to gross/net/tax - their i18n entries are left in place,
 			// unreferenced, rather than deleted, so restoring a row stays a one-line change.
+			// zoneCap/dotKeyZone belong to the zone view's own legend, which lists the five
+			// zone colours instead of a value ramp - see IndiaMap.js's _renderZoneKey().
 			["scaleCap", "lowest", "low", "high", "noBilling", "dotKey",
+				"zoneCap", "dotKeyZone",
 				"grossBilled", "netValue", "taxValue"
 			].forEach(function (sKey) {
 				o[sKey] = that._text("map" + sKey.charAt(0).toUpperCase() + sKey.slice(1));
