@@ -46,7 +46,7 @@ sap.ui.define([
 		},
 		unitDots: {
 			set: "UnitDots",
-			select: "UnitCode,UnitName,NetValue,TaxValue,GrossValue,PriorValue,PriorGross," +
+			select: "UnitCode,UnitName,AlmZone,NetValue,TaxValue,GrossValue,PriorValue,PriorGross," +
 				"DeltaPct,Latitude,Longitude,PlantCount"
 		},
 		scheme: {

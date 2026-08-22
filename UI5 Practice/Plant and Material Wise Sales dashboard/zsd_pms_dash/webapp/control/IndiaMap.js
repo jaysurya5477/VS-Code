@@ -13,17 +13,19 @@ sap.ui.define([
 	 *
 	 *   * quantile colour scale, not linear - a handful of large states would otherwise wash
 	 *     the whole map out to the palest step
-	 *   * zone granularity shades each zone's member states, taking the zone from the
-	 *     hardcoded ZONE_OF_STATE table below rather than from ZSD_ZONE_PLANT-ALM_ZONE or
-	 *     the state's geography - see ZONE_OF_STATE's own comment for why
+	 *   * zone granularity shades each zone's member states, taking the zone from
+	 *     deriveZoneOfState() below - live off each Unit dot's own AlmZone (ZSD_ZONE_PLANT),
+	 *     not from the state-grain Geo entity's AlmZone or the state's geography - see that
+	 *     function's own comment for why
 	 *   * dot radius 2.2 + sqrt(v / max) * 6.5, biggest drawn first so small dots stay on top
 	 *   * hover card kept to three rows - gross, then the net and tax it is made of
 	 *   * legend labelled with the actual quantile breaks, plus "no billing" and the dot key
 	 *
 	 * The base geometry (state paths, zone unions, projection constants, state abbreviations)
 	 * is model/indiaGeo.js, ported verbatim from the prototype. Everything data-driven is
-	 * real: choropleth values come from the Geo entity, dot positions from the UnitDots
-	 * entity's own Latitude/Longitude (OD-3/OD-5). Nothing here is hand-geocoded.
+	 * real: choropleth values come from the Geo entity, dot positions AND each Unit's own
+	 * zone from the UnitDots entity's Latitude/Longitude/AlmZone (OD-3/OD-5/2026-08-22).
+	 * Nothing here is hand-geocoded.
 	 *
 	 * Fills are emitted as `var(--pms-scale-N)` references rather than resolved hex, so the
 	 * light and dark ramps both live in css/style.css and a theme switch needs no redraw.
@@ -60,27 +62,14 @@ sap.ui.define([
 	};
 
 	/**
-	 * Authoritative zone per plant, ported verbatim from SAP table ZSD_ZONE_PLANT ("Display
-	 * View Zone-wise Plants", client 300, screen read 2026-08-22) - the same master table
-	 * ZSD_ZONE_PLANT-ALM_ZONE is sourced from, and the one whose Plant codes match this map's
-	 * own dot UnitCode values 1:1. Update this (and PLANT_STATES below, for a plant that needs
-	 * one) when the SAP screen changes - ZONE_OF_STATE further down is derived from both
-	 * automatically, so a state whose plants all agree on a zone picks it up with no other
-	 * edit needed.
-	 */
-	var ZONE_OF_PLANT = {
-		"2000": "Central", "3100": "Central", "4901": "Central",
-		"3300": "West", "4500": "West", "4900": "West",
-		"3200": "South", "4300": "South", "4800": "South",
-		"3500": "North", "3600": "North", "4100": "North", "4700": "North",
-		"3400": "East", "4200": "East", "4400": "East", "4600": "East", "4902": "East"
-	};
-
-	/**
-	 * Which canonical state(s) each ZONE_OF_PLANT plant physically/organisationally covers -
-	 * from the SAP screen's own Unit description (e.g. "HQ (UP+UK)") and each plant's own
-	 * Latitude/Longitude. Plant 2000 sits at 26.53,80.23 (Kanpur, Uttar Pradesh) but its Unit
-	 * label covers Uttarakhand too, so both states pick up its zone below.
+	 * Which canonical state(s) each plant below physically/organisationally covers - from the
+	 * SAP screen's own Unit description (e.g. "HQ (UP+UK)") and each plant's own Latitude/
+	 * Longitude. Plant 2000 sits at 26.53,80.23 (Kanpur, Uttar Pradesh) but its Unit label
+	 * covers Uttarakhand too, so both states pick up its zone below. ZSD_ZONE_PLANT itself
+	 * has no state column - only Plant/Zone/Unit/Lat/Long (see ZCL_PMS_DASH_QUERY=>
+	 * get_unit_dots and ZSD_PMS_UNIT_DOTS-AlmZone, 2026-08-22) - so this mapping stays a
+	 * hardcoded, manually-maintained fact rather than something read live. Add a plant here
+	 * (matching the SAP screen's Plant column) for deriveZoneOfState() below to pick it up.
 	 */
 	var PLANT_STATES = {
 		"2000": ["Uttar Pradesh", "Uttarakhand"],           // HQ (UP+UK), physically Kanpur
@@ -104,25 +93,34 @@ sap.ui.define([
 	};
 
 	/**
-	 * Hardcoded state -> zone table for THIS control's own zone view (2026-08-22, revised
-	 * 2026-08-22 to derive from ZONE_OF_PLANT/PLANT_STATES). Production billing kept
-	 * surfacing states under the wrong zone - Karnataka and Uttar Pradesh reporting under
-	 * East being one confirmed case - despite earlier CDS-level fixes, so
-	 * ZSD_ZONE_PLANT-ALM_ZONE can no longer be trusted to grain the choropleth live. Starts
-	 * from ZONE_OF_STATE_BASELINE, then for each state that has at least one plant listed
-	 * above, overrides it to that plant's zone - PROVIDED all of that state's own plants
-	 * agree. Madhya Pradesh hosts both 3100 (Central) and 3300 (West), so it keeps its
-	 * baseline rather than being arbitrarily flipped to one of the two; Uttar Pradesh and
-	 * Uttarakhand have only plant 2000 between them, so both resolve cleanly to Central.
+	 * Derives the state -> zone table this control's zone view paints from, live off
+	 * ZSD_ZONE_PLANT-ALM_ZONE (2026-08-22) instead of a hardcoded plant-zone snapshot.
+	 * mZoneOfPlant is {plant code -> zone}, read off each Unit dot's own AlmZone (see
+	 * ZCL_PMS_DASH_QUERY=>get_unit_dots and ZSD_PMS_UNIT_DOTS-AlmZone) - unambiguous at that
+	 * grain (one join, one value per Unit), unlike ZSD_PMS_GEO's state-grain AlmZone, which
+	 * disagreed with itself when a state hosted units in more than one zone.
+	 *
+	 * Starts from ZONE_OF_STATE_BASELINE (the standard geographic classification), then for
+	 * each state PLANT_STATES says has a plant with a KNOWN live zone, overrides it to that
+	 * zone - PROVIDED every one of that state's own plants agrees. Madhya Pradesh hosts both
+	 * 3100 (Central) and 3300 (West), so it keeps its baseline rather than being arbitrarily
+	 * flipped to one of the two; Uttar Pradesh and Uttarakhand have only plant 2000 between
+	 * them, so both resolve cleanly to whatever ZSD_ZONE_PLANT currently says for it.
 	 *
 	 * The Zone filter, KPI totals and every other panel are untouched - they still match on
 	 * ALM_ZONE server-side; only this control's zone shading, zone hover totals and
 	 * state-view zone eyebrow read from here.
+	 * @param {object} mZoneOfPlant plant code -> zone, as currently known
+	 * @returns {object} canonical state name -> zone
+	 * @private
 	 */
-	var ZONE_OF_STATE = (function () {
+	function deriveZoneOfState(mZoneOfPlant) {
 		var mPlantsByState = {};
 		Object.keys(PLANT_STATES).forEach(function (sPlant) {
-			var sZone = ZONE_OF_PLANT[sPlant];
+			var sZone = mZoneOfPlant[sPlant];
+			if (!sZone) {
+				return; // this plant's zone isn't known yet - nothing to override its state(s) with
+			}
 			PLANT_STATES[sPlant].forEach(function (sState) {
 				(mPlantsByState[sState] || (mPlantsByState[sState] = [])).push(sZone);
 			});
@@ -139,7 +137,7 @@ sap.ui.define([
 			}
 		});
 		return mResolved;
-	})();
+	}
 
 	/** Shared hover card. One map on the page, so one element, created on first hover. */
 	var oTip = null;
@@ -742,6 +740,21 @@ sap.ui.define([
 			// marks a zone the Geo rows happen to carry as "NORTH ".
 			var aSelZones = (this.getSelectedZones() || []).map(formatter.zoneKey);
 
+			// Accumulates across loads rather than being rebuilt from THIS response alone -
+			// exactly like the controller's own filter catalogs (_mergeCatalog): a filtered
+			// view's dots are a subset of all Units, so a plant missing from one response
+			// keeps whatever live zone an earlier, less-filtered response already taught us,
+			// rather than the state it feeds falling back to the geographic baseline and
+			// then flipping back once the filter clears.
+			this._mZoneOfPlant = this._mZoneOfPlant || {};
+			aDots.forEach(function (d) {
+				var sZone = formatter.zoneKey(d.AlmZone);
+				if (d.UnitCode && sZone) {
+					this._mZoneOfPlant[d.UnitCode] = sZone;
+				}
+			}, this);
+			var mZoneOfState = deriveZoneOfState(this._mZoneOfPlant);
+
 			var aStateNames = Object.keys(INDIA.paths);
 			var mByState = {};
 			var mZone = {};
@@ -758,12 +771,12 @@ sap.ui.define([
 					mByState[sCanonical] = r;
 				}
 
-				// Zone comes from the hardcoded ZONE_OF_STATE table, not ZSD_ZONE_PLANT-
-				// ALM_ZONE - see that table's own comment for why. A row whose state text
-				// didn't resolve to anything on the map (sCanonical falsy) has nowhere to
-				// paint it, so it is excluded from the zone view exactly as it already is
-				// from the state view.
-				var sZone = sCanonical ? (ZONE_OF_STATE[sCanonical] || "") : "";
+				// Zone comes from mZoneOfState (deriveZoneOfState(), live off ZSD_ZONE_PLANT via
+				// the Unit dots), not ZSD_ZONE_PLANT-ALM_ZONE on the state-grain Geo row itself -
+				// see deriveZoneOfState()'s own comment for why. A row whose state text didn't
+				// resolve to anything on the map (sCanonical falsy) has nowhere to paint it, so
+				// it is excluded from the zone view exactly as it already is from the state view.
+				var sZone = sCanonical ? (mZoneOfState[sCanonical] || "") : "";
 				if (!sZone) {
 					return;
 				}
@@ -800,7 +813,7 @@ sap.ui.define([
 				};
 			});
 
-			// Zones are whichever of ZONE_OF_STATE's five keys actually have billed states in
+			// Zones are whichever of mZoneOfState's five keys actually have billed states in
 			// this response, not INDIA.zones' preset polygons - so a zone nobody billed under
 			// simply gets no swatch and no shape, rather than an empty one.
 			var aZones = Object.keys(mZone).sort().map(function (sZone) {
@@ -812,7 +825,7 @@ sap.ui.define([
 			});
 
 			// Zone granularity paints each zone's own member states rather than a preset zone
-			// outline: INDIA.zones' geographic unions disagree with ZONE_OF_STATE (Gujarat/
+			// outline: INDIA.zones' geographic unions disagree with mZoneOfState (Gujarat/
 			// Maharashtra/Goa are West here, not folded into a geographic Central/West split).
 			// State polygons stay exact, and a state nobody billed under any zone falls
 			// through to the no-data fill.
@@ -831,12 +844,12 @@ sap.ui.define([
 			var aUnzonedD = [];
 			aStateNames.forEach(function (sState) {
 				var sD = INDIA.paths[sState];
-				// ZONE_OF_STATE directly, not a response-built map: a state with zero
+				// mZoneOfState directly, not a response-built map: a state with zero
 				// billing this period still belongs to its zone and must still be painted
 				// as part of it, not fall through to the no-data fill just because it sent
 				// no row - only a zone with NO billing anywhere (absent from mZoneFill)
 				// leaves its member states unzoned.
-				var sZone = ZONE_OF_STATE[sState] || "";
+				var sZone = mZoneOfState[sState] || "";
 				if (!sD) {
 					return;
 				}
@@ -899,6 +912,7 @@ sap.ui.define([
 
 			return {
 				isZone: bZone,
+				zoneOfState: mZoneOfState,
 				states: aStates,
 				zones: aZones,
 				zoneAreas: aZoneAreas,
@@ -965,10 +979,11 @@ sap.ui.define([
 
 			var sState = oState.getAttribute("data-pms-state");
 			var r = oModel.byState[sState];
-			// The zone here is ZONE_OF_STATE's, not the row's own AlmZone - see that table's
-			// comment for why. It is a property of the state, not of its billing, so it shows
-			// even for a state nobody billed.
-			var sZone = ZONE_OF_STATE[sState] || "";
+			// The zone here is oModel.zoneOfState's (deriveZoneOfState(), live off
+			// ZSD_ZONE_PLANT), not the row's own AlmZone - see that function's comment for
+			// why. It is a property of the state, not of its billing, so it shows even for a
+			// state nobody billed.
+			var sZone = oModel.zoneOfState[sState] || "";
 			var sEyebrow = (INDIA.abbr[sState] || "") +
 				(sZone ? " " + formatter.MIDDOT + " " + sZone : "");
 

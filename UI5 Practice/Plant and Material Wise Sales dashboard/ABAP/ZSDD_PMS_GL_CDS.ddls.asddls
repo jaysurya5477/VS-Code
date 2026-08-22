@@ -59,6 +59,12 @@
 // the billing plant, i.e. exactly the behaviour before this change. The
 // failure mode is "no improvement", not "empty choropleth".
 //
+// OD-10, reverted 2026-08-22: the COALESCE(unit-state, billing-plant-state)
+// above caused a top-states data issue (debugged and fixed live on SAP -
+// the local file had gone stale) - regio/state_text are the BILLING plant's
+// (A.WERKS via T001W/T005U) only, unconditionally. The unit-preference join
+// (T001W/T005U on B.WERKS) that used to feed the COALESCE is removed.
+//
 // OD-5 field spec: create both new ZSD_ZONE_PLANT fields as DEC(10,7) - one
 // shared domain for both, even though latitude only needs 2 integer digits
 // (-90..90) vs longitude's 3 (-180..180). Sign is stored separately by the
@@ -76,53 +82,55 @@
 // ZFI_SALES_GL-CATEGORY, taken directly from the reference program
 // ZFI_SR_NEW_OPT.abap (see OD-4). Verify every other field's type against
 // the actual DDIC on import and adjust before activation.
-define view ZSDD_PMS_GL_CDS as
-
-select from zsd_sale_all as a
-  left outer join zsd_zone_plant as b on b.werks = a.vkbur
+define view ZSDD_PMS_GL_CDS
+  as select from       zsd_sale_all   as a
+    left outer join zsd_zone_plant as b on b.werks = a.vkbur
   // The UNIT's own plant master (preferred), then the BILLING plant's (fallback).
   // Both are plain field-to-field joins so the coalesce below sits only in the
   // SELECT list - no expression in an ON condition.
-  left outer join t001w          as c on c.werks = b.werks
-  left outer join t001w          as e on e.werks = a.werks
-  left outer join t005u          as d on d.land1 = 'IN' and d.bland = c.regio and d.spras = 'E'
-  left outer join t005u          as f on f.land1 = 'IN' and f.bland = e.regio and f.spras = 'E'
+  //  left outer join t001w          as c on c.werks = b.werks
+  //  left outer join t005u          as d on d.land1 = 'IN' and d.bland = c.regio and d.spras = 'E'
+    left outer join t001w          as e on e.werks = a.werks
+    left outer join t005u          as f on  f.land1 = 'IN'
+                                        and f.bland = e.regio
+                                        and f.spras = 'E'
 
 {
-  key a.belnr        as belnr,
-  key a.gjahr        as gjahr,
-  key a.hkont        as hkont,
+  key a.belnr     as belnr,
+  key a.gjahr     as gjahr,
+  key a.hkont     as hkont,
 
-      a.vbeln        as vbeln,
-      a.fkart        as fkart,
-      a.vtext        as vtext,
-      a.category     as category,     // scheme dimension (OD-4: ZFI_SALES_GL-CATEGORY)
-      a.cat_desc     as cat_desc,
-      a.type         as type,         // template's F2/G2 credit-memo flag - confirm real values via P0-2
-      a.month_num    as month_num,    // OD-7: plain calendar month (Apr=04..Dec=12,Jan=01..Mar=03),
-                                       // confirmed live 2026-08-13 - NOT already FY-shifted (Apr=1).
-                                       // ZCL_PMS_DASH_QUERY=>get_gl_rows converts to FY-period on read.
-      a.zmonth       as zmonth,
-      a.budat        as budat,        // date-range/month filters + the Yesterday Sale KPI (OD-1c)
+      a.vbeln     as vbeln,
+      a.fkart     as fkart,
+      a.vtext     as vtext,
+      a.category  as category,  // scheme dimension (OD-4: ZFI_SALES_GL-CATEGORY)
+      a.cat_desc  as cat_desc,
+      a.type      as type,      // template's F2/G2 credit-memo flag - confirm real values via P0-2
+      a.month_num as month_num, // OD-7: plain calendar month (Apr=04..Dec=12,Jan=01..Mar=03),
+                                // confirmed live 2026-08-13 - NOT already FY-shifted (Apr=1).
+                                // ZCL_PMS_DASH_QUERY=>get_gl_rows converts to FY-period on read.
+      a.zmonth    as zmonth,
+      a.budat     as budat, // date-range/month filters + the Yesterday Sale KPI (OD-1c)
 
-      a.netwr        as netwr,
-      a.mwsbk        as mwsbk,
-      a.gross        as gross,
+      a.netwr     as netwr,
+      a.mwsbk     as mwsbk,
+      a.gross     as gross,
 
-      a.kunnr        as kunnr,
-      a.kname        as kname,
-      a.werks        as werks,
+      a.kunnr     as kunnr,
+      a.kname     as kname,
+      a.werks     as werks,
       // a.vkbur        as vkbur,      // OD-8: used only as the join key above (B.WERKS = A.VKBUR) - not exposed as its own column, see header comment
 
-      b.alm_zone     as alm_zone,
-      b.werks        as unit,          // OD-3: map-dot aggregation key, not werks. 18 units in production (P0-7)
-      b.remarks      as city,
-      b.latitude     as latitude,      // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
-      b.longitude    as longitude,     // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
+      b.alm_zone  as alm_zone,
+      b.werks     as unit,      // OD-3: map-dot aggregation key, not werks. 18 units in production (P0-7)
+      b.remarks   as city,
+      b.latitude  as latitude,  // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
+      b.longitude as longitude, // OD-5: new field, business-maintained - does not exist yet, pending P0-10. Recommended DDIC type: DEC(10,7) - see below
 
       // OD-10 (revised): the UNIT's state, falling back to the billing plant's when the
       // unit has none. See the header - the fallback is what makes this safe to activate.
-      coalesce(c.regio, e.regio) as regio,
-      coalesce(d.bezei, f.bezei) as state_text
-
+      //      coalesce(c.regio, e.regio) as regio,
+      //      coalesce(d.bezei, f.bezei) as state_text
+      e.regio     as regio,
+      f.bezei     as state_text
 }

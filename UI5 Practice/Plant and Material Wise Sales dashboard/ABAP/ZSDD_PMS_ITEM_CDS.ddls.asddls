@@ -35,8 +35,6 @@ define view ZSDD_PMS_ITEM_CDS
     inner join   bkpf as d on  d.belnr = b.belnr
                            and d.gjahr = b.gjahr
     inner join   mara as c on c.matnr = a.matnr
-    association [1..*] to zsd_sale_all as s on s.vbeln = a.vbeln
-
 {
   key a.vbeln     as vbeln,
   key a.posnr     as posnr,
@@ -69,5 +67,4 @@ define view ZSDD_PMS_ITEM_CDS
       d.cpudt     as cpudt      // Creation date of the accounting document (BKPF-CPUDT)
 }
 where
-      a.matnr <> ' '
-  and s.isInitial = 0
+  a.matnr <> ' '

@@ -49,6 +49,7 @@ CLASS zcl_pms_unit_dots_qry IMPLEMENTATION.
     lt_out = VALUE #( FOR ls IN ls_dash-unit_dots (
                         unitcode   = ls-unit
                         unitname   = ls-unit_name
+                        almzone    = ls-alm_zone
                         netvalue   = ls-net_value
                         taxvalue   = ls-tax_value
                         grossvalue = ls-gross_value

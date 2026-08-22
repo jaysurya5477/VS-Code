@@ -29,6 +29,11 @@ define custom entity ZSD_PMS_UNIT_DOTS
       // row per Unit (see the GL CDS header), so REMARKS is the Unit's own descriptive name,
       // not a per-plant value - it needs no aggregation, just carrying through.
       UnitName    : abap.char(40);
+      // ZSD_ZONE_PLANT-ALM_ZONE, the Unit's own zone - unambiguous at this grain (see
+      // ZCL_PMS_DASH_QUERY=>get_unit_dots), unlike AlmZone on ZSD_PMS_GEO where a state can
+      // host units in more than one zone. Consumed by the map to shade zone granularity
+      // from live data instead of a hardcoded table.
+      AlmZone     : abap.char(10);
       // GrossValue is the HEADLINE measure - it drives the dot radius and the callout
       // label; NetValue/TaxValue ride along for the hover card. DeltaPct compares
       // GrossValue against PriorGross, so the growth pill matches the value shown.

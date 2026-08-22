@@ -143,6 +143,11 @@ CLASS zcl_pms_dash_query DEFINITION
         " ZSD_ZONE_PLANT-REMARKS (the "city" column on ZSDD_PMS_GL_CDS) - a Unit-level
         " descriptive name, shown beside the code on the map callouts and hover card.
         unit_name   TYPE char40,
+        " ZSD_ZONE_PLANT-ALM_ZONE, carried through so the frontend can read a Unit's zone
+        " straight off its own row - unambiguous at Unit grain (one join, one value),
+        " unlike the state-grain Geo entity where a state can host units in more than
+        " one zone. See IndiaMap.js's ZONE_OF_PLANT for the consumer.
+        alm_zone    TYPE char10,
         " Same headline/breakdown split as ty_geo_row - gross drives the dot radius and
         " the label, net/tax ride along for the hover card, prior_gross backs delta_pct.
         net_value   TYPE p LENGTH 15 DECIMALS 2,
@@ -1149,22 +1154,17 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     " not by raw GL line count.
     TYPES: BEGIN OF ty_plant_acc,
              werks      TYPE werks_d,
-             plant_name TYPE name1,
              unit       TYPE char10,
              unit_name  TYPE char40,
+             alm_zone   TYPE char10,
              latitude   TYPE p LENGTH 9 DECIMALS 6,
              longitude  TYPE p LENGTH 9 DECIMALS 6,
              has_coord  TYPE abap_bool,
              value      TYPE p LENGTH 15 DECIMALS 2,
              tax        TYPE p LENGTH 15 DECIMALS 2,
            END OF ty_plant_acc.
-    DATA: lt_plant TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY,
-          lt_t001w TYPE HASHED TABLE OF t001w WITH UNIQUE KEY werks.
+    DATA: lt_plant TYPE STANDARD TABLE OF ty_plant_acc WITH EMPTY KEY.
 
-    IF NOT it_curr[] IS INITIAL.      	
-      SELECT werks, name1 FROM t001w INTO TABLE @lt_t001w
-        FOR ALL ENTRIES IN @it_curr WHERE werks = @it_curr-werks.
-    ENDIF.
     " Key on WERKS+UNIT together, not WERKS alone - one plant can bill
     " under more than one sales office (OD-8: the real unit-join key is
     " VKBUR, not WERKS), so the same plant can legitimately feed more than
@@ -1175,10 +1175,9 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
       ASSIGN lt_plant[ werks = <ls_row>-werks unit = <ls_row>-unit ] TO FIELD-SYMBOL(<ls_plant>).
       IF sy-subrc <> 0.
         INSERT VALUE #( werks = <ls_row>-werks
-                         plant_name = COND #( WHEN line_exists( lt_t001w[ werks = <ls_row>-werks ] )
-											   THEN lt_t001w[ werks = <ls_row>-werks ]-name1 )
                          unit = <ls_row>-unit
                          unit_name = <ls_row>-city
+                         alm_zone = <ls_row>-alm_zone
                          latitude = <ls_row>-latitude longitude = <ls_row>-longitude
                          has_coord = xsdbool( <ls_row>-latitude IS NOT INITIAL AND <ls_row>-longitude IS NOT INITIAL ) )
           INTO TABLE lt_plant ASSIGNING <ls_plant>.
@@ -1191,6 +1190,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     TYPES: BEGIN OF ty_unit_acc,
              unit         TYPE char10,
              unit_name    TYPE char40,
+             alm_zone     TYPE char10,
              value        TYPE p LENGTH 15 DECIMALS 2,
              tax          TYPE p LENGTH 15 DECIMALS 2,
              coord_weight TYPE p LENGTH 15 DECIMALS 2,   " sum of value across ONLY plants with coordinates
@@ -1222,7 +1222,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
     LOOP AT lt_plant INTO DATA(ls_plant) WHERE unit IS NOT INITIAL.
       ASSIGN lt_unit[ unit = ls_plant-unit ] TO FIELD-SYMBOL(<ls_unit>).
       IF sy-subrc <> 0.
-        INSERT VALUE #( unit = ls_plant-unit unit_name = ls_plant-unit_name )
+        INSERT VALUE #( unit = ls_plant-unit unit_name = ls_plant-unit_name alm_zone = ls_plant-alm_zone )
           INTO TABLE lt_unit ASSIGNING <ls_unit>.
       ENDIF.
       <ls_unit>-value       += ls_plant-value.
@@ -1247,6 +1247,7 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
       APPEND VALUE #( unit = ls_unit-unit
                        unit_name = ls_unit-unit_name
+                       alm_zone = ls_unit-alm_zone
                        net_value = ls_unit-value
                        tax_value = ls_unit-tax
                        gross_value = lv_gross
@@ -1322,11 +1323,17 @@ CLASS zcl_pms_dash_query IMPLEMENTATION.
 
 
   METHOD get_plant_top20.
+
+    TYPES:BEGIN OF ty_t001w,
+			 werks TYPE werks_d,
+			 name1 TYPE name1,
+		   END OF ty_t001w.
+
     DATA lt_plant TYPE ty_plant_row_tab.
-    DATA lt_t001w TYPE HASHED TABLE OF t001w WITH UNIQUE KEY werks.
+    DATA lt_t001w TYPE HASHED TABLE OF ty_t001w WITH UNIQUE KEY werks.
 
     IF it_curr IS NOT INITIAL.
-      SELECT werks, name1 FROM t001w INTO TABLE lt_t001w
+      SELECT werks name1 FROM t001w INTO TABLE lt_t001w
         FOR ALL ENTRIES IN it_curr WHERE werks = it_curr-werks.
     ENDIF.
 
