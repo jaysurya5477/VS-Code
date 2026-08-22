@@ -33,20 +33,14 @@ sap.ui.define([
 	var PJ = INDIA.proj;
 
 	/**
-	 * Hardcoded state -> zone table for THIS control's own zone view (2026-08-22). Production
-	 * billing keeps surfacing states under the wrong zone - Karnataka and Uttar Pradesh
-	 * reporting under East being one confirmed case - despite earlier CDS-level fixes, so
-	 * ZSD_ZONE_PLANT-ALM_ZONE can no longer be trusted to grain the choropleth. This map now
-	 * fixes each state's zone on the frontend instead. The Zone filter, KPI totals and every
-	 * other panel are untouched - they still match on ALM_ZONE server-side; only this
-	 * control's zone shading, zone hover totals and state-view zone eyebrow read from here.
-	 *
-	 * Grouping mirrors ALIMCO's real zones, confirmed against a reference zonal map: Gujarat,
-	 * Maharashtra and Goa are their own West zone rather than folding into Central, and North
-	 * East billing keeps its own states rather than merging into East (see indiaGeo.js's own
-	 * merge, which this table deliberately does not repeat).
+	 * Baseline geographic zone per state - the "standard" Indian zonal classification (see
+	 * the reviewed reference map), used to colour a state's choropleth polygon before any
+	 * plant-level correction below is applied. Gujarat, Maharashtra and Goa are their own
+	 * West zone rather than folding into Central, and North East states keep their own
+	 * geometry rather than merging into East (see indiaGeo.js's own merge, which this table
+	 * deliberately does not repeat).
 	 */
-	var ZONE_OF_STATE = {
+	var ZONE_OF_STATE_BASELINE = {
 		"Jammu and Kashmir": "North", "Ladakh": "North", "Himachal Pradesh": "North",
 		"Punjab": "North", "Uttarakhand": "North", "Haryana": "North", "Delhi": "North",
 		"Uttar Pradesh": "North", "Rajasthan": "North", "Chandigarh": "North",
@@ -64,6 +58,88 @@ sap.ui.define([
 		"Tamil Nadu": "South", "Kerala": "South", "Puducherry": "South",
 		"Lakshadweep": "South", "Andaman and Nicobar Islands": "South"
 	};
+
+	/**
+	 * Authoritative zone per plant, ported verbatim from SAP table ZSD_ZONE_PLANT ("Display
+	 * View Zone-wise Plants", client 300, screen read 2026-08-22) - the same master table
+	 * ZSD_ZONE_PLANT-ALM_ZONE is sourced from, and the one whose Plant codes match this map's
+	 * own dot UnitCode values 1:1. Update this (and PLANT_STATES below, for a plant that needs
+	 * one) when the SAP screen changes - ZONE_OF_STATE further down is derived from both
+	 * automatically, so a state whose plants all agree on a zone picks it up with no other
+	 * edit needed.
+	 */
+	var ZONE_OF_PLANT = {
+		"2000": "Central", "3100": "Central", "4901": "Central",
+		"3300": "West", "4500": "West", "4900": "West",
+		"3200": "South", "4300": "South", "4800": "South",
+		"3500": "North", "3600": "North", "4100": "North", "4700": "North",
+		"3400": "East", "4200": "East", "4400": "East", "4600": "East", "4902": "East"
+	};
+
+	/**
+	 * Which canonical state(s) each ZONE_OF_PLANT plant physically/organisationally covers -
+	 * from the SAP screen's own Unit description (e.g. "HQ (UP+UK)") and each plant's own
+	 * Latitude/Longitude. Plant 2000 sits at 26.53,80.23 (Kanpur, Uttar Pradesh) but its Unit
+	 * label covers Uttarakhand too, so both states pick up its zone below.
+	 */
+	var PLANT_STATES = {
+		"2000": ["Uttar Pradesh", "Uttarakhand"],           // HQ (UP+UK), physically Kanpur
+		"3100": ["Madhya Pradesh"],                         // AAPC Jabalpur
+		"4901": ["Chhattisgarh"],                           // RMC Raipur
+		"3300": ["Madhya Pradesh"],                         // RMC Ujjain
+		"4500": ["Maharashtra"],                            // RMC Mumbai
+		"4900": ["Gujarat"],                                // RMC Ahmedabad
+		"3200": ["Karnataka", "Kerala", "Lakshadweep"],     // AAPC Bangalore (KA+KL+LK)
+		"4300": ["Telangana"],                              // RMC Hyderabad
+		"4800": ["Andhra Pradesh", "Tamil Nadu"],           // RMC Chennai (AP+TN)
+		"3500": ["Punjab", "Chandigarh", "Himachal Pradesh"], // AAPC Mohali (PB+CH+HP)
+		"3600": ["Haryana"],                                // AAPC Faridabad
+		"4100": ["Delhi"],                                  // RMC Delhi (NCR)
+		"4700": ["Rajasthan"],                               // RMC Jaipur
+		"3400": ["Odisha"],                                 // AAPC Bhubaneswar
+		"4200": ["West Bengal"],                             // RMC Kolkata
+		"4400": ["Assam"],                                  // RMC Guwahati
+		"4600": ["Jharkhand"],                               // RMC Ranchi
+		"4902": ["Bihar"]                                    // RMC Patna
+	};
+
+	/**
+	 * Hardcoded state -> zone table for THIS control's own zone view (2026-08-22, revised
+	 * 2026-08-22 to derive from ZONE_OF_PLANT/PLANT_STATES). Production billing kept
+	 * surfacing states under the wrong zone - Karnataka and Uttar Pradesh reporting under
+	 * East being one confirmed case - despite earlier CDS-level fixes, so
+	 * ZSD_ZONE_PLANT-ALM_ZONE can no longer be trusted to grain the choropleth live. Starts
+	 * from ZONE_OF_STATE_BASELINE, then for each state that has at least one plant listed
+	 * above, overrides it to that plant's zone - PROVIDED all of that state's own plants
+	 * agree. Madhya Pradesh hosts both 3100 (Central) and 3300 (West), so it keeps its
+	 * baseline rather than being arbitrarily flipped to one of the two; Uttar Pradesh and
+	 * Uttarakhand have only plant 2000 between them, so both resolve cleanly to Central.
+	 *
+	 * The Zone filter, KPI totals and every other panel are untouched - they still match on
+	 * ALM_ZONE server-side; only this control's zone shading, zone hover totals and
+	 * state-view zone eyebrow read from here.
+	 */
+	var ZONE_OF_STATE = (function () {
+		var mPlantsByState = {};
+		Object.keys(PLANT_STATES).forEach(function (sPlant) {
+			var sZone = ZONE_OF_PLANT[sPlant];
+			PLANT_STATES[sPlant].forEach(function (sState) {
+				(mPlantsByState[sState] || (mPlantsByState[sState] = [])).push(sZone);
+			});
+		});
+
+		var mResolved = Object.assign({}, ZONE_OF_STATE_BASELINE);
+		Object.keys(mPlantsByState).forEach(function (sState) {
+			var aZones = mPlantsByState[sState];
+			var bUnanimous = aZones.every(function (sZone) {
+				return sZone === aZones[0];
+			});
+			if (bUnanimous) {
+				mResolved[sState] = aZones[0];
+			}
+		});
+		return mResolved;
+	})();
 
 	/** Shared hover card. One map on the page, so one element, created on first hover. */
 	var oTip = null;
