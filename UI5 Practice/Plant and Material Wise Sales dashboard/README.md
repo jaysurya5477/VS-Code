@@ -53,16 +53,40 @@ recorded in full in `CONTEXT_LOG.md` §6:
   East. `ZSDD_PMS_GL_CDS` now joins `T001W`/`T005U` twice and `coalesce( )`s the result.
   ⚠ **Not yet activated — the production choropleth stays wrong until it is.**
 - **OD-11 — the map's zone comes from `ALM_ZONE`, not a geographic lookup**, so the Zone filter and
-  the shading finally agree (2000 HQ is in Kanpur but belongs to Central).
+  the shading finally agree (2000 HQ is in Kanpur but belongs to Central). ⚠ **Superseded
+  2026-08-22 (OD-15, below) — `ALM_ZONE` kept mis-assigning states on the map regardless.**
 - **OD-12 — growth indicators are hidden for FY 2026 whenever a filter beyond Fiscal Year is set.**
   `VKBUR` began in FY 2026, so prior-year rows have a blank zone and are excluded by any zone
   predicate, which made a filtered comparison divide by an almost-empty base. The rule expires on
-  its own in FY 2027. The Yesterday Sale card shows no pill in any year.
+  its own in FY 2027. The Yesterday Sale card shows no pill in any year. ⚠ **Revised 2026-08-22
+  (OD-14, below) — the FY-only exemption did not hold up.**
 - **Both filter caps lifted.** Gateway pages at 100 *and* `sap.ui.model.Model` defaults `sizeLimit`
   to 100 — two independent caps in series, either of which alone still showed `(0 of 100)`.
 
 `npm run start-prod` (port 8098, `ui5-prod.yaml`) points a local build at the production backend for
 exactly this kind of diagnosis. It holds **no credentials** — the proxy prompts.
+
+**FY floor, unconditional delta suppression, and the map's own zone table (2026-08-22).** Three
+more decisions, all recorded in `CONTEXT_LOG.md` §6:
+
+- **OD-13 — the FY picker is floored at `VKBUR_FIRST_FY` (2026).** `_fyOptions()` no longer offers
+  any year before it — pre-2026 billing carries no sales office at all, so it can neither be
+  grouped nor filtered by zone. The picker widens back to three years on its own once FY 2028
+  makes FY 2026 the third year back.
+- **OD-14 — growth pills are hidden for the whole of FY 2026, not only when a scope filter narrows
+  it (supersedes OD-12).** The FY 2025 comparison base is unreliable either way, filtered or not.
+  FY 2027 onward is unaffected. The scheme panel's subtitle now switches between "· vs FY {year}"
+  and a plain "Gross value by scheme" (i18n `schemeVsFy` / `schemeNoVs`) to match.
+- **OD-15 — the map's own zone choropleth reverts to a frontend hardcoded table (supersedes
+  OD-11).** `ALM_ZONE` kept surfacing states under the wrong zone in production even after OD-11 —
+  Karnataka and Uttar Pradesh under East, Odisha missing from East entirely in an unbilled period.
+  `IndiaMap.js` now carries its own `ZONE_OF_STATE` table covering all 36 states/UTs across 5
+  zones. Scoped to this control alone: the Zone filter dropdown, KPI totals and every other panel
+  still match on `ALM_ZONE` server-side, unchanged; zone hover totals still aggregate live from
+  the same Geo rows, just grouped by `ZONE_OF_STATE`.
+- The choropleth's lightest colour step and "no billing" fill (`--pms-scale-0`, `--pms-nodata`)
+  were also darkened slightly, so low-value and no-billing states stay visibly distinct from the
+  white panel background in light theme. Dark theme untouched.
 
 ## Where things are
 

@@ -515,6 +515,28 @@ d.code("onFilterSelectionFinish: function () { this._markDirty(); },\n"
 d.p("Two exceptions load immediately: the initial bootstrap in onInit, and onReset — "
     "clearing is an explicit action rather than an edit in progress.")
 
+d.h2("7.4a  Flooring the Fiscal-Year Options (OD-13)")
+d.p("_fyOptions( ) used to return the three most recent fiscal years unconditionally — "
+    "[iCurr, iCurr - 1, iCurr - 2] — for the FY Select. Billing before VKBUR_FIRST_FY (2026) "
+    "carries no sales office at all (OD-8, OD-12), so it can neither be grouped nor filtered by "
+    "zone; offering it in the picker let a user select a fiscal year the rest of the dashboard "
+    "could not render correctly.")
+d.code("_fyOptions: function () {\n"
+       "    var iCurr = this._currentFy();\n"
+       "    return [iCurr, iCurr - 1, iCurr - 2].filter(function (fy) {\n"
+       "        return fy >= VKBUR_FIRST_FY;\n"
+       "    }).map(function (fy) {\n"
+       "        return {\n"
+       "            key: String(fy),\n"
+       "            text: \"FY \" + fy + \"-\" + String(fy + 1).slice(2)\n"
+       "        };\n"
+       "    });\n"
+       "}")
+d.callout("The list widens again on its own", "Once the current fiscal year reaches 2028, the "
+          "candidate list [2028, 2027, 2026] survives the filter in full and the picker is back "
+          "to three options — every one of them with VKBUR throughout. No further code change is "
+          "needed for that to happen; VKBUR_FIRST_FY stays a fixed constant.")
+
 d.h2("7.5  Catalog Merging")
 d.p("The State, Plant, Scheme and Material dropdowns have no value-help entities. Their items are "
     "harvested from each response by _mergeCatalog( ) and ACCUMULATE across loads rather than "
@@ -572,6 +594,42 @@ d.p("quantile( ) bins by equal COUNT, not equal width, so a handful of very larg
     "It returns the real min and max alongside the bins, because the per-swatch labels are each "
     "band's LOWER bound; without the true extremes the legend looks like it stops at the last "
     "break rather than running on to the largest value actually painted.")
+d.callout("Light-theme scale bumped off the panel background (2026-08-22)", "--pms-scale-0 (the "
+          "lightest step, for the smallest billed value) and --pms-nodata (\"no billing\") "
+          "started as the prototype's own #f7fbff / #f2f5f6 — both within a few points of the "
+          "#ffffff panel behind them, so the smallest-value state and a state with no billing at "
+          "all both read as blank. Deepened to #e5f0fb / #e3e8ea so both stay visibly distinct "
+          "from empty panel space and from each other, on both the state and the zone choropleth "
+          "(the same tokens drive both). --pms-scale-1..4, --pms-zonediv and the dark theme were "
+          "untouched — dark was already designed with enough separation.")
+
+d.h3("Zone derivation: ZONE_OF_STATE, not AlmZone")
+d.p("Until 2026-08-18 zone granularity shaded a hardcoded GEOGRAPHIC union. OD-11 then switched "
+    "it to the row's own AlmZone, so the Zone filter and the map would always agree. In "
+    "production AlmZone kept surfacing states under the wrong zone regardless — Karnataka and "
+    "Uttar Pradesh reporting under East, and Odisha not appearing under East at all in a period "
+    "it had no billing — the same plant-Unit many-to-many symptom OD-10 diagnosed, just not yet "
+    "fixed by OD-10's own (still unactivated) backend change. 2026-08-22 (OD-15) reverts to a "
+    "hardcoded table again, but a BUSINESS one this time, not a geographic one: ZONE_OF_STATE "
+    "maps each of the 36 states/UTs to one of North / West / Central / East / South per ALIMCO's "
+    "real zonal map.")
+d.code("var ZONE_OF_STATE = {\n"
+       "    \"Jammu and Kashmir\": \"North\", \"Ladakh\": \"North\", ... \"Chandigarh\": \"North\",\n"
+       "    \"Gujarat\": \"West\", \"Maharashtra\": \"West\", \"Goa\": \"West\",\n"
+       "        \"Dadra and Nagar Haveli and Daman and Diu\": \"West\",\n"
+       "    \"Madhya Pradesh\": \"Central\", \"Chhattisgarh\": \"Central\",\n"
+       "    \"Bihar\": \"East\", \"Jharkhand\": \"East\", ... \"Tripura\": \"East\",\n"
+       "    \"Telangana\": \"South\", \"Andhra Pradesh\": \"South\", ... \"Andaman and Nicobar "
+       "Islands\": \"South\"\n"
+       "};")
+d.callout("Scoped to this control alone", "The Zone filter dropdown and every other panel — KPI "
+          "totals, Top-states, scheme rows — still match on ALM_ZONE server-side, unchanged (see "
+          "7.6). Only this control's own zone shading, its zone hover-card totals and the state "
+          "card's zone eyebrow now read ZONE_OF_STATE. Zone hover totals still aggregate live "
+          "from the same Geo entity rows, just grouped by ZONE_OF_STATE instead of AlmZone; the "
+          "card's three rows (gross / net / tax) are unchanged. A state whose canonical name is "
+          "not a key in the table has no zone to paint, exactly as before.")
+
 d.h3("Zone granularity")
 d.p("A zone is drawn as ONE path whose d is the concatenation of its member states' subpaths, stroked inline in its own fill colour. Drawing a path per state left every internal state border stroked, so a zone read as several states that happened to share a colour rather than as one region.")
 d.callout("Why hover and selection use a filter", "The inline stroke outranks any selector, so the .pmsMapArea hover and selected rules cannot repaint it — which is deliberate: an ink stroke would outline every one of those subpaths again and undo exactly what the inline stroke achieves. Both states darken the whole region with a CSS filter instead, which works on any scale step and in both themes.")
@@ -582,11 +640,11 @@ d.p("Three rows — Gross billed, Net value, Tax (GST) — and nothing else, on 
     "(state polygon, zone polygon, Unit dot). It carried growth against last year, share of India, "
     "plants billing and invoice counts until 2026-08-18, when they were removed as noise "
     "(OD-12); the zone and dot cards also lost the state / plant counts from their headers.")
-d.callout("The state card's eyebrow reads AlmZone, not the geographic table", "It used "
-          "INDIA.zoneOf[state] — the hardcoded geographic lookup — which would print 'UP - North' "
-          "beside a panel that had just shaded Uttar Pradesh as Central. It now reads the row's own "
-          "AlmZone through formatter.zoneKey( ), the same source the shading uses. A state with no "
-          "billing shows its abbreviation alone.")
+d.callout("The state card's eyebrow reads ZONE_OF_STATE, not AlmZone", "Between 2026-08-18 and "
+          "2026-08-22 it read the row's own AlmZone through formatter.zoneKey( ), matching "
+          "whichever source the shading used at the time. It now reads ZONE_OF_STATE for the same "
+          "reason, one level removed: a state's zone eyebrow is a property of the STATE, not of "
+          "its billing, so it still shows even for a state nobody billed under any zone.")
 d.callout("What the removal made dead", "IndiaMap's deltaVisible and priorFyLabel properties and "
           "their view bindings, the per-zone prior / plants / invoices / states accumulators, the "
           "share-of-India denominator, and six of the fifteen mapTexts keys. All removed — a bound "
@@ -626,20 +684,22 @@ d.callout("The arithmetic was never wrong", "pct( ) was checked against the ABAP
           "IV_PART = 385,019,754.54 over IV_WHOLE = 2,105,569.94 is genuinely +18285.8%, and it "
           "reconciles with the Rs 38.71 Cr on the card. Capping or hiding large percentages before "
           "diagnosing this would have buried a master-data gap behind a cosmetic fix.")
+d.p("2026-08-18's first version hid the pills only when FY 2026 was selected TOGETHER with a "
+    "scope filter (zone / state / plant / scheme / material / period); Fiscal Year on its own was "
+    "exempt, on the reasoning that an FY-only view totals both years' rows including the "
+    "blank-VKBUR ones, so nothing is excluded and the comparison stays sound.")
+d.callout("2026-08-22: that exemption did not survive review (OD-14)", "The FY 2025 total is still built "
+          "almost entirely from rows that predate VKBUR whether or not a filter narrows it — an "
+          "FY-only view is not comparing two clean years, it is comparing a normal FY 2026 against "
+          "an FY 2025 that is missing the field the rest of the dashboard groups by. "
+          "_deltasUnreliable( ) now returns true for FY 2026 outright, filtered or not, and "
+          "SCOPE_FILTERS is deleted as dead code.")
 d.code("var VKBUR_FIRST_FY = 2026;\n"
-       "var SCOPE_FILTERS = [\"zone\", \"state\", \"plant\", \"scheme\", \"material\", \"period\"];\n"
        "\n"
        "_deltasUnreliable: function () {\n"
        "    var o = this._oFilters;\n"
-       "    if (!o || parseInt(o.fy, 10) !== VKBUR_FIRST_FY) { return false; }\n"
-       "    return SCOPE_FILTERS.some(function (sKey) {\n"
-       "        return (o[sKey] || []).length > 0;\n"
-       "    });\n"
+       "    return !!o && parseInt(o.fy, 10) === VKBUR_FIRST_FY;\n"
        "}")
-d.callout("Fiscal Year is deliberately not a scope filter", "An FY-only view totals both sides "
-          "INCLUDING the blank-VKBUR rows, so nothing is excluded and the comparison is sound. "
-          "Only a filter that narrows the comparison can break it. Hiding the pills on the FY "
-          "selector too would have removed the one comparison that still works.")
 d.callout("It expires on its own", "FY 2027 compares against FY 2026, which has VKBUR throughout. "
           "This is a dated workaround for a one-off master-data transition, not a permanent rule — "
           "the constant name says so, and no code change is needed when it lapses.")
@@ -652,6 +712,14 @@ d.callout("The Yesterday Sale card never shows a pill, in any year", "A single d
           "single day a year earlier is noise, not a trend — a public holiday on one side of the "
           "comparison swings it completely. It was removed outright on 2026-08-18 rather than "
           "conditioned, because it was never meaningful.")
+d.p("The scheme panel's subtitle follows the same flag rather than being wired independently. It "
+    "used to read \"Gross value by scheme · vs FY {year}\" (i18n key schemeVsFy) unconditionally, "
+    "even in the moments its own rows had no pill beside them. It now reads the plain "
+    "\"Gross value by scheme\" (schemeNoVs) whenever _deltasUnreliable( ) is true, and only shows "
+    "the \"vs FY {year}\" form when the comparison is one the pills themselves are willing to "
+    "show.")
+d.code("oModel.setProperty(\"/schemeSubtitle\", this._deltasUnreliable() ?\n"
+       "    this._text(\"schemeNoVs\") : this._text(\"schemeVsFy\", [String(iPriorFy)]));")
 
 d.h2("7.8  Responsive Panel Sizing")
 d.p("Panel heights are viewport-relative, not fixed: the map is 52vh and both charts 46vh, with the floor and ceiling set in CSS as min-height / max-height. The scheme list is bounded the same way and scrolls internally, so it cannot drive the grid row taller than the map beside it.")
@@ -757,7 +825,7 @@ d.bullets([
     "The Scheme filter does not restrict the material panel. Category lives only on the G/L-grain fact, not on VBRP/VBRK. Closing this needs the mirror image of resolve_material_gl_keys( ) — item resolution from a G/L row — which was deliberately not attempted in the same pass as the first cross-grain join.",
     "The material-to-G/L bridge depends on a hardcoded list of seven condition types. Anything outside that list falls back to document-level inclusion, which over-states.",
     "Every entity set recomputes the whole dashboard, so one refresh runs get_dashboard_data( ) nine times. There is no shared buffer.",
-    "ALM_ZONE's real data element was never confirmed; it is typed as a CHAR10 placeholder. It is also hand-maintained, which is why every read of it goes through formatter.zoneKey( ) — see 7.6. (Until 2026-08-18 the frontend derived zone from the state name instead; that is no longer true, and was the cause of the zone mismatch OD-11 fixed.)",
+    "ALM_ZONE's real data element was never confirmed; it is typed as a CHAR10 placeholder. It is also hand-maintained, which is why every read of it goes through formatter.zoneKey( ) — see 7.6. This still governs the Zone filter and every panel except the map's own zone shading, which reads a hardcoded ZONE_OF_STATE table instead as of 2026-08-22 (OD-15, see 7.7) — ALM_ZONE kept mis-assigning states there even after OD-11 (2026-08-18) switched it away from the geographic lookup that came before.",
     "No value-help entities exist for Plant / Material / State type-ahead. The dropdowns are built from each response's own codes and therefore list only what has been in scope so far.",
     "Credit-memo exclusion is applied to the material panel only (fkart = 'G2'), not to the KPI cards or the G/L-grain panels.",
     "There is no free date-range picker — the fiscal year always spans Apr 1 to Mar 31; the Period filter narrows within it.",
@@ -766,7 +834,7 @@ d.bullets([
 ])
 d.h2("10.1  Open at the Close of 2026-08-18")
 d.bullets([
-    "ABAP not yet activated or transported: ZSDD_PMS_GL_CDS (the OD-10 revision), ZCL_PMS_DASH_QUERY, ZSD_PMS_SCHEME, ZCL_PMS_SCHEME_QRY, ZSD_PMS_DASH_TEST (gained a p_zone parameter) and ZSD_PMS_ZONE_DIAG (new). Needed in BOTH MED and MEP. Until ZSDD_PMS_GL_CDS is active in MEP, the production choropleth keeps putting Uttar Pradesh and Karnataka under East.",
+    "ABAP not yet activated or transported: ZSDD_PMS_GL_CDS (the OD-10 revision), ZCL_PMS_DASH_QUERY, ZSD_PMS_SCHEME, ZCL_PMS_SCHEME_QRY, ZSD_PMS_DASH_TEST (gained a p_zone parameter) and ZSD_PMS_ZONE_DIAG (new). Needed in BOTH MED and MEP. Until it is active in MEP, state-granularity views and any zone/state AGGREGATE total (the Zone filter, KPI totals, Top-states) still fall back to the billing plant's own state rather than the Unit's. The zone-GRANULARITY MAP VIEW itself no longer depends on this activation: 2026-08-22 (OD-15) moved its shading to the hardcoded ZONE_OF_STATE table, so Uttar Pradesh and Karnataka now paint correctly under it regardless of whether this CDS revision is active.",
     "The app itself has never been deployed to production — see 8.3.",
     "Plant 4700 (RMC Jaipur) is zoned NORTH in MEP client 300 and CENTRAL in MED client 100. That is a master-data question for the business, not a code one, but it means the two systems will not agree on the map until it is settled.",
     "The ADT MCP server returns 401 on every call, so no live object-by-object comparison against MED or MEP could be run. Everything above was established from the repository and from the running app.",

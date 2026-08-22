@@ -68,7 +68,7 @@ d.p("Two things behave differently. The dashboard loads by itself when you first
 
 d.h2("3.2  The Filters")
 d.table(["Filter", "What it does"], [
-    ["Fiscal Year", "Chooses the year. One year only — it cannot be left empty. Offers the three most recent years."],
+    ["Fiscal Year", "Chooses the year. One year only — it cannot be left empty. Offers up to the three most recent years, but never one older than 2026-27 (older billing cannot be split by zone)."],
     ["Zone", "Narrows to one or more of North, West, South, East and Central."],
     ["State", "Narrows to one or more states."],
     ["Plant", "Narrows to one or more billing plants."],
@@ -148,16 +148,15 @@ d.p("A pill reading \"new\" means there was nothing at all in the comparison per
 d.callout("Why the single-day card has no pill", "It reports one day against the same day a year "
           "earlier. If either of those two days happened to be a holiday, the percentage says "
           "more about the calendar than about sales, so it is not shown at all.")
-d.callout("Why the pills disappear when you filter this year", "This applies to 2026-27 only. "
-          "The Unit and Zone grouping the dashboard uses came into effect this year, so most of "
-          "last year's records do not carry it. As soon as you narrow the view — by zone, state, "
-          "plant, scheme, material or period — you would be comparing an almost complete year "
-          "against an almost empty one, which reports growth in the thousands of percent. Rather "
-          "than show you a figure that is not true, the dashboard hides the pills. Clear your "
-          "filters and they come back. From 2027-28 onwards this stops happening by itself.")
-d.p("Changing only the Fiscal Year does not hide the pills. With nothing else narrowing the "
-    "view, both years count everything they hold, so the comparison is sound. Your figures are "
-    "never affected either way — only the comparison is withheld.")
+d.callout("Why the pills disappear for the whole of 2026-27", "The Unit and Zone grouping the "
+          "dashboard uses came into effect this year, so most of last year's records do not carry "
+          "it. Comparing this year against last year would mean comparing an almost complete year "
+          "against an almost empty one, which reports growth in the thousands of percent — and "
+          "that is true whether or not you have narrowed the view with any other filter. Rather "
+          "than show you a figure that is not true, the dashboard hides the pills for the whole of "
+          "2026-27, filtered or not. Select a different fiscal year and they come back. From "
+          "2027-28 onwards this stops happening by itself.")
+d.p("Your figures themselves are never affected either way — only the comparison is withheld.")
 
 # ============================================================== 5 ============
 d.h1("5.  Reading the Map")
@@ -167,15 +166,25 @@ d.h2("5.1  The Shaded Map")
 d.p("Each state is shaded according to how much was billed there. Use the State / Zone switch to "
     "change what is shaded: individual states, or the zones they belong to. In Zone mode a zone is "
     "drawn as one continuous area, so you see the zone rather than the states inside it.")
-d.callout("A zone is a business grouping, not a region of the map", "Zones come from the zone code "
-          "maintained against each Unit in SAP, not from where a state sits on the map. 2000 HQ is "
-          "in Kanpur, in Uttar Pradesh, but belongs to Central — so in Zone mode Uttar "
-          "Pradesh is shaded as part of Central, and a zone can cover areas that are nowhere near "
-          "each other. If a Unit shows under the wrong zone, its zone code in SAP is what needs "
-          "correcting.")
+d.callout("A zone is a business grouping, not a region of the map", "Zones are not drawn from "
+          "where a state sits on the map: 2000 HQ is in Kanpur, in Uttar Pradesh, but belongs to "
+          "Central — so in Zone mode Uttar Pradesh is shaded as part of Central, and a zone can "
+          "cover areas that are nowhere near each other. Everywhere else on the screen — the Zone "
+          "filter, the KPI totals, the scheme rows — a Unit's zone comes from the zone code "
+          "maintained against it in SAP. As of August 2026 the map's own shading is the one "
+          "exception: it reads each state's zone from a fixed list built into the dashboard "
+          "instead, because the SAP-maintained code was occasionally showing a state under the "
+          "wrong zone on the map. If a Unit's TOTALS show under the wrong zone anywhere else on "
+          "the screen, its zone code in SAP is what needs correcting; if only the MAP shading "
+          "looks wrong for a state, tell your SAP support team which state and which zone it "
+          "should be.")
 d.p("The colour scale sits below the map, labelled with real rupee values so you can read what "
     "each shade is worth. States with no billing at all get their own separate colour, so you can "
     "tell \"nothing\" apart from \"very little\".")
+d.callout("Shades darkened slightly in August 2026", "The lightest shade and the \"no billing\" "
+          "colour used to sit close enough to the panel's own white background that a "
+          "barely-billed state and an unbilled state could both look blank. Both are now a little "
+          "darker so each reads clearly against the white panel, as well as against each other.")
 d.callout("Why the darkest states are not always the biggest jump", "The colours are spread so "
           "that roughly the same NUMBER of states falls into each shade. If the scale were spread "
           "evenly by value instead, one or two very large states would push everything else into "
@@ -210,6 +219,10 @@ d.h2("6.1  Scheme Performance")
 d.p("Your schemes, ranked by gross value. Each row shows a colour chip, the value, a bar showing its "
     "share of the total, that share as a percentage, how many invoices it covers, and its growth "
     "against last year. Schemes with nothing in your current selection are not listed at all.")
+d.p("The panel's subtitle usually names the year it is comparing against — \"Gross value by "
+    "scheme · vs FY {year}\". Whenever the percentage pills are hidden for the reason given in "
+    "4.5, the subtitle drops back to a plain \"Gross value by scheme\", so it never promises a "
+    "comparison the rows are not making.")
 d.p("Beneath the divider is the Top states roll-up. Both the scheme rows and the state rows are "
     "clickable and filter the screen.")
 
@@ -284,10 +297,10 @@ qa = [
      "Check what it billed last year. Where last year's figure was very small, even a modest "
      "increase produces an enormous percentage. Where there was nothing at all last year, you "
      "will see \"new\" instead of a number."),
-    ("The percentage pills vanished after I pressed Go. Is something broken?",
-     "No, and your figures are unaffected. In 2026-27 the dashboard hides the pills as soon as "
-     "you filter by anything other than the fiscal year, because last year's records do not carry "
-     "the Unit and Zone grouping and the comparison would be wildly wrong. Clear the filters to "
+    ("The percentage pills are missing. Is something broken?",
+     "No, and your figures are unaffected. For the whole of fiscal year 2026-27 the dashboard "
+     "hides the pills, filtered or not, because last year's records do not carry the Unit and "
+     "Zone grouping and the comparison would be wildly wrong. Select a different fiscal year to "
      "get them back. See 4.5."),
     ("Why does the Plant filter list far more plants than the plant panel shows?",
      "The panel deliberately shows only the top 20 so it stays readable. The filter deliberately "

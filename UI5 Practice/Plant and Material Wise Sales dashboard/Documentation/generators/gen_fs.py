@@ -72,11 +72,17 @@ d.h2("2.3  Zone")
 d.p("A zone is ALIMCO's regional grouping — North, West, South, East and Central. The map "
     "can be switched from state granularity to zone granularity, and the Zone filter narrows "
     "every panel.")
-d.callout("Zone comes from ZSD_ZONE_PLANT, not from geography", "A zone is a business grouping, "
-          "not a map of India: 2000 HQ sits in Kanpur, in Uttar Pradesh, but belongs to Central. "
-          "The dashboard therefore takes the zone from the ALM_ZONE code on the Unit's mapping "
-          "row — the same field the Zone filter matches on — so filter and map always "
-          "agree. If a Unit appears under the wrong zone, ALM_ZONE is what needs correcting.")
+d.callout("Zone comes from ZSD_ZONE_PLANT for filtering; the map's own shading uses a fixed table",
+          "A zone is a business grouping, not a map of India: 2000 HQ sits in Kanpur, in Uttar "
+          "Pradesh, but belongs to Central. The Zone filter, the KPI totals and every panel "
+          "besides the map itself still take the zone from the ALM_ZONE code on the Unit's "
+          "mapping row, so filtering and totals always agree with each other. The map's own zone "
+          "shading is the one exception (decided 2026-08-22): because ALM_ZONE kept surfacing "
+          "states under the wrong zone in production, the map now shades each state from a fixed "
+          "state-to-zone table built into the app, grouping all 36 states and union territories "
+          "into ALIMCO's five zones. If a Unit's totals show under the wrong zone anywhere else on "
+          "the screen, ALM_ZONE is what needs correcting; if only the map's own shading looks "
+          "wrong for a state, the app's built-in table needs correcting instead.")
 d.p("Because zones are assigned per Unit rather than drawn on the map, a zone need not be one "
     "connected piece of the country. Zone granularity shades each zone's own member states, so "
     "Central covering both Madhya Pradesh and Uttar Pradesh is drawn exactly as the data says. "
@@ -120,12 +126,19 @@ d.p("A scheme is the business programme a sale belongs to — for example ADIP o
 
 d.h2("2.7  Fiscal Year and Period")
 d.p("Every figure is scoped to exactly one fiscal year, running April 1 to March 31. The "
-    "dashboard opens on the fiscal year containing today's date and offers the three most recent "
-    "years. The Period filter narrows within that year and is numbered the way the business "
-    "counts it — Apr is period 1 and Mar is period 12.")
+    "dashboard opens on the fiscal year containing today's date and offers up to the three most "
+    "recent years, floored at FY 2026 (decided 2026-08-22) — billing before that year carries no "
+    "sales office and so cannot be grouped or filtered by zone at all. The Period filter narrows "
+    "within the selected year and is numbered the way the business counts it — Apr is period 1 "
+    "and Mar is period 12.")
 d.callout("Fiscal year numbering", "A fiscal year is named after the calendar year it STARTS in. "
           "April 2026 to March 2027 is fiscal year 2026, shown as “FY 2026-27”. This "
           "matches SAP's own GJAHR on the billing data.")
+d.callout("Why the picker does not always show three years (OD-13)", "Only fiscal years from FY 2026 "
+          "onward are offered. Earlier billing has no sales office recorded, so it cannot be "
+          "grouped into a zone or a Unit — selecting it would break every zone- and Unit-based "
+          "view on the screen. The list will show three years again once FY 2028 makes FY 2026 "
+          "the third year back, at which point every offered year is fully covered.")
 
 # ============================================================== 3 ============
 d.h1("3.  Data Sources")
@@ -175,8 +188,8 @@ d.callout("The one place they meet", "When — and only when — a Material filt
 d.h1("4.  KPI Definitions")
 d.p("Four KPI cards sit above the panels. All four respect every active filter. The three money "
     "cards carry a growth pill comparing them against the previous fiscal year; the "
-    "single-day card does not, and in FY 2026 the pills are hidden whenever a filter beyond "
-    "Fiscal Year is set — both explained in 4.2.")
+    "single-day card does not, and in FY 2026 the pills are hidden outright, filtered or not — "
+    "both explained in 4.2.")
 
 d.h2("4.1  KPI Summary")
 d.table(["KPI", "Definition", "Sub-line beneath the value"], [
@@ -198,16 +211,16 @@ d.callout("The single-day card never shows one", "Yesterday Sale / Month-End Sal
           "day against the same day a year earlier. A public holiday on one side of that "
           "comparison swings the percentage completely, so it measures the calendar rather than "
           "the business. It was removed outright rather than conditioned.")
-d.callout("In FY 2026, filtering hides every pill", "The sales-office grouping behind the Zone "
-          "and Unit views only came into use in FY 2026. Most FY 2025 records do not carry one, "
-          "so a filtered comparison measures a nearly complete year against a nearly empty one "
-          "and reports growth in the thousands of percent. Rather than show a figure that cannot "
-          "be trusted, the pills are hidden whenever FY 2026 is selected together with any of "
-          "Zone, State, Plant, Scheme, Material or Period.")
-d.p("Fiscal Year on its own is deliberately not treated as such a filter. With nothing narrowing "
-    "the view, both years total everything they hold, including the records with no sales office, "
-    "so the comparison is sound and the pills stay. From FY 2027 the rule lapses by itself, "
-    "because FY 2027 is compared against FY 2026, which carries the sales office throughout.")
+d.callout("In FY 2026, every pill is hidden — filtered or not (revised 2026-08-22, OD-14)", "The "
+          "sales-office grouping behind the Zone and Unit views only came into use in FY 2026, so "
+          "most FY 2025 records do not carry one. That makes the FY 2025 comparison base "
+          "unreliable on its own terms, not only once a filter narrows it — even the unfiltered "
+          "FY 2026 total is measured against a prior year missing the grouping the rest of the "
+          "dashboard depends on. Until 2026-08-18 the pills were hidden only when a filter beyond "
+          "Fiscal Year was also set; that exemption for an FY-only view did not hold up, so the "
+          "pills are now hidden for the whole of FY 2026 regardless of what else is filtered.")
+d.p("From FY 2027 this stops applying by itself, because FY 2027 is compared against FY 2026, "
+    "which carries the sales office throughout.")
 
 d.h2("4.3  Yesterday Sale vs Month-End Sale")
 d.p("The fourth card reports a single day, and which day it reports on — and therefore what "
@@ -278,6 +291,11 @@ d.callout("The scale follows the layer, not the dots", "In State mode the scale 
           "in Zone mode it describes zones. Neither describes the Unit dots, which are a different "
           "series entirely — so a Unit dot worth more than the scale's top break is normal, "
           "not an error.")
+d.callout("Lightest colours darkened for readability (2026-08-22)", "The palest step of the value "
+          "scale and the separate \"no billing\" colour used to sit close enough to the panel's "
+          "own white background that a barely-billed state and an unbilled state could both look "
+          "blank. Both were darkened slightly so each is now visibly its own colour against the "
+          "panel, as well as against each other.")
 d.h3("The Unit dots")
 d.p("An overlay that can be switched off. One dot per Unit, its size proportional to that Unit's "
     "gross value, joined by a leader line to a label carrying the Unit code, the Unit name and the "
@@ -298,6 +316,11 @@ d.p("A ranked list rather than a chart. Each scheme shows a colour chip, its gro
     "the Top-states roll-up. Every row is clickable and toggles that scheme — or that state "
     "— in the filter bar. Schemes with no gross value in the current selection are not "
     "listed.")
+d.callout("The panel's own subtitle follows the same rule as the pills", "The subtitle above the "
+          "list normally reads \"Gross value by scheme · vs FY {year}\". Whenever growth pills "
+          "are hidden for the reason given in 4.2, it reads the plain \"Gross value by scheme\" "
+          "instead, so the heading never promises a year-on-year comparison the rows underneath "
+          "are not actually showing.")
 
 d.h2("5.5  Sales by Plant")
 d.p("The top 20 plants by net value, drawn as stacked bars of net plus tax, so the full bar is "
@@ -435,13 +458,13 @@ faq = [
      "Check the prior year first. Where last year's figure is very small, a modest absolute "
      "movement produces an enormous percentage. Where last year's figure is zero, the pill shows "
      "“new” rather than a percentage at all. In FY 2026 the known case of this — a "
-     "filtered view whose prior year has no sales office — is handled by hiding the pills "
-     "outright; see 4.2."),
-    ("The growth pills disappeared when I applied a filter.",
-     "That is intended, and only happens in FY 2026. The comparison against FY 2025 is not "
-     "reliable once the view is narrowed, because the sales-office grouping did not exist last "
-     "year — see 4.2 for the full reason. Clear the filters, or select a different fiscal year, "
-     "and they return. The figures themselves are unaffected; only the comparison is withheld."),
+     "prior year missing the sales-office grouping — is handled by hiding the pills outright "
+     "for the whole year; see 4.2."),
+    ("The growth pills disappeared in FY 2026.",
+     "That is intended. The comparison against FY 2025 is not reliable for the whole of FY 2026, "
+     "because the sales-office grouping did not exist last year — see 4.2 for the full reason. "
+     "This happens whether or not any other filter is set. Select a different fiscal year and "
+     "they return. The figures themselves are unaffected; only the comparison is withheld."),
     ("Why is a state coloured when I have filtered to a different zone?",
      "It should not be. The dashboard re-checks each state's zone itself before painting the map, "
      "precisely to prevent this. If it still happens, the state-to-zone rule needs a state added "

@@ -394,6 +394,42 @@ data (`recompute()`, template ~line 608). Replicate this, don't just compare ful
     the per-zone `prior`/`plants`/`invoices`/`states` accumulators and the share denominator.
     `deltaVisible` still does real work on `KpiCard` and `SchemeList`. The i18n entries for the
     removed rows are deliberately left in the bundle so restoring one stays a one-line change.
+- **OD-13 — FY selector floored at `VKBUR_FIRST_FY`; only FY 2026 onward is offered.** ✅ *Decided
+  2026-08-22.* `_fyOptions( )` used to offer the current fiscal year and the two before it
+  unconditionally. Every year before `VKBUR_FIRST_FY` (2026) has no sales office on its billing
+  (OD-8, OD-12), so it cannot be grouped or filtered by zone at all — offering it in the picker
+  invited a selection the dashboard could never render correctly. `_fyOptions( )` now filters the
+  same `[iCurr, iCurr-1, iCurr-2]` candidate list to `fy >= VKBUR_FIRST_FY`, so FY 2025 and earlier
+  simply do not appear. The list widens back to three years on its own once FY 2028 makes FY 2026
+  the third year back, at which point every offered year has VKBUR throughout.
+- **OD-14 — growth pills suppressed for FY 2026 unconditionally, not only under a scope filter;
+  supersedes OD-12's rule.** ✅ *Decided 2026-08-22.* OD-12 hid the pills only when FY 2026 was
+  selected together with a scope filter (zone/state/plant/scheme/material/period), reasoning that
+  an FY-only view totals both years' rows including the blank-VKBUR ones, so the comparison stayed
+  sound. Revisited: the FY 2025 comparison base is unreliable regardless of whether a filter
+  narrows it — the same missing-VKBUR rows sit in the total either way, just uncounted rather than
+  excluded, and the base is still mostly missing the field the rest of the dashboard groups by.
+  `_deltasUnreliable( )` now returns true for FY 2026 outright; `SCOPE_FILTERS` is deleted as dead
+  code. FY 2027 onward is unaffected either way — VKBUR covers FY 2026 throughout, so the
+  comparison base is sound and deltas show normally. The scheme panel's subtitle follows the same
+  switch: "Gross value by scheme" (i18n `schemeNoVs`) when deltas are unreliable, "Gross value by
+  scheme · vs FY {year}" (`schemeVsFy`) when they are not — previously it always showed the "vs
+  FY" form even while the pills beside it were hidden.
+- **OD-15 — map's zone choropleth reverted to a frontend hardcoded table; supersedes OD-11.** ✅
+  *Decided 2026-08-22.* OD-11 (2026-08-18) moved the map's zone shading from a hardcoded
+  geographic lookup to the row's own `ALM_ZONE`, so the Zone filter and the map would agree. In
+  production `ALM_ZONE` kept surfacing states under the wrong zone anyway — Karnataka and Uttar
+  Pradesh reporting under East, and Odisha not appearing under East at all in a period it had no
+  billing — the same many-to-many plant↔Unit symptom OD-10 diagnosed, just not yet fixed by OD-10's
+  own (still unactivated) backend COALESCE. `IndiaMap.js` now carries its own `ZONE_OF_STATE`
+  table — all 36 states/UTs mapped to one of 5 zones (North/West/Central/East/South) per ALIMCO's
+  real zonal map — and reads every state's zone from there instead. This is scoped to the map
+  control alone: the Zone filter dropdown and every other panel (KPI totals, Top-states, scheme
+  rows) still match on `ALM_ZONE` server-side, unchanged. Zone hover-card totals still aggregate
+  live from the Geo entity's rows, just grouped by `ZONE_OF_STATE` instead of `AlmZone`; the card's
+  three rows (gross/net/tax) are unchanged. The choropleth's lightest colour step and "no billing"
+  fill (`--pms-scale-0`, `--pms-nodata`) were also darkened slightly in the same change, so both
+  stay visibly distinct from the white panel background in light theme; dark theme was untouched.
 
 ## 7. How to point the ADT MCP at another client / system
 
@@ -505,11 +541,32 @@ roll-up, plant and material charts. What live use surfaced, beyond the OD-10/11/
 - **ABAP not yet activated/transported.** Order: `ZSDD_PMS_GL_CDS` (the OD-10 COALESCE revision) →
   `ZCL_PMS_DASH_QUERY` → `ZSD_PMS_SCHEME` → `ZCL_PMS_SCHEME_QRY` → republish `ZSD_PMS_DASH_O4`.
   Also `ZSD_PMS_DASH_TEST` (gained a `p_zone` parameter) and `ZSD_PMS_ZONE_DIAG` (new). Needed in
-  **both MED and MEP** — until `ZSDD_PMS_GL_CDS` is active in MEP, Uttar Pradesh and Karnataka will
-  keep appearing under East.
+  **both MED and MEP** — until `ZSDD_PMS_GL_CDS` is active in MEP, state-granularity views and any
+  zone/state aggregate total (the Zone filter, KPI totals, Top-states) still fall back to the
+  billing plant's own state rather than the Unit's. *(The zone-**granularity map view** itself no
+  longer depends on this activation — see OD-15 below, 2026-08-22.)*
 - **The app has never been deployed to production.** `ui5-deploy.yaml` only ever targeted
   `vhafbmedap01`; there is no MEP deploy target.
 - **Plant 4700 (RMC Jaipur) is zoned differently per system** — NORTH in MEP 300, CENTRAL in MED
   100. A master-data question for the business, not a code one.
 - **ADT MCP returns 401 on every call**, so a live object-by-object comparison against the systems
   could not be run; the server is configured outside this repo (see §7).
+
+**2026-08-22: FY floor, unconditional delta suppression, and the map's zone reverted to a
+hardcoded table.** Three more decisions layered on top of the 2026-08-18 batch, all in §6:
+
+- **OD-13** floors the FY picker at `VKBUR_FIRST_FY` (2026) — pre-2026 billing has no sales office,
+  so offering it invited a selection nothing on the dashboard could group or filter by zone.
+- **OD-14** (supersedes OD-12) hides growth pills for the whole of FY 2026 unconditionally, not
+  only under a scope filter — the FY 2025 comparison base turned out to be unreliable either way.
+  The scheme panel's subtitle now tracks the same flag (`schemeVsFy` vs the new `schemeNoVs`).
+- **OD-15** (supersedes OD-11) moves the map's own zone shading off `ALM_ZONE` and onto a
+  hardcoded `ZONE_OF_STATE` table in `IndiaMap.js`, because `ALM_ZONE` kept mis-assigning states in
+  production even after OD-11. This is scoped to the map control alone — the Zone filter, KPI
+  totals and every other panel are unchanged. As a side effect, this also fixes the "Uttar Pradesh
+  and Karnataka under East" symptom on the **zone-granularity map view** specifically, independent
+  of whether the still-unactivated OD-10 backend revision ever lands.
+- Unrelated small fix in the same commit: the choropleth's lightest colour step and "no billing"
+  fill were darkened slightly (`--pms-scale-0`, `--pms-nodata`) — both used to sit within a few
+  points of the white panel background, so a barely-billed state and an unbilled one could both
+  read as blank. Dark theme was untouched.
